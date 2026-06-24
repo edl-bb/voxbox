@@ -78,19 +78,12 @@ struct MiniRecorderView: View {
     // MARK: - State for Animation
     @State private var phase: CGFloat = 0
 
-    // Calculate bar height based on audio level and position
-    private func barHeight(for index: Int) -> CGFloat {
-        let level = CGFloat(audioRecorder.audioLevel)
-        let baseHeight: CGFloat = 4
-        let maxHeight: CGFloat = 28
-
-        // Create wave pattern that responds to audio
-        let waveOffset = sin(CGFloat(index) * 0.5 + phase) * 0.3
-        let audioMultiplier = sqrt(level) * (0.8 + waveOffset)
-
-        let height = baseHeight + (maxHeight - baseHeight) * audioMultiplier
-        return max(baseHeight, min(height, maxHeight))
-    }
+    // MARK: - Live waveform
+    // Samples come from AudioRecordingService.liveWaveSamples (peak amplitude per
+    // audio buffer while recording). Rendered with a SwiftUI Canvas so it redraws
+    // on every sample change.
+    private static let waveBarWidth: CGFloat = 2.5
+    private static let waveBarSpacing: CGFloat = 2.0
 
     // Default Init for Preview
     init(onCommit: ((String) -> Void)? = nil, onCancel: (() -> Void)? = nil) {
@@ -121,17 +114,31 @@ struct MiniRecorderView: View {
                 HStack(spacing: 12) {
                     stopButton
 
-                    // Waveform - bar visualizer style
-                    HStack(spacing: 3) {
-                        ForEach(0..<15) { index in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.white.opacity(0.7))
-                                .frame(width: 3, height: barHeight(for: index))
-                                .animation(
-                                    .easeInOut(duration: 0.15), value: audioRecorder.audioLevel)
+                    // Waveform — live render of the actual microphone input.
+                    // Calm/flat when silent, peaks on speech.
+                    Canvas { context, size in
+                        let raw = audioRecorder.liveWaveSamples
+                        guard !raw.isEmpty else { return }
+                        let step = Self.waveBarWidth + Self.waveBarSpacing
+                        let maxBars = max(1, Int(size.width / step))
+                        // Noise-gate, then auto-gain to the recent peak so the
+                        // waveform stays lively and well-scaled at any volume.
+                        let visible = raw.suffix(maxBars).map { max(0, $0 - 0.02) }
+                        let recentPeak = max(visible.max() ?? 0, 0.05)
+                        let midY = size.height / 2
+                        for (i, sample) in visible.enumerated() {
+                            let norm = CGFloat(min(1, sample / recentPeak))
+                            let barHeight = max(2.5, norm * size.height)
+                            let x = CGFloat(i) * step
+                            let rect = CGRect(
+                                x: x, y: midY - barHeight / 2,
+                                width: Self.waveBarWidth, height: barHeight)
+                            context.fill(
+                                Path(roundedRect: rect, cornerRadius: Self.waveBarWidth / 2),
+                                with: .color(.white.opacity(0.9)))
                         }
                     }
-                    .frame(height: 30)
+                    .frame(width: 96, height: 26)
 
                     HStack(spacing: 8) {
                         Menu {
@@ -634,47 +641,6 @@ struct MiniRecorderView: View {
 }
 
 // MARK: - Helper Shapes & Views
-
-struct HorizontalWave: Shape {
-    var phase: CGFloat
-    var amplitude: CGFloat
-    var frequency: CGFloat
-
-    // Allow animation of phase, amplitude, AND frequency
-    var animatableData: AnimatablePair<CGFloat, AnimatablePair<CGFloat, CGFloat>> {
-        get { AnimatablePair(phase, AnimatablePair(amplitude, frequency)) }
-        set {
-            phase = newValue.first
-            amplitude = newValue.second.first
-            frequency = newValue.second.second
-        }
-    }
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-        let midHeight = height / 2
-
-        // Start at left middle
-        path.move(to: CGPoint(x: 0, y: midHeight))
-
-        for x in stride(from: 0, through: width, by: 1) {
-            let relativeX = x / width
-
-            // Sine wave formula: y = A * sin(kx - wt)
-            // k = 2pi * frequency (cycles across width)
-            // wt = phase
-            let sine = sin((relativeX * .pi * 2 * frequency) - phase)
-
-            let y = midHeight + sine * amplitude
-
-            path.addLine(to: CGPoint(x: x, y: y))
-        }
-
-        return path
-    }
-}
 
 struct ChevronShape: Shape {
     let pointsUp: Bool
