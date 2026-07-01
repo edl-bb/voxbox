@@ -3,7 +3,7 @@ import Combine
 import Foundation
 
 /// Service to check for app updates and manage update preferences
-class UpdateService: ObservableObject {
+class UpdateService: NSObject, ObservableObject {
     static let shared = UpdateService()
 
     @Published var availableUpdate: AppVersion?
@@ -26,7 +26,13 @@ class UpdateService: ObservableObject {
     private let autoUpdateKey = "autoUpdate"
     private let lastReminderDateKey = "lastUpdateReminderDate"
 
-    private init() {
+    private var activeDownloadSession: URLSession?
+    private var activeDownloadContinuation: CheckedContinuation<URL, Error>?
+    private var activeDownloadDestinationURL: URL?
+    private var activeDownloadStartedAt: Date?
+
+    private override init() {
+        super.init()
         loadLastCheckDate()
     }
 
@@ -200,54 +206,21 @@ class UpdateService: ObservableObject {
     // MARK: - Private Helpers
 
     private func downloadWithProgress(from url: URL) async throws -> URL {
-        let (asyncBytes, response) = try await URLSession.shared.bytes(from: url)
-
-        let total = response.expectedContentLength  // may be -1 if unknown
         let dest = FileManager.default.temporaryDirectory
             .appendingPathComponent("SpeakType-update-\(UUID().uuidString).dmg")
 
-        FileManager.default.createFile(atPath: dest.path, contents: nil)
-        let handle = try FileHandle(forWritingTo: dest)
-        defer { try? handle.close() }
+        return try await withCheckedThrowingContinuation { continuation in
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
 
-        var received: Int64 = 0
-        var buffer = Data()
-        buffer.reserveCapacity(1024 * 64)
-        let startedAt = Date()
+            let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+            activeDownloadSession = session
+            activeDownloadContinuation = continuation
+            activeDownloadDestinationURL = dest
+            activeDownloadStartedAt = Date()
 
-        for try await byte in asyncBytes {
-            buffer.append(byte)
-            received += 1
-
-            // Flush every 64 KB so the UI moves more smoothly.
-            if buffer.count >= 1024 * 64 {
-                handle.write(buffer)
-                buffer.removeAll(keepingCapacity: true)
-
-                if total > 0 {
-                    let progress = Double(received) / Double(total)
-                    let safeElapsed = max(Date().timeIntervalSince(startedAt), 0.1)
-                    let bytesPerSecond = Double(received) / safeElapsed
-                    await MainActor.run {
-                        self.installPhase = "Downloading"
-                        self.setInstallProgress(progress * 0.8)  // download = 0-80%
-                        self.installStatus =
-                            "\(Self.byteString(received)) of \(Self.byteString(total)) • \(Self.byteString(Int64(bytesPerSecond)))/s • \(Int(progress * 100))%"
-                    }
-                }
-            }
+            session.downloadTask(with: url).resume()
         }
-
-        // Flush remaining bytes
-        if !buffer.isEmpty { handle.write(buffer) }
-
-        await MainActor.run {
-            self.installPhase = "Verifying"
-            self.setInstallProgress(0.82)
-            self.installStatus = "Download complete. Preparing update…"
-        }
-
-        return dest
     }
 
     private func verifyDMG(at dmgURL: URL) throws {
@@ -368,11 +341,89 @@ class UpdateService: ObservableObject {
     private static func byteString(_ bytes: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
+
+    private func finishDownload(_ result: Result<URL, Error>) {
+        guard let continuation = activeDownloadContinuation else { return }
+
+        activeDownloadContinuation = nil
+        activeDownloadDestinationURL = nil
+        activeDownloadStartedAt = nil
+        activeDownloadSession?.finishTasksAndInvalidate()
+        activeDownloadSession = nil
+
+        switch result {
+        case .success(let url):
+            continuation.resume(returning: url)
+        case .failure(let error):
+            continuation.resume(throwing: error)
+        }
+    }
+}
+
+extension UpdateService: URLSessionDownloadDelegate {
+    func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
+        let safeElapsed = max(Date().timeIntervalSince(activeDownloadStartedAt ?? Date()), 0.1)
+        let bytesPerSecond = Double(totalBytesWritten) / safeElapsed
+
+        Task { @MainActor in
+            self.installPhase = "Downloading"
+
+            if totalBytesExpectedToWrite > 0 {
+                let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+                self.setInstallProgress(progress * 0.8)  // download = 0-80%
+                self.installStatus =
+                    "\(Self.byteString(totalBytesWritten)) of \(Self.byteString(totalBytesExpectedToWrite)) • \(Self.byteString(Int64(bytesPerSecond)))/s • \(Int(progress * 100))%"
+            } else {
+                self.installStatus =
+                    "\(Self.byteString(totalBytesWritten)) downloaded • \(Self.byteString(Int64(bytesPerSecond)))/s"
+            }
+        }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didFinishDownloadingTo location: URL
+    ) {
+        guard let destinationURL = activeDownloadDestinationURL else {
+            finishDownload(.failure(UpdateError.downloadFailed("Missing destination URL.")))
+            return
+        }
+
+        do {
+            if FileManager.default.fileExists(atPath: destinationURL.path) {
+                try FileManager.default.removeItem(at: destinationURL)
+            }
+            try FileManager.default.moveItem(at: location, to: destinationURL)
+
+            Task { @MainActor in
+                self.installPhase = "Verifying"
+                self.setInstallProgress(0.82)
+                self.installStatus = "Download complete. Preparing update…"
+            }
+
+            finishDownload(.success(destinationURL))
+        } catch {
+            finishDownload(.failure(UpdateError.downloadFailed(error.localizedDescription)))
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let error else { return }
+        finishDownload(.failure(UpdateError.downloadFailed(error.localizedDescription)))
+    }
 }
 
 // MARK: - Errors
 
 enum UpdateError: LocalizedError {
+    case downloadFailed(String)
     case mountFailed
     case appNotFoundInDMG
     case copyFailed(String)
@@ -380,6 +431,7 @@ enum UpdateError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
+        case .downloadFailed(let msg): return "Failed to download update: \(msg)"
         case .mountFailed: return "Failed to mount the update disk image."
         case .appNotFoundInDMG: return "Could not find the app inside the downloaded update."
         case .copyFailed(let msg): return "Failed to install: \(msg)"
