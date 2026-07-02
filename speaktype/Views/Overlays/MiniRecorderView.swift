@@ -182,23 +182,20 @@ struct MiniRecorderView: View {
                                 Button("Clear recents") { recentLanguagesString = "" }
                             }
                         } label: {
-                            HStack(spacing: 6) {
-                                Text(currentLanguageLabel)
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.white.opacity(0.92))
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
+                            HStack(spacing: 5) {
+                                Image(systemName: "globe")
+                                    .font(.system(size: 12, weight: .semibold))
 
                                 DoubleChevronIcon(color: .white.opacity(0.92))
                             }
-                            .frame(maxWidth: 74, alignment: .leading)
                             .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .padding(.vertical, 5)
                             .background(Color.white.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                         .menuIndicator(.hidden)
                         .menuStyle(.borderlessButton)
+                        .tint(.white.opacity(0.92))
                         .fixedSize()
                         .help(spokenLanguageHelpText)
 
@@ -225,20 +222,20 @@ struct MiniRecorderView: View {
                                 audioRecorder.fetchAvailableDevices()
                             }
                         } label: {
-                            HStack(spacing: 6) {
+                            HStack(spacing: 5) {
                                 Image(systemName: "mic.fill")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.white.opacity(0.92))
+                                    .font(.system(size: 12, weight: .semibold))
 
                                 DoubleChevronIcon(color: .white.opacity(0.92))
                             }
                             .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .padding(.vertical, 5)
                             .background(Color.white.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                         .menuIndicator(.hidden)
                         .menuStyle(.borderlessButton)
+                        .tint(.white.opacity(0.92))
                         .fixedSize()
                         .help(inputDeviceHelpText)
 
@@ -253,7 +250,7 @@ struct MiniRecorderView: View {
                 .transition(.opacity)
             }
         }
-        .frame(width: 260, height: 50)
+        .frame(width: 300, height: 50)
         .clipShape(RoundedRectangle(cornerRadius: 25))
         .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
         .contextMenu {
