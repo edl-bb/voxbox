@@ -147,9 +147,95 @@ struct AIModel: Identifiable, Equatable {
         availableModels.filter { $0.engine == engine }
     }
 
-    /// Returns the best model recommended for this device's RAM
+    /// What the user primarily wants from transcription — biases the trade-off
+    /// between real-time speed and raw accuracy.
+    enum UseCase: String, CaseIterable, Identifiable {
+        case dictation      // real-time typing; latency matters most
+        case balanced
+        case transcription  // files/meetings; accuracy matters most
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .dictation: return "Dictation"
+            case .balanced: return "Balanced"
+            case .transcription: return "Transcription"
+            }
+        }
+
+        /// (speed, accuracy) weighting, summing to 1.
+        var weights: (speed: Double, accuracy: Double) {
+            switch self {
+            case .dictation: return (0.6, 0.4)
+            case .balanced: return (0.4, 0.6)
+            case .transcription: return (0.2, 0.8)
+            }
+        }
+    }
+
+    /// Recommends the best-fitting model for this Mac and use case, considering
+    /// RAM, chip performance tier, and the Neural Engine — not just RAM.
+    static func recommendedModel(
+        for capability: DeviceCapability = .current,
+        useCase: UseCase = .dictation
+    ) -> AIModel {
+        let fits = availableModels.filter { capability.ramGB >= $0.minimumRAMGB }
+        let pool = fits.isEmpty ? availableModels : fits
+        return pool.max {
+            recommendationScore($0, capability: capability, useCase: useCase)
+                < recommendationScore($1, capability: capability, useCase: useCase)
+        } ?? availableModels.last!
+    }
+
+    /// 0.0–1.0-ish fitness score; higher is a better match for the machine + use case.
+    static func recommendationScore(
+        _ model: AIModel,
+        capability: DeviceCapability,
+        useCase: UseCase
+    ) -> Double {
+        let (wSpeed, wAccuracy) = useCase.weights
+        let speedN = model.speed / 10.0
+        let accuracyN = model.accuracy / 10.0
+
+        // A slow model feels slower on a weaker Mac, so scale perceived speed by
+        // the device tier (weak machines drag large/slow models down).
+        let effectiveSpeed = speedN * (0.5 + 0.5 * capability.performanceTier)
+
+        var score = wSpeed * effectiveSpeed + wAccuracy * accuracyN
+
+        // Lightly reward comfortable RAM headroom so we don't pick a model that
+        // only just fits.
+        let headroom = Double(capability.ramGB - model.minimumRAMGB)
+        score += min(0.1, max(0, headroom) * 0.01)
+
+        // Intel Macs have no Neural Engine and struggle with the largest models.
+        if !capability.hasNeuralEngine && model.expectedSizeBytes > 1_000_000_000 {
+            score -= 0.15
+        }
+
+        return score
+    }
+
+    /// A short, human explanation of why a model is recommended for this Mac.
+    static func recommendationReason(
+        for model: AIModel,
+        capability: DeviceCapability = .current,
+        useCase: UseCase = .dictation
+    ) -> String {
+        let engineNote = model.engine == .parakeet ? "runs in real time" : "loads comfortably"
+        switch useCase {
+        case .dictation:
+            return "Fast, accurate enough for live dictation and \(engineNote) on your \(capability.chipName)."
+        case .balanced:
+            return "A strong balance of speed and accuracy for your \(capability.chipName)."
+        case .transcription:
+            return "Highest accuracy your \(capability.chipName) with \(capability.ramGB) GB can run well."
+        }
+    }
+
+    /// Backward-compatible RAM-only recommendation used by older call sites.
     static func recommendedModel(forDeviceRAMGB ram: Int) -> AIModel {
-        // Find the best (highest accuracy) model that fits in the device's RAM
         return availableModels.first(where: { ram >= $0.minimumRAMGB })
             ?? availableModels.last!  // Fallback to smallest
     }
