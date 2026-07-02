@@ -21,8 +21,14 @@ class AudioRecordingService: NSObject, ObservableObject {
     @Published var selectedDeviceId: String? {
         didSet {
             setupSession()
+            // Persist so the selection survives app restarts.
+            if let selectedDeviceId {
+                UserDefaults.standard.set(selectedDeviceId, forKey: Self.selectedDeviceDefaultsKey)
+            }
         }
     }
+
+    private static let selectedDeviceDefaultsKey = "selectedAudioDeviceId"
 
     private var captureSession: AVCaptureSession?
     private var audioOutput: AVCaptureAudioDataOutput?
@@ -110,8 +116,12 @@ class AudioRecordingService: NSObject, ObservableObject {
 
     override init() {
         super.init()
+        // Restore the persisted device before discovery completes; AVCaptureDevice(uniqueID:)
+        // resolves it directly, and fetchAvailableDevices() falls back if it is gone.
+        // (didSet does not fire during init, matching the previous lazy session setup.)
+        selectedDeviceId = UserDefaults.standard.string(forKey: Self.selectedDeviceDefaultsKey)
         fetchAvailableDevices()
-        if let first = availableDevices.first {
+        if selectedDeviceId == nil, let first = availableDevices.first {
             selectedDeviceId = first.uniqueID
         }
 
@@ -146,7 +156,12 @@ class AudioRecordingService: NSObject, ObservableObject {
             self.availableDevices = discoverySession.devices.filter { device in
                 !device.localizedName.localizedCaseInsensitiveContains("Microsoft Teams")
             }
-            if self.selectedDeviceId == nil, let first = self.availableDevices.first {
+            // Fall back to the first device when nothing is selected or the
+            // selected (possibly persisted) device is no longer connected.
+            let selectionIsAvailable = self.availableDevices.contains {
+                $0.uniqueID == self.selectedDeviceId
+            }
+            if !selectionIsAvailable, let first = self.availableDevices.first {
                 self.selectedDeviceId = first.uniqueID
             }
         }
