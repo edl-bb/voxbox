@@ -155,7 +155,12 @@ struct MiniRecorderView: View {
                     }
                     .frame(width: 96, height: 26)
 
-                    HStack(spacing: 8) {
+                    // Hairline divider between the live waveform and the controls.
+                    Rectangle()
+                        .fill(Color.white.opacity(0.12))
+                        .frame(width: 1, height: 22)
+
+                    HStack(spacing: 14) {
                         Menu {
                             Button("Auto-detect") { setLanguage("auto") }
 
@@ -182,20 +187,16 @@ struct MiniRecorderView: View {
                                 Button("Clear recents") { recentLanguagesString = "" }
                             }
                         } label: {
-                            HStack(spacing: 5) {
+                            HStack(spacing: 4) {
                                 Image(systemName: "globe")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.system(size: 13, weight: .semibold))
 
-                                DoubleChevronIcon(color: .white.opacity(0.92))
+                                DoubleChevronIcon(color: .white.opacity(0.5))
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .background(Color.white.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                         .menuIndicator(.hidden)
                         .menuStyle(.borderlessButton)
-                        .tint(.white.opacity(0.92))
+                        .tint(.white.opacity(0.85))
                         .fixedSize()
                         .help(spokenLanguageHelpText)
 
@@ -222,26 +223,22 @@ struct MiniRecorderView: View {
                                 audioRecorder.fetchAvailableDevices()
                             }
                         } label: {
-                            HStack(spacing: 5) {
+                            HStack(spacing: 4) {
                                 Image(systemName: "mic.fill")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.system(size: 13, weight: .semibold))
 
-                                DoubleChevronIcon(color: .white.opacity(0.92))
+                                DoubleChevronIcon(color: .white.opacity(0.5))
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .background(Color.white.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                         .menuIndicator(.hidden)
                         .menuStyle(.borderlessButton)
-                        .tint(.white.opacity(0.92))
+                        .tint(.white.opacity(0.85))
                         .fixedSize()
                         .help(inputDeviceHelpText)
 
                         // Recording mode indicator
                         Image(systemName: recordingMode == 0 ? "hand.tap.fill" : "repeat.1")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.white.opacity(0.7))
                             .help(recordingMode == 0 ? "Hold to Record" : "Toggle to Record")
                     }
@@ -333,17 +330,30 @@ struct MiniRecorderView: View {
 
     private var stopButton: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10)  // Squircle
-                .fill(Color(red: 1.0, green: 0.2, blue: 0.2))  // Bright Red
-                .frame(width: 32, height: 32)  // Smaller button
-                .shadow(color: Color.red.opacity(0.4), radius: 4, x: 0, y: 0)
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.36, blue: 0.34),
+                            Color(red: 0.90, green: 0.15, blue: 0.15),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 32, height: 32)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .stroke(Color.white.opacity(0.28), lineWidth: 0.5)
+                )
+                .shadow(color: Color(red: 1.0, green: 0.2, blue: 0.2).opacity(0.45), radius: 7, x: 0, y: 1)
 
-            // Inner square icon
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color.black.opacity(0.4))
+            // Inner stop square.
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(Color.white)
                 .frame(width: 10, height: 10)
         }
-        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .contentShape(RoundedRectangle(cornerRadius: 11))
         .onTapGesture {
             handleHotkeyTrigger()
         }
@@ -351,16 +361,41 @@ struct MiniRecorderView: View {
 
     private var backgroundView: some View {
         ZStack {
-            // Dark background with blur, all clipped to capsule
+            // Frosted blur base, clipped to the pill.
             VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow, cornerRadius: 25)
-                .clipShape(RoundedRectangle(cornerRadius: 25))
+                .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
 
-            RoundedRectangle(cornerRadius: 25)
-                .fill(Color.black.opacity(0.85))
+            // Depth: subtly lighter at the top, darker at the bottom.
+            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(white: 0.17), Color(white: 0.07)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .opacity(0.92)
 
-            // Subtle border
-            RoundedRectangle(cornerRadius: 25)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            // Glass highlight along the top edge.
+            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.10), Color.clear],
+                        startPoint: .top,
+                        endPoint: .center
+                    )
+                )
+
+            // Hairline border, brighter up top for a lit-from-above feel.
+            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.22), Color.white.opacity(0.05)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 1
+                )
         }
     }
 
