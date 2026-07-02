@@ -28,6 +28,37 @@ struct AIModel: Identifiable, Equatable {
         englishOnlyOverride ?? variant.hasSuffix(".en")
     }
 
+    /// Playful-but-accurate qualitative label for the speed score.
+    var speedTier: String {
+        switch speed {
+        case 9.5...: return "Blazing"
+        case 8.5..<9.5: return "Very fast"
+        case 7.0..<8.5: return "Fast"
+        case 5.5..<7.0: return "Steady"
+        default: return "Relaxed"
+        }
+    }
+
+    /// Playful-but-accurate qualitative label for the accuracy score.
+    var accuracyTier: String {
+        switch accuracy {
+        case 9.3...: return "Flawless"
+        case 8.7..<9.3: return "Sharp"
+        case 8.0..<8.7: return "Reliable"
+        case 7.0..<8.0: return "Solid"
+        default: return "Rough"
+        }
+    }
+
+    /// A one-word essence used as a card's spotlight tag.
+    var essence: String {
+        if speed >= 9.5 && accuracy >= 8.5 { return "Best all-rounder" }
+        if speed >= 9.5 { return "Fastest" }
+        if accuracy >= 9.3 { return "Most accurate" }
+        if expectedSizeBytes < 100_000_000 { return "Featherweight" }
+        return "Balanced"
+    }
+
     // Speed/Accuracy based on OpenAI Whisper benchmarks (WER on LibriSpeech test-clean)
     // Speed: relative performance on Apple Silicon (10 = fastest)
     // Accuracy: based on Word Error Rate (10 = ~2% WER, 5 = ~15% WER)

@@ -93,6 +93,134 @@ struct MiniRecorderView: View {
     // MARK: - State for Animation
     @State private var phase: CGFloat = 0
 
+    /// Whether the pill is hovered — reveals the mic/mode controls inline.
+    @State private var expanded = false
+
+    // MARK: - Recorder helpers
+
+    /// Compact language label for the always-visible tag ("Auto" or "EN").
+    private var currentLanguageShort: String {
+        transcriptionLanguage == "auto" ? "Auto" : transcriptionLanguage.uppercased()
+    }
+
+    /// First word of the selected input device, for a compact chip ("MacBook").
+    private var shortDeviceName: String {
+        let name = currentInputDeviceName
+        return name.split(separator: " ").first.map(String.init) ?? name
+    }
+
+    private func elapsedString(_ now: Date) -> String {
+        guard let start = audioRecorder.recordingStartTime else { return "0:00" }
+        let s = max(0, Int(now.timeIntervalSince(start)))
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+
+    /// Shared chip styling for the recorder's labeled controls (icon + word + chevron).
+    private func recorderChipLabel(icon: String, text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon).font(.system(size: 11, weight: .semibold))
+            Text(text).font(.system(size: 11, weight: .semibold))
+            DoubleChevronIcon(color: .white.opacity(0.45))
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(Color.white.opacity(0.12)))
+    }
+
+    private var languageControl: some View {
+        Menu {
+            Button("Auto-detect") { setLanguage("auto") }
+            if !quickLanguageCodes.isEmpty {
+                Divider()
+                ForEach(quickLanguageCodes, id: \.self) { code in
+                    if let lang = GeneralSettingsTab.whisperLanguages.first(where: { $0.code == code }) {
+                        Button(lang.name) { setLanguage(code) }
+                    }
+                }
+            }
+            Divider()
+            Menu("More languages") {
+                ForEach(GeneralSettingsTab.whisperLanguages, id: \.code) { lang in
+                    Button(lang.name) { setLanguage(lang.code) }
+                }
+            }
+            if !recentLanguageCodes.isEmpty {
+                Divider()
+                Button("Clear recents") { recentLanguagesString = "" }
+            }
+        } label: {
+            recorderChipLabel(icon: "globe", text: currentLanguageShort)
+        }
+        .menuIndicator(.hidden)
+        .menuStyle(.borderlessButton)
+        .tint(.white.opacity(0.9))
+        .fixedSize()
+        .help(spokenLanguageHelpText)
+    }
+
+    private var micControl: some View {
+        Menu {
+            if audioRecorder.availableDevices.isEmpty {
+                Button("No input devices found") {}.disabled(true)
+            } else {
+                ForEach(audioRecorder.availableDevices, id: \.uniqueID) { device in
+                    Button {
+                        selectAudioDevice(device.uniqueID)
+                    } label: {
+                        if audioRecorder.selectedDeviceId == device.uniqueID {
+                            Label(device.localizedName, systemImage: "checkmark")
+                        } else {
+                            Text(device.localizedName)
+                        }
+                    }
+                }
+            }
+            Divider()
+            Button("Refresh inputs") { audioRecorder.fetchAvailableDevices() }
+        } label: {
+            recorderChipLabel(icon: "mic.fill", text: shortDeviceName)
+        }
+        .menuIndicator(.hidden)
+        .menuStyle(.borderlessButton)
+        .tint(.white.opacity(0.9))
+        .fixedSize()
+        .help(inputDeviceHelpText)
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+    }
+
+    private var modeControl: some View {
+        Menu {
+            Button {
+                recordingMode = 0
+            } label: {
+                if recordingMode == 0 {
+                    Label("Hold to talk", systemImage: "checkmark")
+                } else {
+                    Text("Hold to talk")
+                }
+            }
+            Button {
+                recordingMode = 1
+            } label: {
+                if recordingMode == 1 {
+                    Label("Toggle on / off", systemImage: "checkmark")
+                } else {
+                    Text("Toggle on / off")
+                }
+            }
+        } label: {
+            recorderChipLabel(
+                icon: recordingMode == 0 ? "hand.tap.fill" : "repeat.1",
+                text: recordingMode == 0 ? "Hold" : "Toggle")
+        }
+        .menuIndicator(.hidden)
+        .menuStyle(.borderlessButton)
+        .tint(.white.opacity(0.9))
+        .fixedSize()
+        .help("Recording mode")
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+    }
+
     // MARK: - Live waveform
     // Samples come from AudioRecordingService.liveWaveSamples (peak amplitude per
     // audio buffer while recording). Rendered with a SwiftUI Canvas so it redraws
@@ -153,103 +281,36 @@ struct MiniRecorderView: View {
                                 with: .color(.white.opacity(0.9)))
                         }
                     }
-                    .frame(width: 96, height: 26)
+                    .frame(height: 26)
+                    .frame(maxWidth: .infinity)
 
-                    // Hairline divider between the live waveform and the controls.
-                    Rectangle()
-                        .fill(Color.white.opacity(0.12))
-                        .frame(width: 1, height: 22)
-
-                    HStack(spacing: 14) {
-                        Menu {
-                            Button("Auto-detect") { setLanguage("auto") }
-
-                            if !quickLanguageCodes.isEmpty {
-                                Divider()
-                                ForEach(quickLanguageCodes, id: \.self) { code in
-                                    if let lang = GeneralSettingsTab.whisperLanguages.first(where: {
-                                        $0.code == code
-                                    }) {
-                                        Button(lang.name) { setLanguage(code) }
-                                    }
-                                }
-                            }
-
-                            Divider()
-                            Menu("More languages") {
-                                ForEach(GeneralSettingsTab.whisperLanguages, id: \.code) { lang in
-                                    Button(lang.name) { setLanguage(lang.code) }
-                                }
-                            }
-
-                            if !recentLanguageCodes.isEmpty {
-                                Divider()
-                                Button("Clear recents") { recentLanguagesString = "" }
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "globe")
-                                    .font(.system(size: 13, weight: .semibold))
-
-                                DoubleChevronIcon(color: .white.opacity(0.5))
-                            }
-                        }
-                        .menuIndicator(.hidden)
-                        .menuStyle(.borderlessButton)
-                        .tint(.white.opacity(0.85))
-                        .fixedSize()
-                        .help(spokenLanguageHelpText)
-
-                        Menu {
-                            if audioRecorder.availableDevices.isEmpty {
-                                Button("No input devices found") {}
-                                    .disabled(true)
-                            } else {
-                                ForEach(audioRecorder.availableDevices, id: \.uniqueID) { device in
-                                    Button {
-                                        selectAudioDevice(device.uniqueID)
-                                    } label: {
-                                        if audioRecorder.selectedDeviceId == device.uniqueID {
-                                            Label(device.localizedName, systemImage: "checkmark")
-                                        } else {
-                                            Text(device.localizedName)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Divider()
-                            Button("Refresh inputs") {
-                                audioRecorder.fetchAvailableDevices()
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "mic.fill")
-                                    .font(.system(size: 13, weight: .semibold))
-
-                                DoubleChevronIcon(color: .white.opacity(0.5))
-                            }
-                        }
-                        .menuIndicator(.hidden)
-                        .menuStyle(.borderlessButton)
-                        .tint(.white.opacity(0.85))
-                        .fixedSize()
-                        .help(inputDeviceHelpText)
-
-                        // Recording mode indicator
-                        Image(systemName: recordingMode == 0 ? "hand.tap.fill" : "repeat.1")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.7))
-                            .help(recordingMode == 0 ? "Hold to Record" : "Toggle to Record")
+                    // Elapsed recording time.
+                    TimelineView(.periodic(from: .now, by: 0.5)) { context in
+                        Text(elapsedString(context.date))
+                            .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
+                            .foregroundColor(.white.opacity(0.55))
                     }
+
+                    // Mic + mode: revealed inline on hover, each clearly labeled.
+                    if expanded {
+                        micControl
+                        modeControl
+                    }
+
+                    // Language: always available, compact.
+                    languageControl
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
                 .transition(.opacity)
             }
         }
-        .frame(width: 300, height: 50)
-        .clipShape(RoundedRectangle(cornerRadius: 25))
-        .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+        .frame(width: 420, height: 52)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .shadow(color: .black.opacity(0.28), radius: 10, x: 0, y: 3)
+        .animation(.easeInOut(duration: 0.18), value: expanded)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.18)) { expanded = hovering }
+        }
         .contextMenu {
             modelSelectionMenu
         }
