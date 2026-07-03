@@ -17,6 +17,8 @@ struct MiniRecorderView: View {
 
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("recordingMode") private var recordingMode: Int = 0
+    /// Whether we've already shown the one-time accessibility warning (release only).
+    @AppStorage("hasShownAccessibilityWarning") private var hasShownAccessibilityWarning = false
     @AppStorage("transcriptionLanguage") private var transcriptionLanguage: String = "auto"
     @AppStorage("recentTranscriptionLanguages") private var recentLanguagesString: String = ""
     private let quickLanguageDefaults = ["en", "es", "fr", "de", "hi", "pt", "ja", "zh"]
@@ -93,8 +95,15 @@ struct MiniRecorderView: View {
     // MARK: - State for Animation
     @State private var phase: CGFloat = 0
 
-    /// Whether the pill is hovered — reveals the mic/mode controls inline.
+    /// Whether the pill is hovered — reveals the mic/mode/language controls inline.
     @State private var expanded = false
+
+    /// Local recording start, set the moment we begin listening so the elapsed
+    /// timer ticks reliably (independent of the service's non-published state).
+    @State private var recordingStart: Date?
+
+    /// Drives the soft pulse on the recording indicator dot.
+    @State private var dotPulse = false
 
     // MARK: - Recorder helpers
 
@@ -110,7 +119,7 @@ struct MiniRecorderView: View {
     }
 
     private func elapsedString(_ now: Date) -> String {
-        guard let start = audioRecorder.recordingStartTime else { return "0:00" }
+        guard let start = recordingStart ?? audioRecorder.recordingStartTime else { return "0:00" }
         let s = max(0, Int(now.timeIntervalSince(start)))
         return String(format: "%d:%02d", s / 60, s % 60)
     }
@@ -234,86 +243,182 @@ struct MiniRecorderView: View {
         self.onCancel = onCancel
     }
 
-    var body: some View {
-        ZStack {
-            backgroundView
+    // MARK: - Display phase & pill geometry
 
-            if isWarmingUp || transcription.isLoading {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                        .colorScheme(.dark)
-                    Text("Warming up model...")
-                        .font(Typography.labelMedium)
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                .transition(.opacity)
-            } else if isProcessing {
-                Text(statusMessage)
-                    .font(Typography.labelMedium)
-                    .foregroundColor(.white)
-                    .transition(.opacity)
-            } else {
-                HStack(spacing: 12) {
-                    stopButton
+    /// The recorder is always on screen. `idle` is the tiny resting pill; the
+    /// other phases are the expanded HUD it morphs into.
+    private enum RecorderPhase { case idle, warming, processing, recording }
 
-                    // Waveform — live render of the actual microphone input.
-                    // Calm/flat when silent, peaks on speech.
-                    Canvas { context, size in
-                        let raw = audioRecorder.liveWaveSamples
-                        guard !raw.isEmpty else { return }
-                        let step = Self.waveBarWidth + Self.waveBarSpacing
-                        let maxBars = max(1, Int(size.width / step))
-                        // Noise-gate, then auto-gain to the recent peak so the
-                        // waveform stays lively and well-scaled at any volume.
-                        let visible = raw.suffix(maxBars).map { max(0, $0 - 0.02) }
-                        let recentPeak = max(visible.max() ?? 0, 0.05)
-                        let midY = size.height / 2
-                        for (i, sample) in visible.enumerated() {
-                            let norm = CGFloat(min(1, sample / recentPeak))
-                            let barHeight = max(2.5, norm * size.height)
-                            let x = CGFloat(i) * step
-                            let rect = CGRect(
-                                x: x, y: midY - barHeight / 2,
-                                width: Self.waveBarWidth, height: barHeight)
-                            context.fill(
-                                Path(roundedRect: rect, cornerRadius: Self.waveBarWidth / 2),
-                                with: .color(.white.opacity(0.9)))
-                        }
-                    }
-                    .frame(height: 26)
-                    .frame(maxWidth: .infinity)
+    private var displayPhase: RecorderPhase {
+        if isWarmingUp || transcription.isLoading { return .warming }
+        if isProcessing { return .processing }
+        if isListening { return .recording }
+        return .idle
+    }
 
-                    // Elapsed recording time.
-                    TimelineView(.periodic(from: .now, by: 0.5)) { context in
-                        Text(elapsedString(context.date))
-                            .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
-                            .foregroundColor(.white.opacity(0.55))
-                    }
+    /// Width of the pill for the current phase. The frosted capsule animates
+    /// between these, morphing the resting handle into the full HUD.
+    private var pillWidth: CGFloat {
+        switch displayPhase {
+        case .idle: return 58
+        case .warming: return 200
+        case .processing: return 210
+        case .recording: return expanded ? 460 : 250
+        }
+    }
 
-                    // Mic + mode: revealed inline on hover, each clearly labeled.
-                    if expanded {
-                        micControl
-                        modeControl
-                    }
+    private var pillHeight: CGFloat {
+        displayPhase == .idle ? 24 : 44
+    }
 
-                    // Language: always available, compact.
-                    languageControl
-                }
-                .padding(.horizontal, 16)
-                .transition(.opacity)
+    private var pillCornerRadius: CGFloat { pillHeight / 2 }
+
+    /// Drives the gentle breathing of the idle waveform motif.
+    @State private var idleBreathing = false
+
+    // MARK: - Phase content
+
+    /// Resting state — a small white waveform that softly breathes. Our own take
+    /// on an always-present handle: calm, minimal, premium.
+    private var idleContent: some View {
+        HStack(spacing: 3) {
+            ForEach(Array(Self.idleBarScale.enumerated()), id: \.offset) { index, scale in
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.9))
+                    .frame(width: 2.5, height: 12)
+                    .scaleEffect(y: idleBreathing ? scale : 0.35, anchor: .center)
+                    .animation(
+                        .easeInOut(duration: 0.95)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.11),
+                        value: idleBreathing)
             }
         }
-        .frame(width: 420, height: 52)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .shadow(color: .black.opacity(0.28), radius: 10, x: 0, y: 3)
-        .animation(.easeInOut(duration: 0.18), value: expanded)
+        .frame(height: 24)
+        .onAppear { idleBreathing = true }
+        .transition(.opacity.combined(with: .scale(scale: 0.6)))
+    }
+
+    private var warmingContent: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+                .colorScheme(.dark)
+            Text("Warming up model...")
+                .font(Typography.labelMedium)
+                .foregroundColor(.white.opacity(0.9))
+        }
+        .transition(.opacity)
+    }
+
+    private var processingContent: some View {
+        Text(statusMessage)
+            .font(Typography.labelMedium)
+            .foregroundColor(.white)
+            .lineLimit(1)
+            .transition(.opacity)
+    }
+
+    private var recordingContent: some View {
+        HStack(spacing: 10) {
+            recordingDot
+
+            // Waveform — live render of the actual microphone input.
+            // Calm/flat when silent, peaks on speech.
+            Canvas { context, size in
+                let raw = audioRecorder.liveWaveSamples
+                guard !raw.isEmpty else { return }
+                let step = Self.waveBarWidth + Self.waveBarSpacing
+                let maxBars = max(1, Int(size.width / step))
+                // Noise gate: drop low-level ambient sound (fans, room tone) so the
+                // waveform stays flat when you're not speaking. Then auto-gain to the
+                // recent peak — but with a high floor so faint noise can't be
+                // amplified up to full height the way it was before.
+                let noiseGate: Float = 0.06
+                let visible = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
+                let recentPeak = max(visible.max() ?? 0, 0.25)
+                let midY = size.height / 2
+                for (i, sample) in visible.enumerated() {
+                    let norm = CGFloat(min(1, sample / recentPeak))
+                    let barHeight = max(2.0, norm * size.height)
+                    let x = CGFloat(i) * step
+                    let rect = CGRect(
+                        x: x, y: midY - barHeight / 2,
+                        width: Self.waveBarWidth, height: barHeight)
+                    context.fill(
+                        Path(roundedRect: rect, cornerRadius: Self.waveBarWidth / 2),
+                        with: .color(.white.opacity(0.9)))
+                }
+            }
+            .frame(height: 22)
+            .frame(maxWidth: .infinity)
+
+            // Elapsed recording time.
+            TimelineView(.periodic(from: .now, by: 0.5)) { context in
+                Text(elapsedString(context.date))
+                    .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
+                    .foregroundColor(.white.opacity(0.6))
+            }
+
+            // Mic + mode + language: revealed inline on hover only, to keep
+            // the resting state minimal.
+            if expanded {
+                micControl
+                modeControl
+                languageControl
+            }
+        }
+        .padding(.horizontal, 14)
+        .transition(.opacity)
+    }
+
+    /// Silhouette for the idle waveform — a soft, symmetric shape.
+    private static let idleBarScale: [CGFloat] = [0.5, 0.85, 1.0, 0.85, 0.5]
+
+    /// The morphing pill itself, sized to the current phase.
+    private var pillView: some View {
+        ZStack {
+            backgroundView(cornerRadius: pillCornerRadius)
+
+            switch displayPhase {
+            case .warming:
+                warmingContent
+            case .processing:
+                processingContent
+            case .recording:
+                recordingContent
+            case .idle:
+                idleContent
+            }
+        }
+        .frame(width: pillWidth, height: pillHeight)
+        .clipShape(RoundedRectangle(cornerRadius: pillCornerRadius, style: .continuous))
+        .shadow(
+            color: .black.opacity(displayPhase == .idle ? 0.35 : 0.45),
+            radius: displayPhase == .idle ? 8 : 14,
+            x: 0,
+            y: displayPhase == .idle ? 3 : 5)
+        .animation(.spring(response: 0.45, dampingFraction: 0.90), value: displayPhase)
+        .animation(.spring(response: 0.40, dampingFraction: 0.92), value: expanded)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.18)) { expanded = hovering }
+            guard displayPhase == .recording else { return }
+            expanded = hovering
         }
         .contextMenu {
             modelSelectionMenu
         }
+    }
+
+    var body: some View {
+        // Fixed-size window; the pill is centered inside and morphs entirely in
+        // SwiftUI. Because the window never resizes, the animation stays smooth
+        // with no boundary clipping. Color.clear makes the root fill the window so
+        // the pill is reliably centered.
+        ZStack {
+            Color.clear.allowsHitTesting(false)
+            pillView
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onReceive(NotificationCenter.default.publisher(for: .recordingStartRequested)) { _ in
             startRecording()
         }
@@ -353,11 +458,17 @@ struct MiniRecorderView: View {
         .onChange(of: isListening) {
             // Only animate when actually recording to save CPU
             if isListening {
+                recordingStart = Date()
                 withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
                     phase = .pi * 4
                 }
+                withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) {
+                    dotPulse = true
+                }
             } else {
+                recordingStart = nil
                 phase = 0
+                dotPulse = false
             }
         }
         .onReceive(
@@ -389,74 +500,36 @@ struct MiniRecorderView: View {
 
     // MARK: - Subviews
 
-    private var stopButton: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 1.0, green: 0.36, blue: 0.34),
-                            Color(red: 0.90, green: 0.15, blue: 0.15),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: 32, height: 32)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(Color.white.opacity(0.28), lineWidth: 0.5)
-                )
-                .shadow(color: Color(red: 1.0, green: 0.2, blue: 0.2).opacity(0.45), radius: 7, x: 0, y: 1)
-
-            // Inner stop square.
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .fill(Color.white)
-                .frame(width: 10, height: 10)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 11))
-        .onTapGesture {
-            handleHotkeyTrigger()
-        }
+    /// Live recording indicator — a soft, pulsing red dot. Reads as "recording",
+    /// not a button. Still tappable to stop for users who prefer clicking.
+    private var recordingDot: some View {
+        let core = Color(red: 1.0, green: 0.27, blue: 0.24)
+        return Circle()
+            .fill(core)
+            .frame(width: 10, height: 10)
+            .overlay(
+                Circle()
+                    .stroke(core.opacity(0.35), lineWidth: 5)
+                    .scaleEffect(dotPulse ? 2.1 : 1.0)
+                    .opacity(dotPulse ? 0 : 0.9)
+            )
+            .shadow(color: core.opacity(0.6), radius: 4, x: 0, y: 0)
+            .frame(width: 24, height: 24)  // stable hit + halo area
+            .contentShape(Circle())
+            .onTapGesture { handleHotkeyTrigger() }
+            .help("Recording — click or press your hotkey to stop")
     }
 
-    private var backgroundView: some View {
+    private func backgroundView(cornerRadius: CGFloat) -> some View {
         ZStack {
-            // Frosted blur base, clipped to the pill.
-            VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow, cornerRadius: 25)
-                .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            // Deep, premium near-black — flat and even (the frosted blur was what
+            // made it read grayish, so it's gone).
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color(white: 0.05))
 
-            // Depth: subtly lighter at the top, darker at the bottom.
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color(white: 0.17), Color(white: 0.07)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .opacity(0.92)
-
-            // Glass highlight along the top edge.
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.10), Color.clear],
-                        startPoint: .top,
-                        endPoint: .center
-                    )
-                )
-
-            // Hairline border, brighter up top for a lit-from-above feel.
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.22), Color.white.opacity(0.05)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 1
-                )
+            // Single subtle hairline border for definition against dark backdrops.
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.8)
         }
     }
 
@@ -493,8 +566,9 @@ struct MiniRecorderView: View {
     // MARK: - Logic
 
     private func initializedService() {
-        // Pre-warm the audio capture session for instant first recording
-        audioRecorder.prewarmSession()
+        // NOTE: the recorder is now always on screen, so we must NOT keep the mic
+        // capture session warm here — that would light the system mic indicator at
+        // all times. The session is started on demand when recording begins.
 
         guard !selectedModel.isEmpty else {
             debugLog("No model selected - skipping initialization")
@@ -552,10 +626,15 @@ struct MiniRecorderView: View {
             return
         }
 
-        // Check if accessibility is enabled - warn but don't block
-        if !isAccessibilityEnabled {
-            showAccessibilityWarning = true
-        }
+        // Warn (at most once) if accessibility is off — transcribed text still lands
+        // on the clipboard, we just can't auto-paste. Skipped entirely in DEBUG so
+        // frequent rebuilds (which reset the TCC grant) don't nag while testing.
+        #if !DEBUG
+            if !isAccessibilityEnabled && !hasShownAccessibilityWarning {
+                hasShownAccessibilityWarning = true
+                showAccessibilityWarning = true
+            }
+        #endif
 
         // Check if model is selected BEFORE starting recording
         guard !selectedModel.isEmpty else {

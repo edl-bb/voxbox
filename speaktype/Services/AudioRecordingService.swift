@@ -243,6 +243,7 @@ class AudioRecordingService: NSObject, ObservableObject {
         resetMainWriterState()
         resetChunkWriterState()
         isRecording = true
+        recordingStartTime = Date()
         // Hop onto audioQueue: idleSessionStopWorkItem is only ever touched there,
         // and startRecording runs on the main thread.
         audioQueue.async { self.cancelIdleSessionStop() }
@@ -329,6 +330,7 @@ class AudioRecordingService: NSObject, ObservableObject {
         // Set stopping flag BEFORE anything else to prevent race conditions
         isStopping = true
         isRecording = false  // Stop capturing new frames immediately
+        recordingStartTime = nil
         DispatchQueue.main.async {
             self.audioLevel = 0.0
             self.audioFrequency = 0.0

@@ -9,6 +9,24 @@ class MiniRecorderWindowController: NSObject {
         UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
     }
 
+    /// Show the always-present resting pill. Called once at launch; the pill then
+    /// lives on screen and morphs into the recording HUD on demand.
+    func showIdleRecorder() {
+        if panel == nil {
+            setupPanel()
+        }
+        guard let panel = panel else { return }
+
+        centerPanel()
+        // Idle pill is a passive indicator — let clicks pass through to whatever is
+        // behind it so the transparent window never blocks the desktop or dock.
+        panel.ignoresMouseEvents = true
+
+        if !panel.isVisible {
+            panel.orderFrontRegardless()
+        }
+    }
+
     // Start recording - show panel and begin recording
     func startRecording() {
         // Capture previous app to restore focus later
@@ -20,29 +38,39 @@ class MiniRecorderWindowController: NSObject {
 
         guard let panel = panel else { return }
 
+        centerPanel()
+        // Become interactive so the recording HUD (stop dot, hover controls) works.
+        panel.ignoresMouseEvents = false
+
         if !panel.isVisible {
             print("Showing Mini Recorder Panel")
-
-            // Force layout to ensure frame is correct
-            panel.layoutIfNeeded()
-
-            // Position above dock with fixed width (panel width should be 220)
-            if let screen = NSScreen.main {
-                let visibleFrame = screen.visibleFrame
-                let windowWidth: CGFloat = 420  // Fixed width from setupPanel
-                let x = visibleFrame.midX - (windowWidth / 2)
-                let y = visibleFrame.minY + 50  // 50px padding above dock
-                panel.setFrameOrigin(NSPoint(x: x, y: y))
-            } else {
-                panel.center()
-            }
-
-            // Show without activating to avoid pulling main app focus unnecessarily
             panel.orderFrontRegardless()
         }
 
         // Trigger instant recording
         NotificationCenter.default.post(name: .recordingStartRequested, object: nil)
+    }
+
+    /// Center the panel horizontally on its current screen, floating just above
+    /// the dock. Safe to call repeatedly (on show and on every resize).
+    private func centerPanel() {
+        guard let panel = panel else { return }
+        let screen = panel.screen ?? NSScreen.main
+        guard let visibleFrame = screen?.visibleFrame else {
+            panel.center()
+            return
+        }
+        let x = visibleFrame.midX - (panel.frame.width / 2)
+        let y = visibleFrame.minY + 36  // just above the dock
+        let origin = NSPoint(x: (x).rounded(), y: (y).rounded())
+        if panel.frame.origin != origin {
+            panel.setFrameOrigin(origin)
+        }
+    }
+
+    /// Return the pill to its passive resting state without hiding it.
+    private func returnToIdle() {
+        panel?.ignoresMouseEvents = true
     }
 
     // Stop recording - trigger transcription and paste
@@ -66,7 +94,8 @@ class MiniRecorderWindowController: NSObject {
                 self?.handleCommit(text: text)
             },
             onCancel: { [weak self] in
-                self?.panel?.orderOut(nil)
+                // Don't hide — the pill stays on screen and settles back to idle.
+                self?.returnToIdle()
             }
         )
 
@@ -75,8 +104,12 @@ class MiniRecorderWindowController: NSObject {
         hostingController = NSHostingController(
             rootView: AnyView(recorderView.background(Color.clear)))
 
+        // Fixed window, big enough for the largest phase. The pill morphs purely in
+        // SwiftUI, centered inside. A window that never resizes means the animation
+        // is smooth with no boundary clipping.
+        let fixedSize = NSSize(width: 520, height: 84)
         let p = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 50),
+            contentRect: NSRect(origin: .zero, size: fixedSize),
             styleMask: [.nonactivatingPanel, .fullSizeContentView, .borderless],
             backing: .buffered,
             defer: false
@@ -84,17 +117,23 @@ class MiniRecorderWindowController: NSObject {
 
         p.isOpaque = false
         p.backgroundColor = .clear
+        p.ignoresMouseEvents = true  // idle by default — clicks pass through
 
-        p.contentViewController = hostingController
-
-        // Ensure hosting view has transparent background to prevent visual artifacts
+        // Use the hosting view directly as the content view (NOT contentViewController)
+        // so the window size is never driven by the SwiftUI content, and clamp the
+        // size so nothing can resize it.
         if let hostView = hostingController?.view {
+            hostView.frame = NSRect(origin: .zero, size: fixedSize)
+            hostView.autoresizingMask = [.width, .height]
             hostView.wantsLayer = true
             hostView.layer?.backgroundColor = NSColor.clear.cgColor
+            p.contentView = hostView
         }
+        p.minSize = fixedSize
+        p.maxSize = fixedSize
         p.titleVisibility = .hidden
         p.titlebarAppearsTransparent = true
-        p.isMovableByWindowBackground = true
+        p.isMovableByWindowBackground = false  // stay put — always screen-centered
         p.hasShadow = false  // Disable system shadow to avoid transparency artifacts (View has its own shadow)
 
         // Window Behavior
@@ -120,9 +159,9 @@ class MiniRecorderWindowController: NSObject {
                 ClipboardService.shared.copy(text: text)
             }
 
-            // 2. Close panel
+            // 2. Settle the pill back to its resting state (keep it on screen).
             await MainActor.run {
-                self.panel?.orderOut(nil)
+                self.returnToIdle()
             }
 
             // 3. Check accessibility - if not granted, just copy to clipboard silently

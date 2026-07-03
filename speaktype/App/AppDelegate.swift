@@ -17,6 +17,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         miniRecorderController = MiniRecorderWindowController()
+        // Show the always-present resting pill so the recorder lives on screen.
+        miniRecorderController?.showIdleRecorder()
 
         // Setup dynamic hotkey monitoring based on user selection
         setupHotkeyMonitoring()
@@ -71,6 +73,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// modifier state (including the held Fn flag), so the modifier-combo cancel
     /// guard must ignore this key code or it cancels the recording it just started.
     private static let emojiSuppressionKeyCode: CGKeyCode = 0x50  // F19 (80)
+
+    /// Whether pressing the Globe/Fn key is configured to show the emoji picker.
+    /// The synthetic-F19 suppression is only needed in that case; injecting it
+    /// otherwise (Do Nothing / Change Input Source / Dictation) just causes the
+    /// macOS alert beep for an unhandled key. Reads `AppleFnUsageType` from
+    /// com.apple.HIToolbox: 0 = Do Nothing, 1 = Change Input Source,
+    /// 2 = Show Emoji & Symbols, 3 = Start Dictation.
+    private static func globeKeyShowsEmojiPicker() -> Bool {
+        let domain = "com.apple.HIToolbox" as CFString
+        CFPreferencesAppSynchronize(domain)
+        if let value = CFPreferencesCopyAppValue("AppleFnUsageType" as CFString, domain) as? Int {
+            return value == 2
+        }
+        // Unknown → assume it could show the picker, so we still suppress it.
+        return true
+    }
 
     private func suppressEmojiPicker() {
         // A robust way to suppress the emoji picker is to post a harmless keydown/keyup
@@ -203,10 +221,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if isPressed && !isHotkeyPressed {
             isHotkeyPressed = true
 
-            // Skip the synthetic F19 emoji-picker suppression when a terminal is
-            // frontmost — terminals echo the injected key as stray control
-            // characters in the prompt (e.g. Claude Code, iTerm, Ghostty).
-            if currentHotkey == .fn && !Self.isFrontmostAppTerminal() {
+            // Only inject the synthetic F19 when the Globe/Fn key is actually
+            // configured to show the emoji picker — otherwise there's nothing to
+            // suppress and the unhandled F19 just triggers the macOS alert beep.
+            // Also skipped for terminals, which echo it as stray control characters.
+            if currentHotkey == .fn && !Self.isFrontmostAppTerminal()
+                && Self.globeKeyShowsEmojiPicker()
+            {
                 suppressEmojiPicker()
             }
 
