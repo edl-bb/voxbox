@@ -39,19 +39,25 @@ struct UpdateSheet: View {
                     .font(Typography.headlineMedium)
                     .foregroundStyle(.primary)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(update.releaseNotes, id: \.self) { note in
-                        HStack(alignment: .top, spacing: 8) {
-                            Text("•")
-                                .font(Typography.bodyMedium)
-                                .foregroundStyle(.primary)
-                            Text(note)
-                                .font(Typography.bodyMedium)
-                                .foregroundStyle(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
+                // Bounded + scrollable so a long changelog can never push the
+                // action buttons off the bottom of the screen.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(update.releaseNotes, id: \.self) { note in
+                            HStack(alignment: .top, spacing: 8) {
+                                Text("•")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(.primary)
+                                Text(note)
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(.primary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxHeight: 240)
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
