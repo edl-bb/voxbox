@@ -97,26 +97,25 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "💿 Creating DMG..."
 
-if [ ! -f "dmg-assets/dmg-background.png" ]; then
-  cd dmg-assets
-  python3 create-background.py 2>/dev/null || ./create-background.sh 2>/dev/null || echo "⚠️  Using default background"
-  cd ..
-fi
-
 [ -f "$DMG_PATH" ] && rm "$DMG_PATH"
 
-create-dmg \
-  --volname "SpeakType" \
-  --volicon "speaktype/Assets.xcassets/AppIcon.appiconset/icon_512x512.png" \
-  --background "dmg-assets/dmg-background.png" \
-  --window-pos 200 120 \
-  --window-size 660 400 \
-  --icon-size 160 \
-  --icon "speaktype.app" 180 170 \
-  --hide-extension "speaktype.app" \
-  --app-drop-link 480 170 \
-  "$DMG_PATH" \
-  "$APP_PATH"
+# Finder-free DMG. create-dmg styles the window via AppleScript (it sends Apple
+# Events to Finder), which is denied in headless / automation contexts with
+# "error -1743: Not authorised to send Apple events to Finder" and aborts the
+# whole build. Build the image directly with hdiutil instead: still a proper
+# drag-to-install DMG (app + Applications shortcut), just without the custom
+# background and icon positioning, and with no dependency on Finder automation.
+DMG_STAGING="$(mktemp -d)"
+cp -R "$APP_PATH" "$DMG_STAGING/"
+ln -s /Applications "$DMG_STAGING/Applications"
+hdiutil create \
+  -volname "SpeakType" \
+  -srcfolder "$DMG_STAGING" \
+  -fs HFS+ \
+  -format UDZO \
+  -ov \
+  "$DMG_PATH"
+rm -rf "$DMG_STAGING"
 
 echo ""
 echo "🔐 Signing DMG..."
