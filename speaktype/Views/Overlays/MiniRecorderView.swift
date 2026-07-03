@@ -296,7 +296,7 @@ struct MiniRecorderView: View {
                 .controlSize(.small)
                 .colorScheme(.dark)
             Text("Warming up model...")
-                .font(Typography.labelMedium)
+                .font(Typography.pillLabel)
                 .foregroundColor(.white.opacity(0.9))
         }
         .transition(.opacity)
@@ -304,7 +304,7 @@ struct MiniRecorderView: View {
 
     private var processingContent: some View {
         Text(statusMessage)
-            .font(Typography.labelMedium)
+            .font(Typography.pillLabel)
             .foregroundColor(.white)
             .lineLimit(1)
             .transition(.opacity)
@@ -321,26 +321,25 @@ struct MiniRecorderView: View {
                 guard !raw.isEmpty else { return }
                 let step = Self.waveBarWidth + Self.waveBarSpacing
                 let maxBars = max(1, Int(size.width / step))
-                // Samples are raw linear peak amplitude (0...1). Tuning goal: faint
-                // ambient sound (a fan, room tone) must read as FLAT, while actually
-                // speaking fills the bars. Three knobs:
-                //   noiseGate       – subtract this floor; anything below it is fan
-                //                     noise and collapses to zero.
-                //   speechReference – the amplitude that counts as "full bars". We
-                //                     auto-gain to the louder of your recent peak and
-                //                     this floor, so faint residual can't bloom to
-                //                     full height, but a quiet mic still fills up.
-                //   contrast        – a power curve that pushes faint residual toward
-                //                     zero while leaving loud speech tall, sharpening
-                //                     the line between "not speaking" and "speaking".
-                let noiseGate: Float = 0.05
-                let speechReference: Float = 0.14
-                let contrast: CGFloat = 1.5
-                let visible = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
-                let recentPeak = max(visible.max() ?? 0, speechReference)
+                // Samples are raw linear peak amplitude (0...1), which sits LOW on
+                // the scale — so we auto-gain to your own recent peak, meaning your
+                // voice always fills the bars no matter the mic level. Two knobs:
+                //   noiseGate  – trim dead-silence hiss before measuring.
+                //   presence   – fade the whole waveform toward flat when the loudest
+                //                thing in view is only faint ambient sound (a fan).
+                //                It reaches full quickly, so real speech is never
+                //                dimmed — only near-silence collapses. Raise
+                //                `presenceFull` if the fan still shows; lower it if
+                //                quiet speech looks weak.
+                let noiseGate: Float = 0.02
+                let presenceFull: Float = 0.08
+                let gated = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
+                let peak = gated.max() ?? 0
+                let recentPeak = max(peak, 0.05)
+                let presence = CGFloat(min(1, peak / presenceFull))
                 let midY = size.height / 2
-                for (i, sample) in visible.enumerated() {
-                    let norm = pow(CGFloat(min(1, sample / recentPeak)), contrast)
+                for (i, sample) in gated.enumerated() {
+                    let norm = CGFloat(min(1, sample / recentPeak)) * presence
                     let barHeight = max(2.0, norm * size.height)
                     let x = CGFloat(i) * step
                     let rect = CGRect(
@@ -357,7 +356,7 @@ struct MiniRecorderView: View {
             // Elapsed recording time.
             TimelineView(.periodic(from: .now, by: 0.5)) { context in
                 Text(elapsedString(context.date))
-                    .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
+                    .font(Typography.pillTime)
                     .foregroundColor(.white.opacity(0.6))
             }
 

@@ -24,6 +24,10 @@ struct speaktypeApp: App {
     @StateObject private var trialManager = TrialManager.shared
 
     init() {
+        // Register bundled fonts (Satoshi, Source Sans 3) so Font.custom resolves
+        // them regardless of what's installed on the machine.
+        AppFonts.registerBundledFonts()
+
         // For UI testing: bypass onboarding automatically
         if ProcessInfo.processInfo.arguments.contains("--uitesting") {
             hasCompletedOnboarding = true

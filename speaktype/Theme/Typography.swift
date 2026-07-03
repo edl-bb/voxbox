@@ -11,6 +11,8 @@ import SwiftUI
 
 private enum FontName {
     static let sourceSans = "SourceSans3-Regular"
+    static let satoshiMedium = AppFonts.Satoshi.medium
+    static let satoshiBold = AppFonts.Satoshi.bold
 }
 
 // MARK: - Typography System
@@ -61,6 +63,12 @@ enum Typography {
     static let statLabel = Font.custom(FontName.sourceSans, size: 13).weight(.regular)
     
     static let badge = Font.custom(FontName.sourceSans, size: 11).weight(.medium)
+
+    // MARK: - Floating recorder pill (Satoshi — geometric, premium)
+
+    static let pillLabel = Font.custom(FontName.satoshiMedium, size: 13)
+    static let pillTime = Font.custom(FontName.satoshiMedium, size: 12).monospacedDigit()
+    static let pillControl = Font.custom(FontName.satoshiBold, size: 11)
     
     // MARK: - Card Typography (Source Sans - clean cards)
     
