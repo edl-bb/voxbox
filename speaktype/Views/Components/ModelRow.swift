@@ -83,6 +83,8 @@ struct ModelRow: View {
                 .font(Typography.modelName)
                 .foregroundStyle(Color.textPrimary)
 
+            LanguageBadge(isEnglishOnly: model.isEnglishOnly)
+
             if isActive && isDownloaded {
                 statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandIndigo)
             } else if isDownloaded {
@@ -104,8 +106,6 @@ struct ModelRow: View {
 
     private var metaRow: some View {
         HStack(spacing: 8) {
-            chip(icon: model.isEnglishOnly ? "character.book.closed" : "globe",
-                 text: model.languageSupportLabel)
             chip(icon: "internaldrive", text: model.size)
         }
     }
@@ -243,23 +243,34 @@ struct ModelRow: View {
     }
 }
 
+// MARK: - Language differentiator badge
+
+/// The single most decision-relevant trait at a glance: multilingual vs English.
+struct LanguageBadge: View {
+    let isEnglishOnly: Bool
+
+    var body: some View {
+        let tint = isEnglishOnly ? Color.textMuted : Color.meterAccuracy
+        Text(isEnglishOnly ? "ENGLISH" : "MULTILINGUAL")
+            .font(Typography.uiBold(9)).tracking(0.6)
+            .padding(.horizontal, 7).padding(.vertical, 3)
+            .background(Capsule().fill(tint.opacity(0.14)))
+            .foregroundStyle(tint)
+    }
+}
+
 // MARK: - Shared metric bars
 
-/// Speed + accuracy as two calm, continuous bars with a qualitative tier word.
+/// A single calm, continuous metric bar with a qualitative tier word.
 /// No false-precision decimals, no gamified LED pips.
-struct MetricBars: View {
-    let model: AIModel
+struct MetricBar: View {
+    let label: String
+    let tier: String
+    let value: Double
+    let tint: Color
     var appeared: Bool = true
 
     var body: some View {
-        HStack(spacing: 22) {
-            bar(label: "Speed", tier: model.speedTier, value: model.speed, tint: .meterSpeed)
-            bar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy, tint: .meterAccuracy)
-        }
-        .padding(.top, 2)
-    }
-
-    private func bar(label: String, tier: String, value: Double, tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Text(label.uppercased())
@@ -281,7 +292,34 @@ struct MetricBars: View {
             }
             .frame(height: 6)
         }
-        .frame(width: 148)
+    }
+}
+
+/// Speed + accuracy side by side — the card layout.
+struct MetricBars: View {
+    let model: AIModel
+    var appeared: Bool = true
+
+    var body: some View {
+        HStack(spacing: 22) {
+            MetricBar(label: "Speed", tier: model.speedTier, value: model.speed,
+                      tint: .meterSpeed, appeared: appeared).frame(width: 148)
+            MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy,
+                      tint: .meterAccuracy, appeared: appeared).frame(width: 148)
+        }
+        .padding(.top, 2)
+    }
+}
+
+/// Speed + accuracy stacked — the hero's right column.
+struct MetricBarsStacked: View {
+    let model: AIModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            MetricBar(label: "Speed", tier: model.speedTier, value: model.speed, tint: .meterSpeed)
+            MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy, tint: .meterAccuracy)
+        }
     }
 }
 

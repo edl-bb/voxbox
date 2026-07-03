@@ -6,11 +6,18 @@ struct AIModelsView: View {
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("modelUseCase") private var useCaseRaw: String = AIModel.UseCase.dictation.rawValue
 
+    /// Keeps the content from stretching edge-to-edge on a wide window, so the
+    /// name and its action never sit at opposite ends of a huge empty band.
+    private let maxContentWidth: CGFloat = 940
+
     // MARK: - Derived
 
     private var capability: DeviceCapability { .current }
     private var useCase: AIModel.UseCase { AIModel.UseCase(rawValue: useCaseRaw) ?? .dictation }
     private var recommendedModel: AIModel { AIModel.recommendedModel(for: capability, useCase: useCase) }
+    private var selectedModelObject: AIModel? {
+        AIModel.availableModels.first { $0.variant == selectedModel }
+    }
 
     private func isDownloaded(_ variant: String) -> Bool {
         (downloadService.downloadProgress[variant] ?? 0) >= 1.0
@@ -33,12 +40,15 @@ struct AIModelsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 26) {
+                currentStrip
                 heroSection
                 listSection
             }
+            .frame(maxWidth: maxContentWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, 32)
-            .padding(.top, 28)
+            .padding(.top, 24)
             .padding(.bottom, 40)
         }
         .background(Color.clear)
@@ -48,6 +58,49 @@ struct AIModelsView: View {
         }
     }
 
+    // MARK: - Current model strip
+
+    /// Always-visible "what am I using right now", so the active model isn't
+    /// buried at the bottom of the list.
+    private var currentStrip: some View {
+        let sel = selectedModelObject
+        let differsFromPick = sel != nil && sel?.variant != recommendedModel.variant
+        return HStack(spacing: 13) {
+            ZStack {
+                Circle().fill(Color.brandIndigoSoft)
+                Image(systemName: sel == nil ? "questionmark" : "waveform")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.brandIndigo)
+            }
+            .frame(width: 42, height: 42)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("CURRENTLY USING")
+                    .font(Typography.uiBold(10)).tracking(1.2)
+                    .foregroundStyle(Color.textMuted)
+                Text(sel?.name ?? "No model selected yet")
+                    .font(Typography.uiBold(16))
+                    .foregroundStyle(sel == nil ? Color.textMuted : Color.textPrimary)
+            }
+
+            Spacer(minLength: 8)
+
+            if differsFromPick {
+                Text("A better-matched pick is recommended below")
+                    .font(Typography.uiMedium(12))
+                    .foregroundStyle(Color.textMuted)
+            }
+        }
+        .padding(.horizontal, 18).padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.bgCard)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.border.opacity(0.6), lineWidth: 1)
+        )
+    }
+
     // MARK: - Hero
 
     private var heroSection: some View {
@@ -55,9 +108,9 @@ struct AIModelsView: View {
         let downloaded = isDownloaded(rec.variant)
         let active = selectedModel == rec.variant
 
-        return VStack(alignment: .leading, spacing: 0) {
-            // Eyebrow + optimize selector
-            HStack(alignment: .top) {
+        return HStack(alignment: .top, spacing: 32) {
+            // LEFT — the pitch.
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkles").font(.system(size: 11, weight: .bold))
                     Text("RECOMMENDED FOR YOU")
@@ -65,9 +118,37 @@ struct AIModelsView: View {
                 }
                 .foregroundStyle(Color.brandIndigo)
 
-                Spacer()
+                Text(rec.name)
+                    .font(Typography.heroName)
+                    .foregroundStyle(Color.textPrimary)
+                    .padding(.top, 16)
 
-                VStack(alignment: .trailing, spacing: 7) {
+                LanguageBadge(isEnglishOnly: rec.isEnglishOnly)
+                    .padding(.top, 12)
+
+                Text(AIModel.recommendationReason(for: rec, capability: capability, useCase: useCase))
+                    .font(Typography.ui(15))
+                    .foregroundStyle(Color.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+
+                HStack(spacing: 7) {
+                    Image(systemName: "laptopcomputer").font(.system(size: 12))
+                    Text("Your Mac · \(capability.summary)")
+                        .font(Typography.uiMedium(12))
+                }
+                .foregroundStyle(Color.textMuted)
+                .padding(.top, 16)
+
+                Spacer(minLength: 20)
+
+                heroAction(rec: rec, downloaded: downloaded, active: active)
+                    .padding(.top, 20)
+            }
+
+            // RIGHT — controls + metrics, so the hero isn't half-empty.
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 7) {
                     Text("OPTIMIZE FOR")
                         .font(Typography.uiBold(9)).tracking(1)
                         .foregroundStyle(Color.textMuted)
@@ -76,41 +157,33 @@ struct AIModelsView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .frame(width: 260)
                 }
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("HOW IT PERFORMS")
+                        .font(Typography.uiBold(9)).tracking(1)
+                        .foregroundStyle(Color.textMuted)
+                    MetricBarsStacked(model: rec)
+                    HStack(spacing: 7) {
+                        Image(systemName: "internaldrive").font(.system(size: 11))
+                        Text("\(rec.size) download").font(Typography.uiMedium(12))
+                    }
+                    .foregroundStyle(Color.textSecondary)
+                }
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.textPrimary.opacity(0.03))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.textPrimary.opacity(0.06), lineWidth: 1)
+                )
             }
-
-            // The pick — big, in the display face.
-            Text(rec.name)
-                .font(Typography.heroName)
-                .foregroundStyle(Color.textPrimary)
-                .padding(.top, 18)
-
-            Text(AIModel.recommendationReason(for: rec, capability: capability, useCase: useCase))
-                .font(Typography.ui(15))
-                .foregroundStyle(Color.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 8)
-
-            // Metrics for the pick.
-            MetricBars(model: rec)
-                .padding(.top, 18)
-
-            // Device context — explicitly labelled as *your* Mac, not a requirement.
-            HStack(spacing: 7) {
-                Image(systemName: "laptopcomputer").font(.system(size: 12))
-                Text("Your Mac · \(capability.summary)")
-                    .font(Typography.uiMedium(12))
-            }
-            .foregroundStyle(Color.textMuted)
-            .padding(.top, 16)
-
-            // Primary action.
-            heroAction(rec: rec, downloaded: downloaded, active: active)
-                .padding(.top, 22)
+            .frame(width: 300)
         }
         .padding(28)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.bgCard)
@@ -159,16 +232,12 @@ struct AIModelsView: View {
     // MARK: - List
 
     private var listSection: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            Text("More models")
-                .font(Typography.sectionTitle)
-                .foregroundStyle(Color.textPrimary)
-
+        VStack(alignment: .leading, spacing: 26) {
             ForEach(engineGroups, id: \.title) { group in
                 VStack(alignment: .leading, spacing: 14) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(group.title)
-                            .font(Typography.uiBold(15))
+                            .font(Typography.sectionTitle)
                             .foregroundStyle(Color.textPrimary)
                         Text(group.subtitle)
                             .font(Typography.ui(12))
@@ -189,5 +258,5 @@ struct AIModelsView: View {
 }
 
 #Preview {
-    AIModelsView().frame(width: 820, height: 900).background(Color.bgApp)
+    AIModelsView().frame(width: 900, height: 900).background(Color.bgApp)
 }
