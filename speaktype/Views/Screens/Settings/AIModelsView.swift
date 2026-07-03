@@ -146,42 +146,28 @@ struct AIModelsView: View {
                     .padding(.top, 20)
             }
 
-            // RIGHT — controls + metrics, so the hero isn't half-empty.
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 7) {
-                    Text("OPTIMIZE FOR")
-                        .font(Typography.uiBold(9)).tracking(1)
-                        .foregroundStyle(Color.textMuted)
-                    Picker("", selection: $useCaseRaw) {
-                        ForEach(AIModel.UseCase.allCases) { Text($0.title).tag($0.rawValue) }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
+            // RIGHT — the performance panel, so the hero isn't half-empty.
+            VStack(alignment: .leading, spacing: 14) {
+                Text("HOW IT PERFORMS")
+                    .font(Typography.uiBold(9)).tracking(1)
+                    .foregroundStyle(Color.textMuted)
+                MetricBarsStacked(model: rec)
+                HStack(spacing: 7) {
+                    Image(systemName: "internaldrive").font(.system(size: 11))
+                    Text("\(rec.size) download").font(Typography.uiMedium(12))
                 }
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("HOW IT PERFORMS")
-                        .font(Typography.uiBold(9)).tracking(1)
-                        .foregroundStyle(Color.textMuted)
-                    MetricBarsStacked(model: rec)
-                    HStack(spacing: 7) {
-                        Image(systemName: "internaldrive").font(.system(size: 11))
-                        Text("\(rec.size) download").font(Typography.uiMedium(12))
-                    }
-                    .foregroundStyle(Color.textSecondary)
-                }
-                .padding(18)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.textPrimary.opacity(0.03))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.textPrimary.opacity(0.06), lineWidth: 1)
-                )
+                .foregroundStyle(Color.textSecondary)
             }
-            .frame(width: 300)
+            .padding(18)
+            .frame(width: 300, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.textPrimary.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.textPrimary.opacity(0.06), lineWidth: 1)
+            )
         }
         .padding(28)
         .background(

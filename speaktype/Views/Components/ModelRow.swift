@@ -62,7 +62,7 @@ struct ModelRow: View {
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(
-                    isActive ? Color.brandAccent.opacity(0.55)
+                    isActive ? Color.brandAccent.opacity(0.4)
                         : Color.border.opacity(isHovered ? 1.0 : 0.5),
                     lineWidth: isActive ? 1.5 : 1
                 )
@@ -285,7 +285,7 @@ struct MetricBar: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.textPrimary.opacity(0.07)).frame(height: 6)
                     Capsule()
-                        .fill(tint)
+                        .fill(tint.opacity(0.7))
                         .frame(width: geo.size.width * (appeared ? value / 10.0 : 0), height: 6)
                         .animation(.spring(response: 0.6, dampingFraction: 0.85), value: appeared)
                 }
@@ -338,9 +338,9 @@ enum ActionButton {
         .padding(.horizontal, large ? 22 : 16)
         .padding(.vertical, large ? 12 : 9)
         .background(
-            Capsule().fill(style == .primary ? Color.brandAccent : Color.textPrimary.opacity(0.06))
+            Capsule().fill(style == .primary ? Color.accentPrimary : Color.textPrimary.opacity(0.06))
         )
-        .foregroundStyle(style == .primary ? Color.white : Color.textPrimary)
+        .foregroundStyle(style == .primary ? Color.bgApp : Color.textPrimary)
     }
 }
 

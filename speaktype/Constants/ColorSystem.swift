@@ -194,8 +194,8 @@ extension Color {
             name: "brandAccent",
             dynamicProvider: { appearance in
                 appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                    ? NSColor(hex: "E58C68")
-                    : NSColor(hex: "BF5B3F")
+                    ? NSColor(hex: "E0A288")   // softer, muted terracotta
+                    : NSColor(hex: "C67A5F")
             }))
     static let brandAccentSoft = Color(
         nsColor: NSColor(
