@@ -524,18 +524,38 @@ struct MiniRecorderView: View {
     private func backgroundView(cornerRadius: CGFloat) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         if displayPhase == .idle {
-            // Resting state: real dark glass. A behind-window blur samples the
-            // desktop/apps behind the pill (SwiftUI's own Material can't — it only
-            // blurs within the window, which is why it read as a flat gray blob).
-            // A light black tint keeps it premium and dark while you can still see
-            // what's happening behind it — present, but not occupying the screen.
+            // Resting state: real frosted glass. The recipe (per glassmorphism):
+            //  1. Backdrop blur — a behind-window NSVisualEffectView samples the
+            //     desktop/apps behind the pill (SwiftUI's Material only blurs
+            //     within the window, which is why it read as a flat gray slab).
+            //  2. LOW tint — only a whisper of dark fill, so the blurred backdrop
+            //     genuinely shows through instead of being painted over.
+            //  3. Glass rim — a bright top-edge highlight fading down, the sheen
+            //     that reads as the thickness/edge of a pane of glass.
+            //  Forced .vibrantDark keeps it a premium dark glass on any backdrop.
             ZStack {
                 VisualEffectBlur(
                     material: .hudWindow,
                     blendingMode: .behindWindow,
-                    cornerRadius: cornerRadius)
-                shape.fill(Color.black.opacity(0.18))
-                shape.strokeBorder(Color.white.opacity(0.16), lineWidth: 0.8)
+                    cornerRadius: cornerRadius,
+                    appearanceName: .vibrantDark)
+                shape.fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.10),
+                            Color.black.opacity(0.10),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom))
+                shape.strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.55),
+                            Color.white.opacity(0.08),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom),
+                    lineWidth: 1)
             }
         } else {
             // Active HUD: deep, opaque near-black so warming/recording/processing
@@ -963,6 +983,9 @@ struct VisualEffectBlur: NSViewRepresentable {
     var material: NSVisualEffectView.Material
     var blendingMode: NSVisualEffectView.BlendingMode
     var cornerRadius: CGFloat = 0
+    /// Force a fixed vibrancy appearance (e.g. `.vibrantDark`) so the frosted
+    /// glass stays dark/premium regardless of the system light/dark setting.
+    var appearanceName: NSAppearance.Name? = nil
 
     func makeNSView(context: Context) -> NSVisualEffectView {
         let visualEffectView = NSVisualEffectView()
@@ -974,6 +997,10 @@ struct VisualEffectBlur: NSViewRepresentable {
         visualEffectView.layer?.cornerRadius = cornerRadius
         visualEffectView.layer?.masksToBounds = true
 
+        if let appearanceName {
+            visualEffectView.appearance = NSAppearance(named: appearanceName)
+        }
+
         return visualEffectView
     }
 
@@ -981,6 +1008,9 @@ struct VisualEffectBlur: NSViewRepresentable {
         nsView.material = material
         nsView.blendingMode = blendingMode
         nsView.layer?.cornerRadius = cornerRadius
+        if let appearanceName {
+            nsView.appearance = NSAppearance(named: appearanceName)
+        }
     }
 }
 
