@@ -16,26 +16,30 @@ struct AIModelsView: View {
         (downloadService.downloadProgress[variant] ?? 0) >= 1.0
     }
 
+    /// Engine groups for the list — the recommended model is intentionally left
+    /// out here because it already headlines the hero (no more duplication).
     private var engineGroups: [(title: String, subtitle: String, models: [AIModel])] {
         [
             (title: "Parakeet", subtitle: "NVIDIA · fastest, near-Whisper accuracy",
              models: AIModel.models(for: .parakeet)),
             (title: "Whisper", subtitle: "OpenAI · most accurate, a touch slower",
              models: AIModel.models(for: .whisper)),
-        ].filter { !$0.models.isEmpty }
+        ]
+        .map { ($0.title, $0.subtitle, $0.models.filter { $0.variant != recommendedModel.variant }) }
+        .filter { !$0.2.isEmpty }
     }
 
     // MARK: - Body
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 32) {
                 heroSection
                 listSection
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 24)
-            .padding(.bottom, 32)
+            .padding(.horizontal, 32)
+            .padding(.top, 28)
+            .padding(.bottom, 40)
         }
         .background(Color.clear)
         .onAppear {
@@ -54,63 +58,75 @@ struct AIModelsView: View {
         return VStack(alignment: .leading, spacing: 0) {
             // Eyebrow + optimize selector
             HStack(alignment: .top) {
-                Text("RECOMMENDED FOR YOUR MAC")
-                    .font(.system(size: 11, weight: .bold)).tracking(1.5)
-                    .foregroundStyle(Color.textMuted)
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles").font(.system(size: 11, weight: .bold))
+                    Text("RECOMMENDED FOR YOU")
+                        .font(Typography.uiBold(11)).tracking(1.4)
+                }
+                .foregroundStyle(Color.brandIndigo)
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 6) {
+                VStack(alignment: .trailing, spacing: 7) {
                     Text("OPTIMIZE FOR")
-                        .font(.system(size: 9, weight: .bold)).tracking(1)
+                        .font(Typography.uiBold(9)).tracking(1)
                         .foregroundStyle(Color.textMuted)
                     Picker("", selection: $useCaseRaw) {
                         ForEach(AIModel.UseCase.allCases) { Text($0.title).tag($0.rawValue) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .frame(width: 240)
+                    .frame(width: 260)
                 }
             }
 
-            // The pick — big and editorial.
+            // The pick — big, in the display face.
             Text(rec.name)
-                .font(.system(size: 34, weight: .regular, design: .serif))
+                .font(Typography.heroName)
                 .foregroundStyle(Color.textPrimary)
-                .padding(.top, 16)
+                .padding(.top, 18)
 
             Text(AIModel.recommendationReason(for: rec, capability: capability, useCase: useCase))
-                .font(.system(size: 15))
+                .font(Typography.ui(15))
                 .foregroundStyle(Color.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 6)
+                .padding(.top, 8)
 
-            // Device context — plain language.
+            // Metrics for the pick.
+            MetricBars(model: rec)
+                .padding(.top, 18)
+
+            // Device context — explicitly labelled as *your* Mac, not a requirement.
             HStack(spacing: 7) {
-                Image(systemName: "cpu").font(.system(size: 12))
-                Text(capability.summary).font(.system(size: 12, weight: .medium))
+                Image(systemName: "laptopcomputer").font(.system(size: 12))
+                Text("Your Mac · \(capability.summary)")
+                    .font(Typography.uiMedium(12))
             }
             .foregroundStyle(Color.textMuted)
-            .padding(.top, 14)
+            .padding(.top, 16)
 
             // Primary action.
             heroAction(rec: rec, downloaded: downloaded, active: active)
-                .padding(.top, 20)
+                .padding(.top, 22)
         }
-        .padding(26)
+        .padding(28)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.textPrimary.opacity(0.06), Color.textPrimary.opacity(0.02)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.bgCard)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.brandIndigo.opacity(0.07), Color.brandIndigo.opacity(0.0)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing))
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.textPrimary.opacity(0.14), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.brandIndigo.opacity(0.22), lineWidth: 1)
         )
+        .shadow(color: Color.brandIndigo.opacity(0.10), radius: 20, x: 0, y: 8)
     }
 
     @ViewBuilder
@@ -118,45 +134,44 @@ struct AIModelsView: View {
         if active && downloaded {
             HStack(spacing: 7) {
                 Image(systemName: "checkmark.circle.fill")
-                Text("This is your default model").font(.system(size: 13, weight: .medium))
+                Text("This is your default model").font(Typography.uiBold(13))
             }
-            .foregroundStyle(Color.textSecondary)
+            .foregroundStyle(Color.brandIndigo)
         } else if downloaded {
-            heroButton(title: "Use this model", icon: "arrow.right") {
+            Button {
                 selectedModel = rec.variant
+            } label: {
+                ActionButton.label(title: "Use this model", icon: "arrow.right",
+                                   style: .primary, large: true)
             }
+            .buttonStyle(.plain)
         } else {
-            heroButton(title: "Download · \(rec.size)", icon: "arrow.down") {
+            Button {
                 downloadService.downloadModel(variant: rec.variant)
+            } label: {
+                ActionButton.label(title: "Download", icon: "arrow.down",
+                                   style: .primary, large: true)
             }
+            .buttonStyle(.plain)
         }
-    }
-
-    private func heroButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Text(title).font(.system(size: 14, weight: .semibold))
-                Image(systemName: icon).font(.system(size: 12, weight: .semibold))
-            }
-            .padding(.horizontal, 20).padding(.vertical, 12)
-            .background(Capsule().fill(Color.textPrimary))
-            .foregroundStyle(Color.bgCard)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - List
 
     private var listSection: some View {
-        VStack(alignment: .leading, spacing: 26) {
+        VStack(alignment: .leading, spacing: 28) {
+            Text("More models")
+                .font(Typography.sectionTitle)
+                .foregroundStyle(Color.textPrimary)
+
             ForEach(engineGroups, id: \.title) { group in
                 VStack(alignment: .leading, spacing: 14) {
-                    HStack(spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(group.title)
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(Typography.uiBold(15))
                             .foregroundStyle(Color.textPrimary)
                         Text(group.subtitle)
-                            .font(.system(size: 12))
+                            .font(Typography.ui(12))
                             .foregroundStyle(Color.textMuted)
                     }
 
@@ -164,7 +179,7 @@ struct AIModelsView: View {
                         ModelRow(
                             model: model,
                             selectedModel: $selectedModel,
-                            isRecommended: model.variant == recommendedModel.variant
+                            isRecommended: false
                         )
                     }
                 }
@@ -174,5 +189,5 @@ struct AIModelsView: View {
 }
 
 #Preview {
-    AIModelsView().frame(width: 720, height: 900).background(Color.bgApp)
+    AIModelsView().frame(width: 820, height: 900).background(Color.bgApp)
 }

@@ -19,6 +19,13 @@ enum AppFonts {
         static let bold = "Satoshi-Bold"
     }
 
+    /// Clash Display — the display/hero face paired with Satoshi for body.
+    enum ClashDisplay {
+        static let medium = "ClashDisplay-Medium"
+        static let semibold = "ClashDisplay-Semibold"
+        static let bold = "ClashDisplay-Bold"
+    }
+
     private static var didRegister = false
 
     /// Registers every .otf/.ttf shipped in the app bundle. Idempotent.

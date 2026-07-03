@@ -184,6 +184,30 @@ extension Color {
                     ? NSColor(hex: "FFFFFF")  // White in Dark Mode for high contrast
                     : NSColor(hex: "1A1A1A")  // Black in Light Mode
             }))
+    // MARK: - Brand accent (AI Models redesign)
+    // One cohesive indigo accent used for recommended/selected states and
+    // primary actions, plus a calm violet/teal pair for the metric bars —
+    // replacing the loud amber/green gamified look.
+
+    static let brandIndigo = Color(
+        nsColor: NSColor(
+            name: "brandIndigo",
+            dynamicProvider: { appearance in
+                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    ? NSColor(hex: "8B87FF")
+                    : NSColor(hex: "5A54E8")
+            }))
+    static let brandIndigoSoft = Color(
+        nsColor: NSColor(
+            name: "brandIndigoSoft",
+            dynamicProvider: { appearance in
+                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    ? NSColor(hex: "8B87FF").withAlphaComponent(0.16)
+                    : NSColor(hex: "5A54E8").withAlphaComponent(0.10)
+            }))
+    static let meterSpeed = Color(hex: "7C6BF5")     // violet
+    static let meterAccuracy = Color(hex: "12B3A3")  // teal
+
     static let accentSuccess = Color(hex: "22C55E")
     static let accentWarning = Color(hex: "F59E0B")
     static let accentError = Color(hex: "EF4444")

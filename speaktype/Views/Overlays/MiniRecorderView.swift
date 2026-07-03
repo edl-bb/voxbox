@@ -92,6 +92,8 @@ struct MiniRecorderView: View {
     @State private var globalEscapeMonitor: Any?
     @State private var localEscapeMonitor: Any?
 
+    @Environment(\.colorScheme) private var colorScheme
+
     // MARK: - State for Animation
     @State private var phase: CGFloat = 0
 
@@ -533,8 +535,19 @@ struct MiniRecorderView: View {
             // `.glassEffect` blurs and refracts the content behind the pill and
             // reacts to light — the genuine article, not a tinted fill faking it.
             if #available(macOS 26.0, *) {
+                // In dark mode the bare glass reads washed-out gray, so tint it
+                // toward black for a deeper look; light mode stays pure/clear (it
+                // already looks great). The edge frost/rim is also toned down in
+                // dark mode so the rim doesn't glow too white.
+                let isDark = colorScheme == .dark
+                let glass: Glass = isDark
+                    ? .regular.tint(Color.black.opacity(0.55))
+                    : .regular
+                let frostOpacity = isDark ? 0.05 : 0.14
+                let rimTop = isDark ? 0.16 : 0.35
+                let rimBottom = isDark ? 0.02 : 0.06
                 Color.clear
-                    .glassEffect(.regular, in: shape)
+                    .glassEffect(glass, in: shape)
                     .overlay {
                         // Clear through the middle, denser/frosted toward the rim —
                         // the way real glass thickens and refracts more at its edge.
@@ -542,15 +555,15 @@ struct MiniRecorderView: View {
                             // Soft frost hugging the inside edge; fades to nothing
                             // before the center.
                             shape
-                                .stroke(Color.white.opacity(0.14), lineWidth: 6)
+                                .stroke(Color.white.opacity(frostOpacity), lineWidth: 6)
                                 .blur(radius: 4)
                             // Crisp glass rim highlight on top of the frost.
                             shape
                                 .strokeBorder(
                                     LinearGradient(
                                         colors: [
-                                            Color.white.opacity(0.35),
-                                            Color.white.opacity(0.06),
+                                            Color.white.opacity(rimTop),
+                                            Color.white.opacity(rimBottom),
                                         ],
                                         startPoint: .top,
                                         endPoint: .bottom),

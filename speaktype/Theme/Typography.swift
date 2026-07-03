@@ -11,8 +11,11 @@ import SwiftUI
 
 private enum FontName {
     static let sourceSans = "SourceSans3-Regular"
+    static let satoshiRegular = AppFonts.Satoshi.regular
     static let satoshiMedium = AppFonts.Satoshi.medium
     static let satoshiBold = AppFonts.Satoshi.bold
+    static let clashMedium = AppFonts.ClashDisplay.medium
+    static let clashSemibold = AppFonts.ClashDisplay.semibold
 }
 
 // MARK: - Typography System
@@ -69,6 +72,21 @@ enum Typography {
     static let pillLabel = Font.custom(FontName.satoshiMedium, size: 13)
     static let pillTime = Font.custom(FontName.satoshiMedium, size: 12).monospacedDigit()
     static let pillControl = Font.custom(FontName.satoshiBold, size: 11)
+
+    // MARK: - Two-font system: Clash Display (display) + Satoshi (body/UI)
+    // Used by the redesigned AI Models screen. Display face for names/titles,
+    // Satoshi for everything readable.
+
+    static func display(_ size: CGFloat) -> Font { Font.custom(FontName.clashSemibold, size: size) }
+    static func displayMedium(_ size: CGFloat) -> Font { Font.custom(FontName.clashMedium, size: size) }
+
+    static let heroName = Font.custom(FontName.clashSemibold, size: 40)
+    static let sectionTitle = Font.custom(FontName.clashSemibold, size: 20)
+    static let modelName = Font.custom(FontName.clashMedium, size: 19)
+
+    static func ui(_ size: CGFloat) -> Font { Font.custom(FontName.satoshiRegular, size: size) }
+    static func uiMedium(_ size: CGFloat) -> Font { Font.custom(FontName.satoshiMedium, size: size) }
+    static func uiBold(_ size: CGFloat) -> Font { Font.custom(FontName.satoshiBold, size: size) }
     
     // MARK: - Card Typography (Source Sans - clean cards)
     

@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// A single AI-model card. Editorial layout with gamified speed/accuracy meters.
+/// A single AI-model card. Clean two-font layout (Clash Display for the name,
+/// Satoshi for everything else) with calm violet/teal metric bars.
 struct ModelRow: View {
     let model: AIModel
     @Binding var selectedModel: String
@@ -25,27 +26,24 @@ struct ModelRow: View {
     var isDownloaded: Bool { progress >= 1.0 }
     var isActive: Bool { selectedModel == model.variant }
 
-    private var speedTint: Color { Color(red: 0.98, green: 0.62, blue: 0.11) }   // amber
-    private var accuracyTint: Color { Color(red: 0.20, green: 0.74, blue: 0.51) } // green
-
     // MARK: - Body
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 18) {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 11) {
                     titleRow
                     Text(model.details)
-                        .font(Typography.cardDescription)
+                        .font(Typography.ui(13))
                         .foregroundStyle(Color.textSecondary)
                     metaRow
-                    meters
+                    MetricBars(model: model, appeared: appeared)
 
                     if let warning = model.ramWarning(deviceRAMGB: WhisperService.deviceRAMGB) {
-                        note(icon: "exclamationmark.triangle.fill", text: warning, tint: .orange)
+                        note(icon: "exclamationmark.triangle.fill", text: warning, tint: .accentWarning)
                     }
                     if let loadError {
-                        note(icon: "xmark.circle.fill", text: loadError, tint: .red)
+                        note(icon: "xmark.circle.fill", text: loadError, tint: .accentError)
                     }
                 }
 
@@ -59,17 +57,17 @@ struct ModelRow: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(isActive ? Color.textPrimary.opacity(0.045) : Color.bgCard)
+                .fill(isActive ? Color.brandIndigoSoft : Color.bgCard)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(
-                    isActive ? Color.textPrimary.opacity(0.5)
+                    isActive ? Color.brandIndigo.opacity(0.55)
                         : Color.border.opacity(isHovered ? 1.0 : 0.5),
                     lineWidth: isActive ? 1.5 : 1
                 )
         )
-        .shadow(color: .black.opacity(isHovered ? 0.10 : 0.04),
+        .shadow(color: .black.opacity(isHovered ? 0.09 : 0.03),
                 radius: isHovered ? 14 : 6, x: 0, y: isHovered ? 6 : 2)
         .animation(.easeOut(duration: 0.16), value: isHovered)
         .animation(.easeOut(duration: 0.16), value: isActive)
@@ -80,37 +78,28 @@ struct ModelRow: View {
     // MARK: - Header
 
     private var titleRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 9) {
             Text(model.name)
-                .font(Typography.cardTitle)
+                .font(Typography.modelName)
                 .foregroundStyle(Color.textPrimary)
 
-            enginePill
-
-            if isRecommended {
-                HStack(spacing: 4) {
-                    Image(systemName: "sparkles").font(.system(size: 9, weight: .bold))
-                    Text("PICK").font(.system(size: 9, weight: .bold)).tracking(0.6)
-                }
-                .padding(.horizontal, 7).padding(.vertical, 3)
-                .background(Capsule().fill(Color.accentColor.opacity(0.15)))
-                .overlay(Capsule().stroke(Color.accentColor.opacity(0.35), lineWidth: 0.5))
-                .foregroundStyle(Color.accentColor)
-            }
-
             if isActive && isDownloaded {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 13)).foregroundStyle(Color.textPrimary)
+                statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandIndigo)
+            } else if isDownloaded {
+                statusBadge(text: "Installed", icon: "arrow.down.circle.fill",
+                            tint: Color.textMuted)
             }
         }
     }
 
-    private var enginePill: some View {
-        Text(model.engine == .parakeet ? "PARAKEET" : "WHISPER")
-            .font(.system(size: 9, weight: .bold)).tracking(0.8)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(Capsule().fill(Color.textPrimary.opacity(0.07)))
-            .foregroundStyle(Color.textMuted)
+    private func statusBadge(text: String, icon: String, tint: Color) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon).font(.system(size: 9, weight: .bold))
+            Text(text).font(Typography.uiBold(10)).textCase(.uppercase).tracking(0.5)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 3)
+        .background(Capsule().fill(tint.opacity(0.14)))
+        .foregroundStyle(tint)
     }
 
     private var metaRow: some View {
@@ -124,58 +113,17 @@ struct ModelRow: View {
     private func chip(icon: String, text: String) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon).font(.system(size: 10))
-            Text(text).font(Typography.cardMeta)
+            Text(text).font(Typography.uiMedium(12))
         }
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, 9).padding(.vertical, 4)
         .background(Capsule().fill(Color.textPrimary.opacity(0.05)))
     }
 
-    // MARK: - Gamified meters
-
-    private var meters: some View {
-        HStack(spacing: 22) {
-            meter(title: "SPEED", value: model.speed, tier: model.speedTier, tint: speedTint)
-            meter(title: "ACCURACY", value: model.accuracy, tier: model.accuracyTier, tint: accuracyTint)
-        }
-        .padding(.top, 2)
-    }
-
-    private func meter(title: String, value: Double, tier: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                Text(title)
-                    .font(.system(size: 9, weight: .bold)).tracking(0.8)
-                    .foregroundStyle(Color.textMuted)
-                Text(tier)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(tint)
-                Spacer(minLength: 0)
-                Text(String(format: "%.1f", value))
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.textPrimary)
-            }
-
-            // Segmented meter — 10 pips, filled proportionally. Reads like a game bar.
-            HStack(spacing: 2) {
-                ForEach(0..<10) { i in
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                        .fill(Double(i) < value ? tint : Color.textPrimary.opacity(0.08))
-                        .frame(height: 5)
-                        .scaleEffect(x: appeared ? 1 : 0, anchor: .leading)
-                        .animation(
-                            .spring(response: 0.5, dampingFraction: 0.8).delay(Double(i) * 0.02),
-                            value: appeared)
-                }
-            }
-        }
-        .frame(width: 150)
-    }
-
     private func note(icon: String, text: String, tint: Color) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon).font(.system(size: 10))
-            Text(text).font(.system(size: 11)).lineLimit(2)
+            Text(text).font(Typography.ui(11)).lineLimit(2)
         }
         .foregroundStyle(tint)
     }
@@ -187,12 +135,15 @@ struct ModelRow: View {
         HStack(spacing: 8) {
             if isDownloaded {
                 if isActive {
-                    pill(text: "Selected", icon: "checkmark", filled: true)
+                    // Already the default — no redundant button, the badge says it.
+                    EmptyView()
                 } else if isLoadingModel {
                     loadingIndicator
                 } else {
-                    Button(action: loadAndSelectModel) { pill(text: "Use", icon: nil, filled: false) }
-                        .buttonStyle(.plain).help("Set as default model")
+                    Button(action: loadAndSelectModel) {
+                        ActionButton.label(title: "Use", icon: "arrow.right", style: .secondary)
+                    }
+                    .buttonStyle(.plain).help("Set as default model")
                 }
                 Button(action: deleteModel) {
                     Image(systemName: "trash").font(.system(size: 13))
@@ -202,12 +153,12 @@ struct ModelRow: View {
                 .buttonStyle(.plain).help("Delete model")
             } else if isDownloading {
                 Button(action: { downloadService.cancelDownload(for: model.variant) }) {
-                    pill(text: "Cancel", icon: "xmark", filled: false)
+                    ActionButton.label(title: "Cancel", icon: "xmark", style: .secondary)
                 }
                 .buttonStyle(.plain)
             } else {
                 Button(action: { downloadService.downloadModel(variant: model.variant) }) {
-                    pill(text: "Download", icon: "arrow.down", filled: true)
+                    ActionButton.label(title: "Download", icon: "arrow.down", style: .primary)
                 }
                 .buttonStyle(.plain)
             }
@@ -219,7 +170,7 @@ struct ModelRow: View {
             HStack(spacing: 6) {
                 ProgressView().scaleEffect(0.7).frame(width: 12, height: 12)
                 Text(transcription.loadingStage.isEmpty ? "Loading…" : transcription.loadingStage)
-                    .font(Typography.buttonLabelSmall)
+                    .font(Typography.uiMedium(12))
             }
             .padding(.horizontal, 14).padding(.vertical, 8)
             .background(Capsule().fill(Color.textPrimary.opacity(0.08)))
@@ -227,36 +178,26 @@ struct ModelRow: View {
 
             if loadingElapsed > 15 {
                 Text(loadingElapsed > 30 ? "Taking longer than expected…" : "\(Int(loadingElapsed))s")
-                    .font(.system(size: 10))
-                    .foregroundStyle(loadingElapsed > 30 ? Color.orange : Color.textMuted)
+                    .font(Typography.ui(10))
+                    .foregroundStyle(loadingElapsed > 30 ? Color.accentWarning : Color.textMuted)
             }
         }
         .help("First load may take 10-30 seconds")
     }
 
-    private func pill(text: String, icon: String?, filled: Bool) -> some View {
-        HStack(spacing: 6) {
-            if let icon { Image(systemName: icon).font(.system(size: 11, weight: .semibold)) }
-            Text(text).font(Typography.buttonLabelSmall)
-        }
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        .background(Capsule().fill(filled ? Color.textPrimary : Color.textPrimary.opacity(0.06)))
-        .foregroundStyle(filled ? Color.bgCard : Color.textPrimary)
-    }
-
     private var downloadProgressSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Downloading…").font(Typography.cardMeta).foregroundStyle(Color.textSecondary)
+                Text("Downloading…").font(Typography.uiMedium(12)).foregroundStyle(Color.textSecondary)
                 Spacer()
                 Text("\(Int(progress * 100))%")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color.textSecondary)
+                    .font(Typography.uiBold(11))
+                    .foregroundStyle(Color.brandIndigo)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.textPrimary.opacity(0.08)).frame(height: 6)
-                    Capsule().fill(Color.accentColor).frame(width: max(6, geo.size.width * progress), height: 6)
+                    Capsule().fill(Color.brandIndigo).frame(width: max(6, geo.size.width * progress), height: 6)
                 }
             }
             .frame(height: 6)
@@ -299,6 +240,69 @@ struct ModelRow: View {
     private func stopLoadingTimer() {
         loadingTimer?.invalidate(); loadingTimer = nil
         loadingStartTime = nil; loadingElapsed = 0
+    }
+}
+
+// MARK: - Shared metric bars
+
+/// Speed + accuracy as two calm, continuous bars with a qualitative tier word.
+/// No false-precision decimals, no gamified LED pips.
+struct MetricBars: View {
+    let model: AIModel
+    var appeared: Bool = true
+
+    var body: some View {
+        HStack(spacing: 22) {
+            bar(label: "Speed", tier: model.speedTier, value: model.speed, tint: .meterSpeed)
+            bar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy, tint: .meterAccuracy)
+        }
+        .padding(.top, 2)
+    }
+
+    private func bar(label: String, tier: String, value: Double, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text(label.uppercased())
+                    .font(Typography.uiBold(9)).tracking(0.8)
+                    .foregroundStyle(Color.textMuted)
+                Text(tier)
+                    .font(Typography.uiBold(11))
+                    .foregroundStyle(tint)
+                Spacer(minLength: 0)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.textPrimary.opacity(0.07)).frame(height: 6)
+                    Capsule()
+                        .fill(tint)
+                        .frame(width: geo.size.width * (appeared ? value / 10.0 : 0), height: 6)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.85), value: appeared)
+                }
+            }
+            .frame(height: 6)
+        }
+        .frame(width: 148)
+    }
+}
+
+// MARK: - Shared action button label
+
+/// One consistent button treatment used by both the hero and the cards, so the
+/// same action never looks like three different buttons.
+enum ActionButton {
+    enum Style { case primary, secondary }
+
+    static func label(title: String, icon: String?, style: Style, large: Bool = false) -> some View {
+        HStack(spacing: 7) {
+            Text(title).font(Typography.uiBold(large ? 14 : 13))
+            if let icon { Image(systemName: icon).font(.system(size: large ? 12 : 11, weight: .bold)) }
+        }
+        .padding(.horizontal, large ? 22 : 16)
+        .padding(.vertical, large ? 12 : 9)
+        .background(
+            Capsule().fill(style == .primary ? Color.brandIndigo : Color.textPrimary.opacity(0.06))
+        )
+        .foregroundStyle(style == .primary ? Color.white : Color.textPrimary)
     }
 }
 
