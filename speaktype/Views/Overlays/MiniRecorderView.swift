@@ -543,61 +543,58 @@ struct MiniRecorderView: View {
     private func backgroundView(cornerRadius: CGFloat) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         if displayPhase == .idle {
-            // Resting state: real frosted glass via SwiftUI's native Liquid Glass.
-            // `.glassEffect` blurs and refracts the content behind the pill and
-            // reacts to light — the genuine article, not a tinted fill faking it.
-            if #available(macOS 26.0, *) {
-                // Dark and light are treated completely differently:
-                //  • Light: frosted glass — soft white inner frost + crisp rim.
-                //  • Dark: NO inner white frost (it read as a gray inward glow) and
-                //    a heavy black fill so it's genuinely near-black premium glass,
-                //    with just a whisper of top-edge sheen for definition.
-                let isDark = pillIsDark
-                let glass: Glass = isDark
-                    ? .regular.tint(Color.black.opacity(0.8))
-                    : .regular
-                Color.clear
-                    .glassEffect(glass, in: shape)
-                    .overlay {
-                        ZStack {
-                            if isDark {
-                                shape.fill(Color.black.opacity(0.62))
-                                shape.strokeBorder(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.10),
-                                            Color.white.opacity(0.0),
-                                        ],
-                                        startPoint: .top,
-                                        endPoint: .bottom),
-                                    lineWidth: 0.75)
-                            } else {
-                                // Soft frost hugging the inside edge; clear center.
-                                shape
-                                    .stroke(Color.white.opacity(0.14), lineWidth: 6)
-                                    .blur(radius: 4)
-                                shape.strokeBorder(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.35),
-                                            Color.white.opacity(0.06),
-                                        ],
-                                        startPoint: .top,
-                                        endPoint: .bottom),
-                                    lineWidth: 1)
-                            }
-                        }
-                        .clipShape(shape)
-                    }
-            } else {
-                // Fallback for macOS 14–15 (no Liquid Glass): behind-window frosted
-                // blur with a bright rim highlight.
+            if pillIsDark {
+                // Dark mode: do NOT use Liquid Glass — its material paints a
+                // luminous edge that reads as a white frost ring no matter how we
+                // tint it. Instead: a behind-window dark blur + heavy black fill =
+                // genuinely near-black premium pill, with only a faint top sheen
+                // (fading to nothing) for edge definition. No rim glow.
                 ZStack {
                     VisualEffectBlur(
                         material: .hudWindow,
                         blendingMode: .behindWindow,
                         cornerRadius: cornerRadius,
                         appearanceName: .vibrantDark)
+                    shape.fill(Color.black.opacity(0.5))
+                    shape.strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.09),
+                                Color.white.opacity(0.01),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom),
+                        lineWidth: 0.75)
+                }
+            } else if #available(macOS 26.0, *) {
+                // Light mode: native Liquid Glass — frosted, refractive, gorgeous.
+                Color.clear
+                    .glassEffect(.regular, in: shape)
+                    .overlay {
+                        // Soft frost hugging the inside edge; clear center.
+                        ZStack {
+                            shape
+                                .stroke(Color.white.opacity(0.14), lineWidth: 6)
+                                .blur(radius: 4)
+                            shape.strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.35),
+                                        Color.white.opacity(0.06),
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom),
+                                lineWidth: 1)
+                        }
+                        .clipShape(shape)
+                    }
+            } else {
+                // Light mode on macOS 14–15 (no Liquid Glass): behind-window blur.
+                ZStack {
+                    VisualEffectBlur(
+                        material: .hudWindow,
+                        blendingMode: .behindWindow,
+                        cornerRadius: cornerRadius)
                     shape.strokeBorder(
                         LinearGradient(
                             colors: [
