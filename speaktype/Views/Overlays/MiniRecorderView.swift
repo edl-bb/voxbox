@@ -282,11 +282,16 @@ struct MiniRecorderView: View {
         HStack(spacing: 3) {
             ForEach(Array(Self.idleBarScale.enumerated()), id: \.offset) { _, scale in
                 Capsule(style: .continuous)
-                    .fill(Color.white.opacity(0.9))
+                    .fill(Color.white)
                     .frame(width: 2.5, height: 12 * scale)
             }
         }
         .frame(height: 24)
+        // Adapt to whatever shows through the glass: a difference blend renders the
+        // bars subtly dark over a light backdrop and light over a dark one, so they
+        // never just blend into white. Softened so it reads gentle, not harsh.
+        .blendMode(.difference)
+        .opacity(0.85)
         .transition(.opacity.combined(with: .scale(scale: 0.6)))
     }
 
@@ -530,6 +535,29 @@ struct MiniRecorderView: View {
             if #available(macOS 26.0, *) {
                 Color.clear
                     .glassEffect(.regular, in: shape)
+                    .overlay {
+                        // Clear through the middle, denser/frosted toward the rim —
+                        // the way real glass thickens and refracts more at its edge.
+                        ZStack {
+                            // Soft frost hugging the inside edge; fades to nothing
+                            // before the center.
+                            shape
+                                .stroke(Color.white.opacity(0.14), lineWidth: 6)
+                                .blur(radius: 4)
+                            // Crisp glass rim highlight on top of the frost.
+                            shape
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.35),
+                                            Color.white.opacity(0.06),
+                                        ],
+                                        startPoint: .top,
+                                        endPoint: .bottom),
+                                    lineWidth: 1)
+                        }
+                        .clipShape(shape)
+                    }
             } else {
                 // Fallback for macOS 14–15 (no Liquid Glass): behind-window frosted
                 // blur with a bright rim highlight.
