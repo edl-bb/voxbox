@@ -520,16 +520,27 @@ struct MiniRecorderView: View {
             .help("Recording — click or press your hotkey to stop")
     }
 
+    @ViewBuilder
     private func backgroundView(cornerRadius: CGFloat) -> some View {
-        ZStack {
-            // Deep, premium near-black — flat and even (the frosted blur was what
-            // made it read grayish, so it's gone).
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(Color(white: 0.05))
-
-            // Single subtle hairline border for definition against dark backdrops.
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.8)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if displayPhase == .idle {
+            // Resting state: dark glass. A frosted blur samples whatever is behind
+            // the window, and a translucent black tint keeps it premium and dark
+            // (not the grayish wash a bare material gives) while still letting you
+            // sense motion behind it — present, but not occupying the screen.
+            ZStack {
+                shape.fill(.ultraThinMaterial)
+                shape.fill(Color.black.opacity(0.30))
+                shape.strokeBorder(Color.white.opacity(0.14), lineWidth: 0.8)
+            }
+            .environment(\.colorScheme, .dark)
+        } else {
+            // Active HUD: deep, opaque near-black so warming/recording/processing
+            // text stays fully legible over any backdrop.
+            ZStack {
+                shape.fill(Color(white: 0.05))
+                shape.strokeBorder(Color.white.opacity(0.10), lineWidth: 0.8)
+            }
         }
     }
 
