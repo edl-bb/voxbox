@@ -61,7 +61,7 @@ class MiniRecorderWindowController: NSObject {
             return
         }
         let x = visibleFrame.midX - (panel.frame.width / 2)
-        let y = visibleFrame.minY + 36  // just above the dock
+        let y = visibleFrame.minY + 4  // sit low & discreet, just above the dock
         let origin = NSPoint(x: (x).rounded(), y: (y).rounded())
         if panel.frame.origin != origin {
             panel.setFrameOrigin(origin)

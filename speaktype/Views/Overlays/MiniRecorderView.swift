@@ -544,18 +544,18 @@ struct MiniRecorderView: View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         if displayPhase == .idle {
             if pillIsDark {
-                // Dark mode: do NOT use Liquid Glass — its material paints a
-                // luminous edge that reads as a white frost ring no matter how we
-                // tint it. Instead: a behind-window dark blur + heavy black fill =
-                // genuinely near-black premium pill, with only a faint top sheen
-                // (fading to nothing) for edge definition. No rim glow.
+                // Dark mode: a near-black premium pill rendered PURELY in SwiftUI.
+                // We deliberately avoid a behind-window NSVisualEffectView here: as
+                // a freshly-inserted AppKit view it crossfades its material in on
+                // the light→dark switch (under the system's appearance-transition),
+                // so the pill took ~a second to darken while dark→light (SwiftUI
+                // glass) was instant. An opaque SwiftUI fill flips with `colorScheme`
+                // immediately in both directions. This mirrors the active-HUD look
+                // below (`Color(white: 0.05)`), plus a faint top sheen for edge
+                // definition. We also skip Liquid Glass in dark: its material paints
+                // a luminous edge that reads as a white frost ring no matter the tint.
                 ZStack {
-                    VisualEffectBlur(
-                        material: .hudWindow,
-                        blendingMode: .behindWindow,
-                        cornerRadius: cornerRadius,
-                        appearanceName: .vibrantDark)
-                    shape.fill(Color.black.opacity(0.5))
+                    shape.fill(Color(white: 0.06))
                     shape.strokeBorder(
                         LinearGradient(
                             colors: [

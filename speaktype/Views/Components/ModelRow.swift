@@ -167,12 +167,13 @@ struct ModelRow: View {
 
     private var loadingIndicator: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            HStack(spacing: 6) {
-                ProgressView().scaleEffect(0.7).frame(width: 12, height: 12)
+            HStack(spacing: 9) {
+                Spinner(size: 13, lineWidth: 2, tint: Color.textSecondary)
                 Text(transcription.loadingStage.isEmpty ? "Loading…" : transcription.loadingStage)
                     .font(Typography.uiMedium(12))
+                    .fixedSize(horizontal: true, vertical: false)
             }
-            .padding(.horizontal, 14).padding(.vertical, 8)
+            .padding(.leading, 12).padding(.trailing, 15).padding(.vertical, 8)
             .background(Capsule().fill(Color.textPrimary.opacity(0.08)))
             .foregroundStyle(Color.textSecondary)
 
