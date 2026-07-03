@@ -67,10 +67,10 @@ struct AIModelsView: View {
         let differsFromPick = sel != nil && sel?.variant != recommendedModel.variant
         return HStack(spacing: 13) {
             ZStack {
-                Circle().fill(Color.brandIndigoSoft)
+                Circle().fill(Color.brandAccentSoft)
                 Image(systemName: sel == nil ? "questionmark" : "waveform")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.brandIndigo)
+                    .foregroundStyle(Color.brandAccent)
             }
             .frame(width: 42, height: 42)
 
@@ -116,7 +116,7 @@ struct AIModelsView: View {
                     Text("RECOMMENDED FOR YOU")
                         .font(Typography.uiBold(11)).tracking(1.4)
                 }
-                .foregroundStyle(Color.brandIndigo)
+                .foregroundStyle(Color.brandAccent)
 
                 Text(rec.name)
                     .font(Typography.heroName)
@@ -191,15 +191,15 @@ struct AIModelsView: View {
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(
                             LinearGradient(
-                                colors: [Color.brandIndigo.opacity(0.07), Color.brandIndigo.opacity(0.0)],
+                                colors: [Color.brandAccent.opacity(0.07), Color.brandAccent.opacity(0.0)],
                                 startPoint: .topLeading, endPoint: .bottomTrailing))
                 )
         )
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.brandIndigo.opacity(0.22), lineWidth: 1)
+                .stroke(Color.brandAccent.opacity(0.22), lineWidth: 1)
         )
-        .shadow(color: Color.brandIndigo.opacity(0.10), radius: 20, x: 0, y: 8)
+        .shadow(color: Color.brandAccent.opacity(0.10), radius: 20, x: 0, y: 8)
     }
 
     @ViewBuilder
@@ -209,7 +209,7 @@ struct AIModelsView: View {
                 Image(systemName: "checkmark.circle.fill")
                 Text("This is your default model").font(Typography.uiBold(13))
             }
-            .foregroundStyle(Color.brandIndigo)
+            .foregroundStyle(Color.brandAccent)
         } else if downloaded {
             Button {
                 selectedModel = rec.variant

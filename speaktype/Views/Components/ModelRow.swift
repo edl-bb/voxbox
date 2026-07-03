@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A single AI-model card. Clean two-font layout (Clash Display for the name,
-/// Satoshi for everything else) with calm violet/teal metric bars.
+/// Satoshi for everything else) with a single warm terracotta accent.
 struct ModelRow: View {
     let model: AIModel
     @Binding var selectedModel: String
@@ -57,12 +57,12 @@ struct ModelRow: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(isActive ? Color.brandIndigoSoft : Color.bgCard)
+                .fill(isActive ? Color.brandAccentSoft : Color.bgCard)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(
-                    isActive ? Color.brandIndigo.opacity(0.55)
+                    isActive ? Color.brandAccent.opacity(0.55)
                         : Color.border.opacity(isHovered ? 1.0 : 0.5),
                     lineWidth: isActive ? 1.5 : 1
                 )
@@ -86,7 +86,7 @@ struct ModelRow: View {
             LanguageBadge(isEnglishOnly: model.isEnglishOnly)
 
             if isActive && isDownloaded {
-                statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandIndigo)
+                statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandAccent)
             } else if isDownloaded {
                 statusBadge(text: "Installed", icon: "arrow.down.circle.fill",
                             tint: Color.textMuted)
@@ -192,12 +192,12 @@ struct ModelRow: View {
                 Spacer()
                 Text("\(Int(progress * 100))%")
                     .font(Typography.uiBold(11))
-                    .foregroundStyle(Color.brandIndigo)
+                    .foregroundStyle(Color.brandAccent)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.textPrimary.opacity(0.08)).frame(height: 6)
-                    Capsule().fill(Color.brandIndigo).frame(width: max(6, geo.size.width * progress), height: 6)
+                    Capsule().fill(Color.brandAccent).frame(width: max(6, geo.size.width * progress), height: 6)
                 }
             }
             .frame(height: 6)
@@ -250,7 +250,7 @@ struct LanguageBadge: View {
     let isEnglishOnly: Bool
 
     var body: some View {
-        let tint = isEnglishOnly ? Color.textMuted : Color.meterAccuracy
+        let tint = isEnglishOnly ? Color.textMuted : Color.brandAccent
         Text(isEnglishOnly ? "ENGLISH" : "MULTILINGUAL")
             .font(Typography.uiBold(9)).tracking(0.6)
             .padding(.horizontal, 7).padding(.vertical, 3)
@@ -303,9 +303,9 @@ struct MetricBars: View {
     var body: some View {
         HStack(spacing: 22) {
             MetricBar(label: "Speed", tier: model.speedTier, value: model.speed,
-                      tint: .meterSpeed, appeared: appeared).frame(width: 148)
+                      tint: .brandAccent, appeared: appeared).frame(width: 148)
             MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy,
-                      tint: .meterAccuracy, appeared: appeared).frame(width: 148)
+                      tint: .brandAccent, appeared: appeared).frame(width: 148)
         }
         .padding(.top, 2)
     }
@@ -317,8 +317,8 @@ struct MetricBarsStacked: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            MetricBar(label: "Speed", tier: model.speedTier, value: model.speed, tint: .meterSpeed)
-            MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy, tint: .meterAccuracy)
+            MetricBar(label: "Speed", tier: model.speedTier, value: model.speed, tint: .brandAccent)
+            MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy, tint: .brandAccent)
         }
     }
 }
@@ -338,7 +338,7 @@ enum ActionButton {
         .padding(.horizontal, large ? 22 : 16)
         .padding(.vertical, large ? 12 : 9)
         .background(
-            Capsule().fill(style == .primary ? Color.brandIndigo : Color.textPrimary.opacity(0.06))
+            Capsule().fill(style == .primary ? Color.brandAccent : Color.textPrimary.opacity(0.06))
         )
         .foregroundStyle(style == .primary ? Color.white : Color.textPrimary)
     }
