@@ -273,29 +273,20 @@ struct MiniRecorderView: View {
 
     private var pillCornerRadius: CGFloat { pillHeight / 2 }
 
-    /// Drives the gentle breathing of the idle waveform motif.
-    @State private var idleBreathing = false
-
     // MARK: - Phase content
 
-    /// Resting state — a small white waveform that softly breathes. Our own take
-    /// on an always-present handle: calm, minimal, premium.
+    /// Resting state — a small white waveform silhouette that sits perfectly
+    /// still. Calm, minimal, premium: the same quiet rest at first launch and
+    /// after a recording, with no idle "breathing" motion.
     private var idleContent: some View {
         HStack(spacing: 3) {
-            ForEach(Array(Self.idleBarScale.enumerated()), id: \.offset) { index, scale in
+            ForEach(Array(Self.idleBarScale.enumerated()), id: \.offset) { _, scale in
                 Capsule(style: .continuous)
                     .fill(Color.white.opacity(0.9))
-                    .frame(width: 2.5, height: 12)
-                    .scaleEffect(y: idleBreathing ? scale : 0.35, anchor: .center)
-                    .animation(
-                        .easeInOut(duration: 0.95)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(index) * 0.11),
-                        value: idleBreathing)
+                    .frame(width: 2.5, height: 12 * scale)
             }
         }
         .frame(height: 24)
-        .onAppear { idleBreathing = true }
         .transition(.opacity.combined(with: .scale(scale: 0.6)))
     }
 
@@ -330,16 +321,26 @@ struct MiniRecorderView: View {
                 guard !raw.isEmpty else { return }
                 let step = Self.waveBarWidth + Self.waveBarSpacing
                 let maxBars = max(1, Int(size.width / step))
-                // Noise gate: drop low-level ambient sound (fans, room tone) so the
-                // waveform stays flat when you're not speaking. Then auto-gain to the
-                // recent peak — but with a high floor so faint noise can't be
-                // amplified up to full height the way it was before.
-                let noiseGate: Float = 0.06
+                // Samples are raw linear peak amplitude (0...1). Tuning goal: faint
+                // ambient sound (a fan, room tone) must read as FLAT, while actually
+                // speaking fills the bars. Three knobs:
+                //   noiseGate       – subtract this floor; anything below it is fan
+                //                     noise and collapses to zero.
+                //   speechReference – the amplitude that counts as "full bars". We
+                //                     auto-gain to the louder of your recent peak and
+                //                     this floor, so faint residual can't bloom to
+                //                     full height, but a quiet mic still fills up.
+                //   contrast        – a power curve that pushes faint residual toward
+                //                     zero while leaving loud speech tall, sharpening
+                //                     the line between "not speaking" and "speaking".
+                let noiseGate: Float = 0.05
+                let speechReference: Float = 0.14
+                let contrast: CGFloat = 1.5
                 let visible = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
-                let recentPeak = max(visible.max() ?? 0, 0.25)
+                let recentPeak = max(visible.max() ?? 0, speechReference)
                 let midY = size.height / 2
                 for (i, sample) in visible.enumerated() {
-                    let norm = CGFloat(min(1, sample / recentPeak))
+                    let norm = pow(CGFloat(min(1, sample / recentPeak)), contrast)
                     let barHeight = max(2.0, norm * size.height)
                     let x = CGFloat(i) * step
                     let rect = CGRect(
