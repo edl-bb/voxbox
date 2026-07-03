@@ -524,38 +524,31 @@ struct MiniRecorderView: View {
     private func backgroundView(cornerRadius: CGFloat) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         if displayPhase == .idle {
-            // Resting state: real frosted glass. The recipe (per glassmorphism):
-            //  1. Backdrop blur — a behind-window NSVisualEffectView samples the
-            //     desktop/apps behind the pill (SwiftUI's Material only blurs
-            //     within the window, which is why it read as a flat gray slab).
-            //  2. LOW tint — only a whisper of dark fill, so the blurred backdrop
-            //     genuinely shows through instead of being painted over.
-            //  3. Glass rim — a bright top-edge highlight fading down, the sheen
-            //     that reads as the thickness/edge of a pane of glass.
-            //  Forced .vibrantDark keeps it a premium dark glass on any backdrop.
-            ZStack {
-                VisualEffectBlur(
-                    material: .hudWindow,
-                    blendingMode: .behindWindow,
-                    cornerRadius: cornerRadius,
-                    appearanceName: .vibrantDark)
-                shape.fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.10),
-                            Color.black.opacity(0.10),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom))
-                shape.strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.55),
-                            Color.white.opacity(0.08),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom),
-                    lineWidth: 1)
+            // Resting state: real frosted glass via SwiftUI's native Liquid Glass.
+            // `.glassEffect` blurs and refracts the content behind the pill and
+            // reacts to light — the genuine article, not a tinted fill faking it.
+            if #available(macOS 26.0, *) {
+                Color.clear
+                    .glassEffect(.regular, in: shape)
+            } else {
+                // Fallback for macOS 14–15 (no Liquid Glass): behind-window frosted
+                // blur with a bright rim highlight.
+                ZStack {
+                    VisualEffectBlur(
+                        material: .hudWindow,
+                        blendingMode: .behindWindow,
+                        cornerRadius: cornerRadius,
+                        appearanceName: .vibrantDark)
+                    shape.strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.55),
+                                Color.white.opacity(0.08),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom),
+                        lineWidth: 1)
+                }
             }
         } else {
             // Active HUD: deep, opaque near-black so warming/recording/processing
