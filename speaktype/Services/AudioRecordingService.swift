@@ -194,6 +194,20 @@ class AudioRecordingService: NSObject, ObservableObject {
         }
 
         audioOutput = AVCaptureAudioDataOutput()
+        // Pin a fixed Linear PCM output format so the live level meter always sees a
+        // known sample layout. Without this, AVCaptureAudioDataOutput delivers the
+        // device's *native* format, which a communication app (Zoom/FaceTime/Meet)
+        // can switch mid-call to a layout processAudioLevel can't decode. The file
+        // writer keeps working (it appends buffers as-is, so transcription is fine),
+        // but the waveform flatlines to 0 — text works, no waveform. Forcing 16-bit
+        // interleaved PCM keeps the meter fed regardless of what else holds the mic.
+        audioOutput?.audioSettings = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsNonInterleaved: false,
+        ]
         if captureSession?.canAddOutput(audioOutput!) == true {
             captureSession?.addOutput(audioOutput!)
             audioOutput?.setSampleBufferDelegate(self, queue: audioQueue)
@@ -250,18 +264,29 @@ class AudioRecordingService: NSObject, ObservableObject {
 
         // 2. Wrap setup in a Task so stopRecording can wait for it
         setupTask = Task { @MainActor in
-            // Ensure capture session is running before setting up the writer
-            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            // Ensure the capture session is running before setting up the writer.
+            let didColdStart = await withCheckedContinuation {
+                (continuation: CheckedContinuation<Bool, Never>) in
                 audioQueue.async {
                     if self.captureSession?.isRunning != true {
                         print("🎤 Starting capture session...")
                         self.captureSession?.startRunning()
-                        // Wait for session to be ready
-                        Thread.sleep(forTimeInterval: 0.3)
-                        print("🎤 Capture session started")
+                        continuation.resume(returning: true)
+                    } else {
+                        continuation.resume(returning: false)
                     }
-                    continuation.resume()
                 }
+            }
+            // Let the session settle before wiring the writer — but do NOT block the
+            // audio queue to do it. The capture delegate is delivered on `audioQueue`;
+            // the old code slept 0.3s ON that queue, so no buffers could arrive while
+            // it slept and the live waveform stayed empty for the first ~0.3s of every
+            // recording (text still worked — the writer just starts on the first
+            // buffer). Awaiting off-queue lets buffers, and the meter, flow while we
+            // wait, so the waveform is alive from the first frame.
+            if didColdStart {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                print("🎤 Capture session started")
             }
 
             let url = getRecordingsDirectory().appendingPathComponent(

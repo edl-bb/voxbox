@@ -20,6 +20,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Show the always-present resting pill so the recorder lives on screen.
         miniRecorderController?.showIdleRecorder()
 
+        // Only show the Dock icon while the dashboard is actually open; otherwise
+        // live quietly in the menu bar.
+        observeWindowsForDockIcon()
+
         // Setup dynamic hotkey monitoring based on user selection
         setupHotkeyMonitoring()
 
@@ -35,6 +39,57 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
+    }
+
+    // MARK: - Dock icon visibility (accessory ↔ regular)
+
+    /// SpeakType should feel like a menu-bar app: the Dock icon appears only while
+    /// the main dashboard window is open, and disappears (leaving the menu-bar
+    /// item + floating pill) once it's closed. We do this by flipping the app's
+    /// activation policy between `.regular` (Dock icon) and `.accessory` (no Dock
+    /// icon, still in the menu bar) as dashboard windows open and close.
+    private func observeWindowsForDockIcon() {
+        let nc = NotificationCenter.default
+        for name in [NSWindow.didBecomeKeyNotification, NSWindow.didBecomeMainNotification] {
+            nc.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                self?.refreshDockIconVisibility()
+            }
+        }
+        // `willClose` fires while the window is still in `NSApp.windows`; re-check
+        // on the next runloop tick, once it has actually left the list.
+        nc.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) {
+            [weak self] _ in
+            DispatchQueue.main.async { self?.refreshDockIconVisibility() }
+        }
+        // Settle the initial state once SwiftUI has had a chance to open any
+        // launch window.
+        DispatchQueue.main.async { [weak self] in self?.refreshDockIconVisibility() }
+    }
+
+    /// Whether a window is the main dashboard (as opposed to the menu-bar extra
+    /// popover, the borderless recorder pill panel, or a system status window) —
+    /// i.e. the only kind of window that should light up the Dock icon.
+    private func isDashboardWindow(_ window: NSWindow) -> Bool {
+        guard window.isVisible else { return false }
+        if window is NSPanel { return false }  // recorder pill + menu-bar popover
+        if let id = window.identifier?.rawValue, id.contains("main-dashboard") { return true }
+        // Fallback for windows SwiftUI doesn't tag: a large content window that
+        // isn't a system status/popup window.
+        let cls = String(describing: type(of: window))
+        if cls.contains("StatusBar") || cls.contains("Popup") || cls.contains("MenuBar") {
+            return false
+        }
+        return window.frame.width >= 600 && window.frame.height >= 400
+    }
+
+    private func refreshDockIconVisibility() {
+        let dashboardOpen = NSApp.windows.contains(where: isDashboardWindow)
+        let target: NSApplication.ActivationPolicy = dashboardOpen ? .regular : .accessory
+        guard NSApp.activationPolicy() != target else { return }
+        NSApp.setActivationPolicy(target)
+        if target == .regular {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     // MARK: - Emoji Picker Suppression
