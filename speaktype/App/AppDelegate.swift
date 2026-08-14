@@ -59,7 +59,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup dynamic hotkey monitoring based on user selection
         setupHotkeyMonitoring()
 
-        checkForUpdatesOnLaunch()
+        // Enforce local data retention (auto-delete old WAVs / expired
+        // transcripts) now and hourly from here on.
+        RetentionService.shared.start()
 
         UpdateService.shared.showUpdateWindowPublisher
             .receive(on: DispatchQueue.main)
@@ -201,6 +203,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupHotkeyMonitoring() {
         setupSuppressingHotkeyEventTap()
+        setupCustomShortcutHandlers()
 
         // Add global monitor for hotkey events
         globalFlagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) {
@@ -338,6 +341,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Wire the user-recorded key combination (HotkeyOption.custom, e.g. ⌘D).
+    /// KeyboardShortcuts delivers keyDown/keyUp for the recorded combo, which
+    /// maps cleanly onto both recording modes: hold-to-record uses down/up,
+    /// toggle mode flips on each press. Handlers are inert unless the selected
+    /// hotkey is the custom one, so a stored combo can't fire while Fn is active.
+    private func setupCustomShortcutHandlers() {
+        KeyboardShortcuts.onKeyDown(for: .toggleRecord) { [weak self] in
+            guard let self, self.getSelectedHotkey() == .custom else { return }
+
+            let recordingMode = UserDefaults.standard.integer(forKey: "recordingMode")
+            if recordingMode == 1 {
+                if AudioRecordingService.shared.isRecording {
+                    self.miniRecorderController?.stopRecording()
+                } else {
+                    self.miniRecorderController?.startRecording()
+                }
+            } else {
+                self.miniRecorderController?.startRecording()
+            }
+        }
+
+        KeyboardShortcuts.onKeyUp(for: .toggleRecord) { [weak self] in
+            guard let self, self.getSelectedHotkey() == .custom else { return }
+            guard UserDefaults.standard.integer(forKey: "recordingMode") == 0 else { return }
+            self.miniRecorderController?.stopRecording()
+        }
+    }
+
     private func handleModifierComboEvent(_ event: NSEvent) {
         guard isHotkeyPressed else { return }
         guard UserDefaults.standard.integer(forKey: "recordingMode") == 0 else { return }
@@ -383,19 +414,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Update Checking
-
-    private func checkForUpdatesOnLaunch() {
-        let updateService = UpdateService.shared
-        let autoUpdate = UserDefaults.standard.bool(forKey: "autoUpdate")
-        guard autoUpdate && updateService.shouldCheckForUpdates() else { return }
-
-        Task {
-            await updateService.checkForUpdates(silent: true)
-            if updateService.availableUpdate != nil && updateService.shouldShowReminder() {
-                await MainActor.run { self.showUpdateWindow() }
-            }
-        }
-    }
+    //
+    // There is deliberately no automatic launch-time update check: the app
+    // makes zero network requests unless the user explicitly asks (manual
+    // "Check for Updates" in Settings, model downloads, license activation).
 
     private func showUpdateWindow() {
         guard let update = UpdateService.shared.availableUpdate else { return }

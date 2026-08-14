@@ -57,7 +57,7 @@ struct MenuBarDashboardView: View {
                 }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("SpeakType")
+                Text("VoxBox")
                     .font(Typography.headlineLarge)
                     .foregroundStyle(Color.textPrimary)
 

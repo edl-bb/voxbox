@@ -33,7 +33,7 @@ struct PermissionsView: View {
                         icon: "mic.fill",
                         color: .green,
                         title: "Microphone Access",
-                        desc: "Allow SpeakType to record your voice for transcription",
+                        desc: "Allow VoxBox to record your voice for transcription",
                         isGranted: micStatus == .authorized,
                         action: { openSettings(for: "Privacy_Microphone") }
                     )
@@ -43,7 +43,7 @@ struct PermissionsView: View {
                         icon: "hand.raised.fill",
                         color: .green,
                         title: "Accessibility Access",
-                        desc: "Allow SpeakType to paste transcribed text directly",
+                        desc: "Allow VoxBox to paste transcribed text directly",
                         isGranted: accessibilityStatus,
                         action: { 
                             ClipboardService.shared.requestAccessibilityPermission()

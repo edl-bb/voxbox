@@ -379,18 +379,9 @@ class AudioRecordingService: NSObject, ObservableObject {
                     lastChunkInput.markAsFinished()
                     lastChunkWriter.finishWriting {
                         self.audioQueue.async {
-                            if discardOutput {
-                                try? FileManager.default.removeItem(at: lastChunkURL)
-                            } else if let validChunkURL = self.validatedAudioFileURL(
-                                at: lastChunkURL,
-                                writer: lastChunkWriter,
-                                label: "Final chunk"
-                            ) {
-                                print("🔪 Final chunk saved: \(validChunkURL.lastPathComponent)")
-                                self.chunkPublisher.send(validChunkURL)
-                            } else {
-                                try? FileManager.default.removeItem(at: lastChunkURL)
-                            }
+                            // Chunks have no consumer (see rotateChunk) — always
+                            // delete so raw audio never lingers on disk.
+                            try? FileManager.default.removeItem(at: lastChunkURL)
                             finishGroup.leave()
                         }
                     }
@@ -625,16 +616,13 @@ extension AudioRecordingService: AVCaptureAudioDataOutputSampleBufferDelegate {
         startNewChunkWriter(startingAt: nextStartPTS)
         isRotatingChunk = false
 
-        // Finish the old writer asynchronously
+        // Finish the old writer asynchronously. Nothing subscribes to
+        // chunkPublisher today (chunk stitching was abandoned), so completed
+        // chunks are deleted immediately — otherwise raw dictation audio
+        // accumulates forever in the Chunks directory.
         oldInput.markAsFinished()
-        oldWriter.finishWriting { [weak self] in
-            guard let self = self else { return }
-            if self.shouldDiscardCurrentRecordingOutput {
-                try? FileManager.default.removeItem(at: finishedURL)
-            } else {
-                print("🔪 Chunk saved: \(finishedURL.lastPathComponent)")
-                self.chunkPublisher.send(finishedURL)
-            }
+        oldWriter.finishWriting {
+            try? FileManager.default.removeItem(at: finishedURL)
         }
     }
 

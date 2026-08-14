@@ -62,7 +62,7 @@ struct speaktypeApp: App {
         // to prevent SwiftUI from auto-opening the main dashboard on activation.
 
         // Menu Bar Extra (Always running listener)
-        MenuBarExtra("SpeakType", systemImage: "waveform", isInserted: $showMenuBarIcon) {
+        MenuBarExtra("VoxBox", systemImage: "waveform", isInserted: $showMenuBarIcon) {
             ThemeProvider {
                 MenuBarDashboardView(
                     openDashboard: openDashboard,

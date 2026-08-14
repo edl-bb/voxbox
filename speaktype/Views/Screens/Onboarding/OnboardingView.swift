@@ -66,7 +66,7 @@ struct WelcomePage: View {
                     .textCase(.uppercase)
                     .tracking(2.5)
 
-                Text("SpeakType")
+                Text("VoxBox")
                     .font(.system(size: 48, weight: .regular, design: .serif))
                     .foregroundStyle(Color.textPrimary)
                     .tracking(-0.5)
@@ -505,7 +505,7 @@ struct GlobeKeyOptimizationPage: View {
                     .foregroundStyle(Color.textPrimary)
 
                 Text(
-                    "By default, macOS uses the \u{1F310} key to show the Emoji Picker, which interrupts SpeakType.\n\nPlease open Keyboard Settings and change **\"Press \u{1F310} key to\"** to **\"Do Nothing\"**."
+                    "By default, macOS uses the \u{1F310} key to show the Emoji Picker, which interrupts VoxBox.\n\nPlease open Keyboard Settings and change **\"Press \u{1F310} key to\"** to **\"Do Nothing\"**."
                 )
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(Color.textSecondary)

@@ -1,13 +1,13 @@
-# SpeakType
+# VoxBox
 
 <div align="center">
 
-![SpeakType Icon](speaktype/Assets.xcassets/AppIcon.appiconset/icon_256x256.png)
+![VoxBox Icon](speaktype/Assets.xcassets/AppIcon.appiconset/icon_256x256.png)
 
 **Fast, Offline Voice-to-Text for macOS**
 
-![SpeakType app screenshot](image.png)
-[![Download](https://img.shields.io/badge/Download-SpeakType.dmg-blueviolet?logo=apple&logoColor=white)](https://github.com/karansinghgit/speaktype/releases/latest)
+![VoxBox app screenshot](image.png)
+[![Download](https://img.shields.io/badge/Download-VoxBox.dmg-blueviolet?logo=apple&logoColor=white)](https://github.com/karansinghgit/speaktype/releases/latest)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange?logo=swift)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%2013.0+-blue?logo=apple)](https://www.apple.com/macos/)
 [![License](https://img.shields.io/badge/License-MIT-red)](LICENSE)
@@ -18,9 +18,9 @@
 
 ---
 
-## What is SpeakType?
+## What is VoxBox?
 
-SpeakType is a **privacy-first, offline voice dictation tool** for macOS. Unlike online dictation services, everything runs **100% locally** using OpenAI's Whisper AI model via [WhisperKit](https://github.com/argmaxinc/WhisperKit). Support for Parakeet coming soon!
+VoxBox is a **privacy-first, offline voice dictation tool** for macOS. Unlike online dictation services, everything runs **100% locally** using OpenAI's Whisper AI model via [WhisperKit](https://github.com/argmaxinc/WhisperKit). Support for Parakeet coming soon!
 
 - **Privacy First** - Zero data leaves your Mac
 - **Lightning Fast** - Optimized for Apple Silicon
@@ -41,8 +41,8 @@ SpeakType is a **privacy-first, offline voice dictation tool** for macOS. Unlike
 
 **[Download Latest Release](https://github.com/karansinghgit/speaktype/releases/latest)**
 
-1. Download `SpeakType.dmg`
-2. Drag **SpeakType** to **Applications**
+1. Download `VoxBox.dmg`
+2. Drag **VoxBox** to **Applications**
 3. Grant Microphone + Accessibility + Documents Folder permissions
 4. Download an AI model from Settings → AI Models
 
@@ -133,8 +133,11 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Made with ❤️ for developers**
+**Made with ❤️ by Cubbei Studios**
 
-*Privacy-first • Open Source *
+*Privacy-first • Open Source*
+
+VoxBox was formerly known as SpeakType. The bundle identifier
+(`com.2048labs.speaktype`) is retained for update and permission continuity.
 
 </div>

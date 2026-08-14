@@ -10,7 +10,7 @@ import Foundation
 enum Constants {
     // MARK: - App Information
     enum App {
-        static let name = "SpeakType"
+        static let name = "VoxBox"
         static let bundleIdentifier = Bundle.main.bundleIdentifier ?? ""
         static let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         static let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"

@@ -86,11 +86,11 @@ struct SettingsTabButton: View {
 
 struct GeneralSettingsTab: View {
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
-    @AppStorage("autoUpdate") private var autoUpdate = true
     @AppStorage("selectedHotkey") private var selectedHotkey: HotkeyOption = .fn
     @AppStorage("recordingMode") private var recordingMode: Int = 0  // 0: Hold to record, 1: Toggle
     @AppStorage("restoreClipboardAfterAutoPaste") private var restoreClipboardAfterAutoPaste =
         true
+    @AppStorage("copyTranscriptToClipboard") private var copyTranscriptToClipboard = true
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @AppStorage("alwaysShowRecorderPill") private var alwaysShowRecorderPill: Bool = false
     @AppStorage(PillPosition.defaultsKey) private var recorderPillPosition: PillPosition = .defaultPosition
@@ -99,6 +99,10 @@ struct GeneralSettingsTab: View {
     @AppStorage("enableAutoEdit") private var enableAutoEdit: Bool = false
     @AppStorage(SmartTrailingPunctuation.defaultsKey)
     private var smartTrailingPunctuation: Bool = true
+    @AppStorage(RetentionService.audioRetentionKey)
+    private var audioRetentionSeconds: Double = RetentionService.defaultAudioRetention
+    @AppStorage(RetentionService.transcriptRetentionKey)
+    private var transcriptRetentionSeconds: Double = RetentionService.defaultTranscriptRetention
 
     private var recentLanguageCodes: [String] {
         recentLanguagesString.split(separator: ",").map(String.init).filter { !$0.isEmpty }
@@ -172,6 +176,24 @@ struct GeneralSettingsTab: View {
                             .menuStyle(.borderlessButton)
                         }
 
+                        if selectedHotkey == .custom {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text("Key combination")
+                                        .font(Typography.bodyMedium)
+                                        .foregroundStyle(Color.textPrimary)
+                                    Spacer()
+                                    KeyboardShortcuts.Recorder("", name: .toggleRecord)
+                                }
+
+                                Text(
+                                    "Record any combination (e.g. ⌘D or ⌃⌥Space). Combinations are much less likely to collide with other apps than a single modifier key."
+                                )
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+                            }
+                        }
+
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Text("Recording Mode")
@@ -217,18 +239,38 @@ struct GeneralSettingsTab: View {
 
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
+                                Text("Copy transcript to clipboard")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                Toggle("", isOn: $copyTranscriptToClipboard)
+                                    .labelsHidden()
+                            }
+
+                            Text(
+                                "Every completed transcript stays on your clipboard after dictation, ready to paste again anywhere."
+                            )
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
                                 Text("Restore clipboard after auto-paste")
                                     .font(Typography.bodyMedium)
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
                                 Toggle("", isOn: $restoreClipboardAfterAutoPaste)
                                     .labelsHidden()
+                                    .disabled(copyTranscriptToClipboard)
                             }
 
                             Text(
-                                restoreClipboardAfterAutoPaste
-                                    ? "After SpeakType pastes into the active app, it restores whatever was already on your clipboard."
-                                    : "After SpeakType pastes into the active app, the transcript stays on your clipboard for manual pasting."
+                                copyTranscriptToClipboard
+                                    ? "Unavailable while “Copy transcript to clipboard” is on — the transcript is kept on the clipboard instead."
+                                    : restoreClipboardAfterAutoPaste
+                                        ? "After pasting into the active app, whatever was already on your clipboard is restored."
+                                        : "After pasting into the active app, the transcript stays on your clipboard for manual pasting."
                             )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
@@ -430,23 +472,61 @@ struct GeneralSettingsTab: View {
                         .font(Typography.captionSmall)
                         .foregroundStyle(Color.textMuted)
                         .padding(.top, 4)
+
+                    Text("English (Australia) transcribes as English and then converts American spellings (color, organize, center) to Australian ones (colour, organise, centre) — fully offline.")
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.top, 4)
+                }
+
+                // Privacy & Data Retention
+                SettingsSection {
+                    SettingsSectionHeader(
+                        icon: "clock.arrow.circlepath", title: "Data Retention",
+                        subtitle: "Auto-delete recordings and transcripts")
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        retentionRow(
+                            title: "Keep audio recordings for",
+                            selection: $audioRetentionSeconds,
+                            options: RetentionService.audioOptions
+                        )
+
+                        Text(
+                            "Recorded WAV files are deleted automatically after this period. The text transcript is kept."
+                        )
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+
+                        Divider()
+
+                        retentionRow(
+                            title: "Keep transcripts for",
+                            selection: $transcriptRetentionSeconds,
+                            options: RetentionService.transcriptOptions
+                        )
+
+                        Text(
+                            "Transcripts older than this are removed from History. Statistics (word counts and durations) are always kept — they contain no content."
+                        )
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+                    }
                 }
 
                 // Updates
                 SettingsSection {
                     SettingsSectionHeader(
                         icon: "arrow.down.circle", title: "Updates",
-                        subtitle: "SpeakType \(AppVersion.currentVersion)")
+                        subtitle: "VoxBox \(AppVersion.currentVersion)")
 
                     VStack(spacing: 16) {
-                        HStack {
-                            Text("Automatically check for updates")
-                                .font(Typography.bodyMedium)
-                                .foregroundStyle(Color.textPrimary)
-                            Spacer()
-                            Toggle("", isOn: $autoUpdate)
-                                .labelsHidden()
-                        }
+                        Text(
+                            "Updates are strictly manual. The app never contacts the internet on its own — it only checks GitHub when you click the button below."
+                        )
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                         Button(action: {
                             Task {
@@ -521,6 +601,43 @@ struct GeneralSettingsTab: View {
         }
     }
 
+    private func retentionRow(
+        title: String,
+        selection: Binding<Double>,
+        options: [(label: String, seconds: TimeInterval)]
+    ) -> some View {
+        HStack {
+            Text(title)
+                .font(Typography.bodyMedium)
+                .foregroundStyle(Color.textPrimary)
+            Spacer()
+            Menu {
+                ForEach(options, id: \.seconds) { option in
+                    Button(option.label) {
+                        selection.wrappedValue = option.seconds
+                        // Apply the new window right away rather than at the
+                        // next hourly sweep.
+                        RetentionService.shared.purgeNow()
+                    }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Text(RetentionService.label(for: selection.wrappedValue, in: options))
+                        .font(Typography.bodySmall)
+                        .foregroundStyle(Color.textPrimary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Color.textPrimary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Color.bgHover)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .menuStyle(.borderlessButton)
+        }
+    }
+
     private func displayName(for code: String) -> String {
         if code == "auto" { return "Auto-detect" }
         return Self.whisperLanguages.first(where: { $0.code == code })?.name ?? code
@@ -533,7 +650,9 @@ struct GeneralSettingsTab: View {
         ("eu", "Basque"), ("be", "Belarusian"), ("bn", "Bengali"), ("bs", "Bosnian"),
         ("br", "Breton"), ("bg", "Bulgarian"), ("yue", "Cantonese"), ("ca", "Catalan"),
         ("zh", "Chinese"), ("hr", "Croatian"), ("cs", "Czech"), ("da", "Danish"),
-        ("nl", "Dutch"), ("en", "English"), ("et", "Estonian"), ("fo", "Faroese"),
+        ("nl", "Dutch"), ("en", "English"),
+        (AustralianEnglishSpelling.languageCode, "English (Australia)"),
+        ("et", "Estonian"), ("fo", "Faroese"),
         ("fi", "Finnish"), ("fr", "French"), ("gl", "Galician"), ("ka", "Georgian"),
         ("de", "German"), ("el", "Greek"), ("gu", "Gujarati"), ("ht", "Haitian Creole"),
         ("ha", "Hausa"), ("haw", "Hawaiian"), ("he", "Hebrew"), ("hi", "Hindi"),

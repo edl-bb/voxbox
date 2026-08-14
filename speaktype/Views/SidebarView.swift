@@ -28,11 +28,11 @@ struct SidebarView: View {
 
             Spacer()
 
-            // 2048 Labs branding link
+            // Cubbei Studios branding link
             Button(action: {
-                NSWorkspace.shared.open(URL(string: "https://2048labs.com")!)
+                NSWorkspace.shared.open(URL(string: "https://cubbei.com")!)
             }) {
-                Text("2048 LABS")
+                Text("CUBBEI STUDIOS")
                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                     .tracking(3)
                     .foregroundStyle(Color.textMuted.opacity(0.25))
@@ -91,7 +91,7 @@ private struct SidebarHeader: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 48, height: 48)
 
-            Text("SpeakType")
+            Text("VoxBox")
                 .font(Typography.sidebarLogo)
                 .foregroundStyle(Color.textPrimary)
 
@@ -141,7 +141,7 @@ private struct SidebarPromoCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text("Try SpeakType Pro")
+                Text("Try VoxBox Pro")
                     .font(Typography.sidebarPromoTitle)
                     .foregroundStyle(Color.textPrimary)
                 Text("✨")

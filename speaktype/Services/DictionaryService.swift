@@ -86,6 +86,34 @@ final class DictionaryService: ObservableObject {
         save()
     }
 
+    // MARK: - Quick corrections
+
+    /// Add a correction rule and immediately retro-apply the dictionary to a
+    /// transcript in History — by default the most recent one — then put the
+    /// corrected text on the clipboard, ready to paste over the mistake.
+    ///
+    /// Returns the corrected transcript, or nil when there is no history item
+    /// to fix up (the rule is still saved for future dictations).
+    @discardableResult
+    func addCorrectionAndApply(
+        trigger: String,
+        replacement: String,
+        matchWholeWord: Bool = true,
+        itemID: UUID? = nil
+    ) -> String? {
+        addEntry(trigger: trigger, replacement: replacement, matchWholeWord: matchWholeWord)
+
+        let history = HistoryService.shared
+        let target = itemID.flatMap { id in history.items.first(where: { $0.id == id }) }
+            ?? history.items.first
+        guard let target else { return nil }
+
+        let corrected = Self.apply(to: target.transcript)
+        history.updateTranscript(id: target.id, transcript: corrected)
+        ClipboardService.shared.copy(text: corrected)
+        return corrected
+    }
+
     // MARK: - Persistence
 
     private func save() {

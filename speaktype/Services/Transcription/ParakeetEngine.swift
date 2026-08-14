@@ -24,6 +24,17 @@ enum ParakeetCatalog {
     }
 }
 
+enum ParakeetEngineError: LocalizedError {
+    case modelNotDownloaded(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .modelNotDownloaded(let variant):
+            return "\(variant) is not downloaded. Download it in Settings → AI Models first."
+        }
+    }
+}
+
 /// Speech-to-text engine backed by NVIDIA Parakeet, run on-device via
 /// FluidAudio (CoreML / Apple Neural Engine).
 ///
@@ -63,7 +74,18 @@ class ParakeetEngine: SpeechToTextEngine {
         let version = ParakeetCatalog.version(for: variant)
         loadingStage = "Loading Parakeet model…"
 
-        // Downloads from Hugging Face on first use, then loads from cache.
+        // Never download implicitly: selecting/loading a model must not touch
+        // the network. Models are fetched only through the explicit download
+        // button (ModelDownloadService). If the cache is empty, fail with a
+        // clear error instead of silently pulling hundreds of megabytes.
+        let cacheDir = AsrModels.defaultCacheDirectory(for: version)
+        let cacheContents = (try? FileManager.default.contentsOfDirectory(atPath: cacheDir.path)) ?? []
+        guard !cacheContents.isEmpty else {
+            loadingStage = ""
+            throw ParakeetEngineError.modelNotDownloaded(variant)
+        }
+
+        // Cache is populated, so this loads from disk without downloading.
         let models = try await AsrModels.downloadAndLoad(version: version)
         let manager = AsrManager(config: .default)
         try await manager.loadModels(models)

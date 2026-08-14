@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Concept 4 — "Out of the box": sound rising out of an open box —
+       literal VoxBox, playful and ownable. -->
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF8A5C"/>
+      <stop offset="1" stop-color="#E5484D"/>
+    </linearGradient>
+  </defs>
+  <!-- Background layer -->
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="url(#bg4)"/>
+  <!-- Glyph layer: open box (isometric-lite) -->
+  <g fill="#FFFFFF">
+    <path d="M150 300h212a16 16 0 0 1 16 16v72a24 24 0 0 1-24 24H158a24 24 0 0 1-24-24v-72a16 16 0 0 1 16-16z"/>
+    <!-- box flaps -->
+    <path d="M134 300 96 262a10 10 0 0 1 5-17l44-9 21 64z" opacity="0.85"/>
+    <path d="M378 300l38-38a10 10 0 0 0-5-17l-44-9-21 64z" opacity="0.85"/>
+  </g>
+  <!-- sound bars rising out of the box -->
+  <g fill="#FFFFFF">
+    <rect x="166" y="208" width="24" height="64" rx="12"/>
+    <rect x="216" y="164" width="24" height="108" rx="12"/>
+    <rect x="266" y="120" width="24" height="152" rx="12"/>
+    <rect x="316" y="180" width="24" height="92" rx="12"/>
+  </g>
+</svg>

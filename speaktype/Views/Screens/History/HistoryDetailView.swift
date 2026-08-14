@@ -6,7 +6,12 @@ struct HistoryDetailView: View {
     
     @StateObject private var audioPlayer = AudioPlayerService.shared
     @State private var showCopyAlert = false
-    
+    @State private var showCorrectionSheet = false
+    @State private var correctionApplied = false
+    /// Live transcript — starts as the stored item's text and updates in place
+    /// when a correction is applied, so the fix is visible immediately.
+    @State private var displayedTranscript = ""
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -35,10 +40,29 @@ struct HistoryDetailView: View {
                         .cornerRadius(12)
                     
                     Spacer()
-                    
+
+                    // Quick dictionary correction: fix a misheard word here,
+                    // save it as a rule for all future dictations, and get the
+                    // corrected transcript back on the clipboard.
+                    Button(action: { showCorrectionSheet = true }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "character.book.closed")
+                                .font(.system(size: 11))
+                            Text("Add Correction")
+                                .font(Typography.labelMedium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.purple)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Fix a misheard word, remember it in the Dictionary, and recopy this transcript")
+
                     // Copy button
                     Button(action: {
-                        copyToClipboard(text: item.transcript)
+                        copyToClipboard(text: displayedTranscript)
                     }) {
                         HStack(spacing: 6) {
                             Image(systemName: "doc.on.doc")
@@ -54,11 +78,11 @@ struct HistoryDetailView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                
+
                 Divider()
-                
+
                 // Transcript
-                Text(item.transcript)
+                Text(displayedTranscript)
                     .font(Typography.bodyMedium)
                     .textSelection(.enabled)
                     .padding(.vertical, 8)
@@ -191,9 +215,31 @@ struct HistoryDetailView: View {
         .background(Color.contentBackground)
         .navigationTitle("Transcript Details")
         .onAppear {
+            displayedTranscript = item.transcript
             if let audioURL = item.audioFileURL {
                 audioPlayer.loadAudio(from: audioURL)
             }
+        }
+        .sheet(isPresented: $showCorrectionSheet) {
+            TranscriptCorrectionSheet { misheard, correct, wholeWord in
+                let corrected = DictionaryService.shared.addCorrectionAndApply(
+                    trigger: misheard,
+                    replacement: correct,
+                    matchWholeWord: wholeWord,
+                    itemID: item.id
+                )
+                if let corrected {
+                    displayedTranscript = corrected
+                    correctionApplied = true
+                }
+            }
+        }
+        .alert("Correction applied", isPresented: $correctionApplied) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(
+                "The rule was added to your Dictionary, this transcript was updated, and the corrected text is on your clipboard."
+            )
         }
         .onDisappear {
             audioPlayer.stop()
@@ -234,6 +280,82 @@ struct HistoryDetailView: View {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - Quick correction sheet
+
+/// Capture a "the model heard X, I meant Y" correction. The rule is saved to
+/// the Dictionary (so every future dictation is fixed automatically), the
+/// current transcript is rewritten with it, and the corrected text lands on
+/// the clipboard for immediate re-pasting.
+struct TranscriptCorrectionSheet: View {
+    /// (misheardText, correctText, matchWholeWord)
+    let onSave: (String, String, Bool) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var misheard = ""
+    @State private var correct = ""
+    @State private var matchWholeWord = true
+
+    private var isValid: Bool {
+        !misheard.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Add Correction")
+                .font(Typography.displaySmall)
+                .foregroundStyle(Color.textPrimary)
+
+            Text(
+                "Saved to your Dictionary so future dictations are fixed automatically. This transcript is updated and recopied to the clipboard right away."
+            )
+            .font(Typography.captionSmall)
+            .foregroundStyle(Color.textMuted)
+            .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("The model heard")
+                    .font(Typography.labelLarge)
+                    .foregroundStyle(Color.textPrimary)
+                TextField("", text: $misheard, prompt: Text("figjam"))
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("You meant")
+                    .font(Typography.labelLarge)
+                    .foregroundStyle(Color.textPrimary)
+                TextField("", text: $correct, prompt: Text("FigJam"))
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            Toggle(isOn: $matchWholeWord) {
+                Text("Match whole words only")
+                    .font(Typography.bodySmall)
+                    .foregroundStyle(Color.textPrimary)
+            }
+            .toggleStyle(.switch)
+
+            HStack(spacing: 12) {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                Button("Save & Recopy") {
+                    onSave(
+                        misheard.trimmingCharacters(in: .whitespacesAndNewlines),
+                        correct,
+                        matchWholeWord
+                    )
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!isValid)
+            }
+        }
+        .padding(24)
+        .frame(width: 400)
     }
 }
 

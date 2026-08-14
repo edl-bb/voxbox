@@ -54,7 +54,7 @@ struct AudioInputView: View {
                         .buttonStyle(.plain)
                     }
                     
-                    Text("Note: SpeakType will use the selected device for all recordings.")
+                    Text("Note: VoxBox will use the selected device for all recordings.")
                         .font(Typography.bodySmall)
                         .foregroundStyle(Color.textSecondary)
                     

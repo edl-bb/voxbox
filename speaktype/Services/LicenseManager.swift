@@ -76,11 +76,11 @@ class LicenseManager: ObservableObject {
             self.licenseKey = key
             self.isPro = true
             print("✅ Found existing license key in Keychain")
-            
-            // Optional: Validate the key on app launch to ensure it's still valid
-            Task {
-                await validateExistingKey(key)
-            }
+
+            // Deliberately NO launch-time revalidation: the app must make zero
+            // network requests unless the user explicitly initiates one. The key
+            // is validated online only during activation (activateLicense).
+            // This also stops a network failure from wiping the stored key.
         } catch KeychainError.itemNotFound {
             print("ℹ️ No license key found in Keychain")
             self.isPro = false
@@ -115,8 +115,6 @@ class LicenseManager: ObservableObject {
             self.expirationDate = validatedKey.expiresAt
             
             print("✅ License activated successfully")
-            print("   • Customer ID: \(validatedKey.customerId)")
-            print("   • Expires: \(validatedKey.expiresAt?.formatted() ?? "Never")")
         } catch let error as LicenseError {
             throw error
         } catch {
@@ -141,20 +139,6 @@ class LicenseManager: ObservableObject {
         self.expirationDate = nil
         
         print("✅ License deactivated")
-    }
-    
-    // MARK: - Validate Existing Key (Silent Check)
-    
-    private func validateExistingKey(_ key: String) async {
-        do {
-            let validatedKey = try await validateLicenseWithPolar(key: key)
-            self.expirationDate = validatedKey.expiresAt
-            print("✅ Existing license validated successfully")
-        } catch {
-            // If validation fails, consider the license invalid
-            print("⚠️ Existing license validation failed: \(error.localizedDescription)")
-            try? await deactivateLicense()
-        }
     }
     
     // MARK: - Polar.sh API Integration

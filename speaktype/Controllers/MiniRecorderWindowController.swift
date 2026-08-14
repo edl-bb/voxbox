@@ -9,6 +9,13 @@ class MiniRecorderWindowController: NSObject {
         UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
     }
 
+    /// When on (the default), every completed transcript stays on the clipboard
+    /// after dictation — even when it was also auto-pasted — so it can be pasted
+    /// again anywhere. Takes precedence over the clipboard-restore behavior.
+    private var shouldKeepTranscriptOnClipboard: Bool {
+        UserDefaults.standard.object(forKey: "copyTranscriptToClipboard") as? Bool ?? true
+    }
+
     /// When on, the resting pill stays on screen even when idle. Default off:
     /// the recorder appears only while dictating and hides afterward (issue #100).
     private var alwaysShowIdlePill: Bool {
@@ -224,9 +231,11 @@ class MiniRecorderWindowController: NSObject {
 
     private func handleCommit(text: String) {
         Task {
-            // 1. Copy to clipboard for manual paste, or snapshot it first if the user wants it restored.
+            // 1. Copy to clipboard for manual paste. When the user wants the
+            // transcript kept on the clipboard, never snapshot/restore; otherwise
+            // snapshot first if they asked for the old clipboard back.
             let previousClipboard: ClipboardService.ClipboardSnapshot?
-            if shouldRestoreClipboardAfterAutoPaste {
+            if !shouldKeepTranscriptOnClipboard && shouldRestoreClipboardAfterAutoPaste {
                 previousClipboard = ClipboardService.shared.copyForTemporaryPaste(text: text)
             } else {
                 previousClipboard = nil
@@ -279,7 +288,7 @@ class MiniRecorderWindowController: NSObject {
         let alert = NSAlert()
         alert.messageText = "Accessibility Permission Required"
         alert.informativeText =
-            "SpeakType needs Accessibility permission to automatically paste transcriptions into the active app.\n\nYour transcription has been copied to the clipboard.\n\nTo enable auto-paste, grant permission in:\nSystem Settings → Privacy & Security → Accessibility"
+            "VoxBox needs Accessibility permission to automatically paste transcriptions into the active app.\n\nYour transcription has been copied to the clipboard.\n\nTo enable auto-paste, grant permission in:\nSystem Settings → Privacy & Security → Accessibility"
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Open System Settings")
         alert.addButton(withTitle: "OK")
