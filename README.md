@@ -137,7 +137,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 *Privacy-first • Open Source*
 
-VoxBox was formerly known as SpeakType. The bundle identifier
-(`com.2048labs.speaktype`) is retained for update and permission continuity.
+VoxBox was formerly known as SpeakType (bundle identifier `dev.cubbei.voxbox`).
 
 </div>

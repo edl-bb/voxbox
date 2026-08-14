@@ -6,7 +6,7 @@ import Security
 /// Service to check for app updates and manage update preferences
 class UpdateService: NSObject, ObservableObject {
     static let shared = UpdateService()
-    static let trustedUpdateBundleIdentifier = "com.cubbei.voxbox"
+    static let trustedUpdateBundleIdentifier = "dev.cubbei.voxbox"
     /// Apple Developer Team ID that release builds must be signed with.
     /// Empty means "no release signing configured yet": update *checks* still
     /// work, but installs are refused fail-closed until the team ID of the
