@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Clean up with on-device AI: optional post-processing of transcripts using the Apple Intelligence model built into macOS 26 (nothing downloaded, nothing leaves the Mac). Three intensity levels — Formatting (mechanical only), Light cleanup (removes "um"/"uh"/false starts, fixes grammar; the default), and Polish (also smooths choppy phrasing). A word-level diff guardrail keeps the raw transcript whenever the model changes more than the chosen level allows. Off by default, in Settings → Transcript Cleanup.
+- Removed all licensing/trial/Pro functionality (Polar.sh integration, license UI, trial banners, keychain license storage). The app is now fully unrestricted with zero license-related code or network calls.
+- New identity for independent builds: bundle identifier is now `com.cubbei.voxbox`, signed with the building developer's own Apple team (set your team in Xcode → Signing & Capabilities). URL scheme is now `voxbox://`. The old `~/Library/Application Support/SpeakType` folder (models, recordings) is migrated automatically on first launch; update installs are disabled fail-closed until a release signing team ID is configured in UpdateService.
 - Menu bar icon is now the VoxBox V-wave monogram (template image, adapts to menu bar appearance) and animates like an equalizer while a recording is in progress.
 - Model download progress is now surfaced app-wide: active downloads show a name + progress bar card in the sidebar and in the menu bar panel, not just inside Settings → AI Models.
 - Minimum system requirement raised to macOS 26 (Tahoe); the pre-26 recorder-pill blur fallback was removed in favour of native Liquid Glass.

@@ -17,12 +17,6 @@ struct speaktypeApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-    // License Manager
-    @StateObject private var licenseManager = LicenseManager.shared
-
-    // Trial Manager
-    @StateObject private var trialManager = TrialManager.shared
-
     init() {
         // Register bundled fonts (Satoshi, Source Sans 3) so Font.custom resolves
         // them regardless of what's installed on the machine.
@@ -46,8 +40,6 @@ struct speaktypeApp: App {
                     }
                 }
             }
-            .environmentObject(licenseManager)
-            .environmentObject(trialManager)
             .preferredColorScheme(appTheme.colorScheme)
             .tint(Color.navyInk)
         }
@@ -79,7 +71,7 @@ struct speaktypeApp: App {
 
     private func openDashboard() {
         // Using URL forces the specific window group to handle the request consistently.
-        if let url = URL(string: "speaktype://open") {
+        if let url = URL(string: "voxbox://open") {
             NSWorkspace.shared.open(url)
         }
     }

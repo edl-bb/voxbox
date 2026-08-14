@@ -106,7 +106,11 @@ class TranscriptionManager {
         if AustralianEnglishSpelling.isAustralianEnglish(language) {
             text = AustralianEnglishSpelling.apply(to: text)
         }
-        return SmartTrailingPunctuation.apply(to: DictionaryService.apply(to: text))
+        // Optional on-device AI cleanup runs after dictionary rules (so custom
+        // replacements are already in place) and before trailing punctuation.
+        let withRules = DictionaryService.apply(to: text)
+        let formatted = await TranscriptFormatterService.shared.format(withRules)
+        return SmartTrailingPunctuation.apply(to: formatted)
     }
 }
 

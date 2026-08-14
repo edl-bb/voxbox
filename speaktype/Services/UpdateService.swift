@@ -6,8 +6,12 @@ import Security
 /// Service to check for app updates and manage update preferences
 class UpdateService: NSObject, ObservableObject {
     static let shared = UpdateService()
-    static let trustedUpdateBundleIdentifier = "com.2048labs.speaktype"
-    static let trustedUpdateTeamIdentifier = "PCV4UMSRZX"
+    static let trustedUpdateBundleIdentifier = "com.cubbei.voxbox"
+    /// Apple Developer Team ID that release builds must be signed with.
+    /// Empty means "no release signing configured yet": update *checks* still
+    /// work, but installs are refused fail-closed until the team ID of the
+    /// signing account is filled in here.
+    static let trustedUpdateTeamIdentifier = ""
 
     @Published var availableUpdate: AppVersion?
     @Published var isCheckingForUpdates = false
@@ -49,11 +53,11 @@ class UpdateService: NSObject, ObservableObject {
 
         do {
             let url = URL(
-                string: "https://api.github.com/repos/karansinghgit/speaktype/releases/latest")!
+                string: "https://api.github.com/repos/edl-bb/speaktype/releases/latest")!
             var request = URLRequest(url: url)
             request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
             // Neutral UA so the default one doesn't leak app version + macOS build.
-            request.setValue("SpeakType", forHTTPHeaderField: "User-Agent")
+            request.setValue("VoxBox", forHTTPHeaderField: "User-Agent")
             request.cachePolicy = .reloadIgnoringLocalCacheData
             request.timeoutInterval = 15
 
@@ -235,7 +239,7 @@ class UpdateService: NSObject, ObservableObject {
 
     private func downloadWithProgress(from url: URL) async throws -> URL {
         let dest = FileManager.default.temporaryDirectory
-            .appendingPathComponent("SpeakType-update-\(UUID().uuidString).dmg")
+            .appendingPathComponent("VoxBox-update-\(UUID().uuidString).dmg")
 
         return try await withCheckedThrowingContinuation { continuation in
             let configuration = URLSessionConfiguration.ephemeral
@@ -306,6 +310,14 @@ class UpdateService: NSObject, ObservableObject {
     }
 
     private func verifyCandidateApp(at appURL: URL) throws {
+        // Fail closed while no release-signing team is configured — a fork
+        // without its own Developer ID must never install downloaded bundles.
+        guard !Self.trustedUpdateTeamIdentifier.isEmpty else {
+            throw UpdateError.invalidCandidateApp(
+                "Updates are disabled: no release signing team is configured for this build."
+            )
+        }
+
         guard
             let bundle = Bundle(url: appURL),
             let bundleIdentifier = bundle.bundleIdentifier

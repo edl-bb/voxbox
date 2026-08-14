@@ -143,42 +143,6 @@ struct SidebarButton: View {
     }
 }
 
-private struct SidebarPromoCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text("Try VoxBox Pro")
-                    .font(Typography.sidebarPromoTitle)
-                    .foregroundStyle(Color.textPrimary)
-                Text("✨")
-                    .font(.system(size: 12))
-            }
-
-            Text("Upgrade for unlimited words")
-                .font(Typography.sidebarPromoSubtitle)
-                .foregroundStyle(Color.textMuted)
-
-            Button(action: {}) {
-                Text("Upgrade to Pro")
-                    .font(Typography.sidebarPromoButton)
-                    .foregroundStyle(Color.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color.bgCard)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.border, lineWidth: 0.5)
-                    )
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
 // MARK: - Sidebar Items
 
 enum SidebarItem: String, CaseIterable, Identifiable {

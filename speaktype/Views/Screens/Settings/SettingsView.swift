@@ -99,6 +99,10 @@ struct GeneralSettingsTab: View {
     @AppStorage("enableAutoEdit") private var enableAutoEdit: Bool = false
     @AppStorage(SmartTrailingPunctuation.defaultsKey)
     private var smartTrailingPunctuation: Bool = true
+    @AppStorage(TranscriptFormatterService.enabledKey)
+    private var formatWithOnDeviceAI: Bool = false
+    @AppStorage(TranscriptFormatterService.intensityKey)
+    private var formattingIntensityRaw: Int = FormattingIntensity.lightCleanup.rawValue
     @AppStorage(RetentionService.audioRetentionKey)
     private var audioRetentionSeconds: Double = RetentionService.defaultAudioRetention
     @AppStorage(RetentionService.transcriptRetentionKey)
@@ -116,10 +120,6 @@ struct GeneralSettingsTab: View {
     }
 
     @StateObject private var updateService = UpdateService.shared
-    @EnvironmentObject var licenseManager: LicenseManager
-
-    @State private var showLicenseSheet = false
-    @State private var showDeactivateAlert = false
 
     var body: some View {
         ScrollView {
@@ -365,6 +365,49 @@ struct GeneralSettingsTab: View {
 
                         Divider()
 
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Clean up with on-device AI")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                Toggle("", isOn: $formatWithOnDeviceAI)
+                                    .labelsHidden()
+                                    .disabled(!TranscriptFormatterService.isModelAvailable)
+                            }
+
+                            if !TranscriptFormatterService.isModelAvailable {
+                                Text(
+                                    "Apple's on-device model isn't available on this Mac right now (it may still be downloading system assets)."
+                                )
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+                            } else if formatWithOnDeviceAI {
+                                Picker("", selection: $formattingIntensityRaw) {
+                                    ForEach(FormattingIntensity.allCases) { level in
+                                        Text(level.displayName).tag(level.rawValue)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                                .labelsHidden()
+
+                                Text(
+                                    (FormattingIntensity(rawValue: formattingIntensityRaw)
+                                        ?? .lightCleanup).summary
+                                )
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+                            }
+
+                            Text(
+                                "Uses the Apple Intelligence model built into macOS — nothing is downloaded and nothing leaves your Mac. If the result changes your words more than the chosen level allows, the raw transcript is kept."
+                            )
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+                        }
+
+                        Divider()
+
                         HStack {
                             Text("Smart trailing punctuation")
                                 .font(Typography.bodyMedium)
@@ -559,45 +602,8 @@ struct GeneralSettingsTab: View {
                     }
                 }
 
-                // License - Hidden (logic kept for future use)
-                // SettingsSection {
-                //     SettingsSectionHeader(
-                //         icon: "key",
-                //         title: "License",
-                //         subtitle: licenseManager.isPro ? "Pro Active" : "Free Plan"
-                //     )
-                //
-                //     if licenseManager.isPro {
-                //         Button(action: { showDeactivateAlert = true }) {
-                //             Text("Deactivate License")
-                //                 .font(Typography.labelMedium)
-                //                 .frame(maxWidth: .infinity)
-                //         }
-                //         .buttonStyle(.stSecondary)
-                //     } else {
-                //         Button(action: { showLicenseSheet = true }) {
-                //             Text("Activate License")
-                //                 .font(Typography.labelMedium)
-                //                 .frame(maxWidth: .infinity)
-                //         }
-                //         .buttonStyle(.stPrimary)
-                //     }
-                // }
             }
             .padding(24)
-        }
-
-        .sheet(isPresented: $showLicenseSheet) {
-            LicenseView()
-                .environmentObject(licenseManager)
-        }
-        .alert("Deactivate License", isPresented: $showDeactivateAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Deactivate", role: .destructive) {
-                Task { try? await licenseManager.deactivateLicense() }
-            }
-        } message: {
-            Text("Are you sure you want to deactivate your Pro license?")
         }
     }
 

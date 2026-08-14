@@ -447,7 +447,7 @@ class AudioRecordingService: NSObject, ObservableObject {
 
         let recordingsDir =
             appSupport
-            .appendingPathComponent("SpeakType")
+            .appendingPathComponent("VoxBox")
             .appendingPathComponent("Recordings")
 
         // Create directory if it doesn't exist
@@ -467,7 +467,7 @@ class AudioRecordingService: NSObject, ObservableObject {
 
         let chunksDir =
             appSupport
-            .appendingPathComponent("SpeakType")
+            .appendingPathComponent("VoxBox")
             .appendingPathComponent("Chunks")
 
         try? FileManager.default.createDirectory(

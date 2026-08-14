@@ -16,6 +16,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var localKeyDownMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // One-time migration for the VoxBox rebrand: move the old SpeakType
+        // Application Support folder (downloaded models, recordings) to the
+        // new name so nothing has to re-download.
+        migrateLegacyStorageIfNeeded()
+
         miniRecorderController = MiniRecorderWindowController()
         // Prepare the resting pill. It stays hidden until recording unless the
         // user opts into always showing it (issue #100).
@@ -73,6 +78,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
+    }
+
+    /// Rename `~/Library/Application Support/SpeakType` → `VoxBox` once, so
+    /// models and recordings from a pre-rebrand install carry over. No-op when
+    /// there is nothing to migrate or the new folder already exists.
+    private func migrateLegacyStorageIfNeeded() {
+        let fileManager = FileManager.default
+        guard
+            let appSupport = fileManager.urls(
+                for: .applicationSupportDirectory, in: .userDomainMask
+            ).first
+        else { return }
+
+        let legacy = appSupport.appendingPathComponent("SpeakType", isDirectory: true)
+        let current = appSupport.appendingPathComponent("VoxBox", isDirectory: true)
+
+        guard fileManager.fileExists(atPath: legacy.path),
+            !fileManager.fileExists(atPath: current.path)
+        else { return }
+
+        do {
+            try fileManager.moveItem(at: legacy, to: current)
+            AppLogger.info("Migrated legacy SpeakType storage to VoxBox", category: AppLogger.app)
+        } catch {
+            AppLogger.error(
+                "Legacy storage migration failed", error: error, category: AppLogger.app)
+        }
     }
 
     // MARK: - Dock icon visibility (accessory ↔ regular)

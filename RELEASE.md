@@ -109,7 +109,7 @@ Error: HTTP status code: 401. Unable to authenticate.
 **Fix:** Regenerate your app-specific password and re-run the keychain setup:
 ```bash
 xcrun notarytool store-credentials "AC_PASSWORD" \
-  --apple-id "mail2048labs@gmail.com" \
+  --apple-id "your-apple-id@example.com" \
   --team-id "PCV4UMSRZX" \
   --password "NEW_PASSWORD_HERE"
 ```

@@ -107,7 +107,7 @@ final class RetentionService {
     private func sweepOrphanedFiles(audioCutoff: Date?, now: Date = Date()) {
         let fileManager = FileManager.default
         let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        guard let base = appSupport.first?.appendingPathComponent("SpeakType") else { return }
+        guard let base = appSupport.first?.appendingPathComponent("VoxBox") else { return }
 
         let referencedPaths = Set(
             HistoryService.shared.items.compactMap { $0.audioFileURL?.standardizedFileURL.path })

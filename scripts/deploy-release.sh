@@ -86,7 +86,7 @@ if [ -n "$PREV_TAG" ]; then
   NOTES=$(printf '%s\n' "$ALL_NOTES" | head -n "$MAX_NOTE_LINES")
   if [ "$(printf '%s\n' "$ALL_NOTES" | wc -l)" -gt "$MAX_NOTE_LINES" ]; then
     NOTES="${NOTES}
-- …and more — see the full changelog: https://github.com/karansinghgit/speaktype/compare/${PREV_TAG}...v${VERSION}"
+- …and more — see the full changelog: https://github.com/edl-bb/speaktype/compare/${PREV_TAG}...v${VERSION}"
   fi
 else
   NOTES="Initial release"

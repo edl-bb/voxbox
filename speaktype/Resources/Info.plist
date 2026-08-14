@@ -21,15 +21,15 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>14.0</string>
+	<string>26.0</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.karansinghgit.speaktype</string>
+            <string>com.cubbei.voxbox</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>speaktype</string>
+                <string>voxbox</string>
             </array>
         </dict>
     </array>
