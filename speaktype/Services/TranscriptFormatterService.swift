@@ -110,8 +110,13 @@ final class TranscriptFormatterService {
     }
 
     static var intensity: FormattingIntensity {
-        FormattingIntensity(rawValue: UserDefaults.standard.integer(forKey: intensityKey))
-            ?? .lightCleanup
+        // integer(forKey:) returns 0 when unset, which would silently select
+        // .formatting — read the raw object so "never set" falls back to the
+        // documented default of .lightCleanup.
+        guard let raw = UserDefaults.standard.object(forKey: intensityKey) as? Int else {
+            return .lightCleanup
+        }
+        return FormattingIntensity(rawValue: raw) ?? .lightCleanup
     }
 
     /// Whether the system model can run on this machine right now (it can be

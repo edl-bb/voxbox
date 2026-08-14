@@ -65,9 +65,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # SwiftLint is preinstalled on the macOS runner image; only fall back to
-      # brew (slow) if it's ever missing.
+      # SwiftLint is sometimes preinstalled on the macOS runner image; fall
+      # back to brew, and tolerate brew failures (the macos-26 image has hit
+      # untrusted-tap errors) — lint is advisory, it must never block CI.
       - name: Ensure SwiftLint
+        continue-on-error: true
         run: command -v swiftlint >/dev/null || brew install swiftlint
 
       # Advisory only: the codebase has a large pre-existing violation
@@ -75,4 +77,9 @@ jobs:
       # Remove continue-on-error once the backlog is cleared to make it a gate.
       - name: Run SwiftLint
         continue-on-error: true
-        run: swiftlint
+        run: |
+          if command -v swiftlint >/dev/null; then
+            swiftlint
+          else
+            echo "SwiftLint unavailable on this runner — skipping (advisory)."
+          fi
