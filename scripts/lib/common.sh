@@ -19,7 +19,7 @@ SIGN_IDENTITY="Developer ID Application"
 SCHEME="speaktype"
 PROJECT_FILE="speaktype.xcodeproj/project.pbxproj"
 CHANGELOG="CHANGELOG.md"
-GITHUB_REPO="edl-bb/speaktype"
+GITHUB_REPO="edl-bb/VoxBox"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

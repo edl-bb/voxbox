@@ -1,6 +1,6 @@
 # Release Process
 
-SpeakType releases run in **two steps**:
+VoxBox releases run in **two steps**:
 
 1. **Build** (`make create-release`) — bump version, build, sign, notarize, and produce a signed DMG in `dist/`. Nothing leaves your machine.
 2. **Deploy** (`make deploy-release`) — push the release commit + tag and upload the DMG to GitHub.
@@ -88,14 +88,14 @@ After the release, verify on a **different Mac**:
 
 ```bash
 # Download and open the DMG
-# Drag SpeakType.app to Applications
+# Drag VoxBox.app to Applications
 # Double-click to open - should NOT show Gatekeeper warning
 
 # Verify signature
-codesign -dv --verbose=4 /Applications/SpeakType.app
+codesign -dv --verbose=4 /Applications/VoxBox.app
 
 # Verify notarization
-spctl -a -vv /Applications/SpeakType.app
+spctl -a -vv /Applications/VoxBox.app
 # Should show: accepted, source=Notarized Developer ID
 ```
 

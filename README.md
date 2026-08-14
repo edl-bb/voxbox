@@ -2,14 +2,13 @@
 
 <div align="center">
 
-![VoxBox Icon](speaktype/Assets.xcassets/AppIcon.appiconset/icon_256x256.png)
+![VoxBox Icon](branding/voxbox-logo.png)
 
 **Fast, Offline Voice-to-Text for macOS**
 
-![VoxBox app screenshot](image.png)
-[![Download](https://img.shields.io/badge/Download-VoxBox.dmg-blueviolet?logo=apple&logoColor=white)](https://github.com/karansinghgit/speaktype/releases/latest)
+[![Download](https://img.shields.io/badge/Download-VoxBox.dmg-blueviolet?logo=apple&logoColor=white)](https://github.com/edl-bb/VoxBox/releases/latest)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange?logo=swift)](https://swift.org)
-[![Platform](https://img.shields.io/badge/Platform-macOS%2013.0+-blue?logo=apple)](https://www.apple.com/macos/)
+[![Platform](https://img.shields.io/badge/Platform-macOS%2026.0+-blue?logo=apple)](https://www.apple.com/macos/)
 [![License](https://img.shields.io/badge/License-MIT-red)](LICENSE)
 
 *Press a hotkey, speak, and instantly paste text anywhere on your Mac.*
@@ -39,7 +38,7 @@ VoxBox is a **privacy-first, offline voice dictation tool** for macOS. Unlike on
 
 ### Download
 
-**[Download Latest Release](https://github.com/karansinghgit/speaktype/releases/latest)**
+**[Download Latest Release](https://github.com/edl-bb/VoxBox/releases/latest)**
 
 1. Download `VoxBox.dmg`
 2. Drag **VoxBox** to **Applications**
@@ -51,8 +50,8 @@ Press `fn` to start dictating.
 ### Build from Source
 
 ```bash
-git clone https://github.com/karansinghgit/speaktype.git
-cd speaktype
+git clone https://github.com/edl-bb/VoxBox.git
+cd VoxBox
 make build && make run
 ```
 

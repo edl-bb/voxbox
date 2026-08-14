@@ -53,7 +53,7 @@ class UpdateService: NSObject, ObservableObject {
 
         do {
             let url = URL(
-                string: "https://api.github.com/repos/edl-bb/speaktype/releases/latest")!
+                string: "https://api.github.com/repos/edl-bb/VoxBox/releases/latest")!
             var request = URLRequest(url: url)
             request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
             // Neutral UA so the default one doesn't leak app version + macOS build.
