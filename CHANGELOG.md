@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Menu bar icon is now the VoxBox V-wave monogram (template image, adapts to menu bar appearance) and animates like an equalizer while a recording is in progress.
+- Model download progress is now surfaced app-wide: active downloads show a name + progress bar card in the sidebar and in the menu bar panel, not just inside Settings → AI Models.
+- Minimum system requirement raised to macOS 26 (Tahoe); the pre-26 recorder-pill blur fallback was removed in favour of native Liquid Glass.
 - Rebrand: the app is now **VoxBox** by **Cubbei Studios** (formerly SpeakType by 2048 Labs). The bundle identifier is unchanged for update/permission continuity.
 - English (Australia) spoken-language option: transcribes as English and converts American spellings (color, organize, center) to Australian ones (colour, organise, centre), fully offline.
 - Copy transcript to clipboard: completed transcripts now stay on the clipboard after dictation (default on, Settings → General).

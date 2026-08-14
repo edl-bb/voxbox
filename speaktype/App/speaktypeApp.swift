@@ -61,8 +61,9 @@ struct speaktypeApp: App {
         // Note: Mini Recorder is now managed manually by AppDelegate -> MiniRecorderWindowController
         // to prevent SwiftUI from auto-opening the main dashboard on activation.
 
-        // Menu Bar Extra (Always running listener)
-        MenuBarExtra("VoxBox", systemImage: "waveform", isInserted: $showMenuBarIcon) {
+        // Menu Bar Extra (Always running listener). The label is the V-wave
+        // monogram, animated while a recording is in progress.
+        MenuBarExtra(isInserted: $showMenuBarIcon) {
             ThemeProvider {
                 MenuBarDashboardView(
                     openDashboard: openDashboard,
@@ -70,6 +71,8 @@ struct speaktypeApp: App {
                 )
             }
             .preferredColorScheme(appTheme.colorScheme)
+        } label: {
+            MenuBarIconView()
         }
         .menuBarExtraStyle(.window)
     }

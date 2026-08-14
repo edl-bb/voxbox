@@ -33,7 +33,7 @@ VoxBox is a **privacy-first, offline voice dictation tool** for macOS. Unlike on
 
 ### Requirements
 
-- macOS 13.0+ (Ventura or newer)
+- macOS 26.0+ (Tahoe or newer)
 - Apple Silicon (M1+) recommended
 - 2GB available storage (for AI models)
 

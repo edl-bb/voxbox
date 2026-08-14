@@ -35,6 +35,7 @@ struct MenuBarDashboardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
+            ActiveDownloadsView()
             statsGrid
             recentTranscriptsSection
             actionRow
@@ -49,7 +50,9 @@ struct MenuBarDashboardView: View {
                 .fill(Color.bgHover)
                 .frame(width: 40, height: 40)
                 .overlay {
-                    Image("MenuBarWave")
+                    // Same V-wave template the status item uses, so the mark
+                    // is consistent between the menu bar and this panel.
+                    Image(nsImage: MenuBarIconView.idleImage)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 24, height: 24)

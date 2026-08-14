@@ -28,6 +28,12 @@ struct SidebarView: View {
 
             Spacer()
 
+            // In-flight model downloads — visible from anywhere in the app,
+            // not just Settings → AI Models. Hidden when nothing is active.
+            ActiveDownloadsView()
+                .padding(.horizontal, SidebarConstants.itemHorizontalPadding)
+                .padding(.bottom, 10)
+
             // Cubbei Studios branding link
             Button(action: {
                 NSWorkspace.shared.open(URL(string: "https://cubbei.com")!)
