@@ -47,17 +47,18 @@ gh auth login
 ### Step 1 — Build (`make create-release`)
 
 ```bash
-make create-release            # auto-bump patch (e.g. 1.0.14 → 1.0.15)
+make create-release            # auto-bump patch (e.g. 1.0.2 → 1.0.3)
 make create-release VERSION=2.0.0   # or specify the version
+make create-release-current    # keep MARKETING_VERSION already in the project
 ```
 
 **What happens:**
 
 1. ✅ **Checks for uncommitted changes** — fails if you have uncommitted work
-2. ✅ **Resolves the version** — auto-bumps patch, or uses `VERSION=`
-3. ✅ **Updates the Xcode project** — MARKETING_VERSION and CURRENT_PROJECT_VERSION
-4. ✅ **Updates CHANGELOG** with the release date
-5. ✅ **Commits + tags locally** (not pushed yet)
+2. ✅ **Resolves the version** — auto-bumps patch, uses `VERSION=`, or (`create-release-current`) reads the version already in the Xcode project
+3. ✅ **Updates the Xcode project** — MARKETING_VERSION and CURRENT_PROJECT_VERSION (skipped by `create-release-current`)
+4. ✅ **Updates CHANGELOG** with the release date (skipped by `create-release-current`)
+5. ✅ **Commits + tags locally** (not pushed yet). `create-release-current` only tags HEAD if `v<version>` is missing.
 6. ✅ **Builds and signs the app** (Release config, Developer ID)
 7. ✅ **Creates and signs the DMG** in `dist/`
 8. ✅ **Notarizes with Apple** (~2-5 minutes) and **staples** the ticket

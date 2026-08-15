@@ -1,6 +1,6 @@
 # Makefile for VoxBox
 
-.PHONY: help build clean clean-dev test lint format ci run run-dev run-release setup logs logs-live logs-errors logs-export install uninstall reinstall
+.PHONY: help build clean clean-dev test lint format ci run run-dev run-release setup logs logs-live logs-errors logs-export install uninstall reinstall create-release create-release-current deploy-release
 
 # Default target
 help:
@@ -24,8 +24,9 @@ help:
 	@echo "  make test-ui       - Run UI tests only"
 	@echo ""
 	@echo "Distribution:"
-	@echo "  make create-release - 🔨 Bump version, build, sign, notarize → dist/*.dmg"
-	@echo "  make deploy-release - 🚀 Push tag + upload DMG to GitHub releases"
+	@echo "  make create-release         - 🔨 Bump version, build, sign, notarize → dist/*.dmg"
+	@echo "  make create-release-current - 📦 Same as create-release, but keep the current version"
+	@echo "  make deploy-release         - 🚀 Push tag + upload DMG to GitHub releases"
 	@echo "  make run-release    - Run the last Release build locally"
 	@echo "  make package        - Create ZIP package (unsigned)"
 	@echo "  make dmg            - Create DMG installer (unsigned)"
@@ -46,6 +47,12 @@ help:
 # Create the local release (build + sign + notarize → dist/)
 create-release:
 	@./scripts/create-release.sh $(VERSION)
+
+# Same pipeline as create-release, using MARKETING_VERSION already in the project.
+# Does not bump version/build, edit the changelog, or create a release commit.
+# Tags HEAD as v<current> if that tag is missing.
+create-release-current:
+	@./scripts/create-release.sh --current
 
 # Deploy the release to GitHub (push tag + upload DMG)
 deploy-release:

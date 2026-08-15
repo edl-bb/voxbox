@@ -1,7 +1,10 @@
 #!/bin/bash
-# create-release.sh — Bump version, build, sign, notarize, and produce a DMG in dist/
+# create-release.sh — Build, sign, notarize, and produce a DMG in dist/
 # Usage: ./scripts/create-release.sh [version]
 #        If no version is given, patch version is auto-bumped.
+#        ./scripts/create-release.sh --current
+#        Uses MARKETING_VERSION already in the Xcode project (no bump, no
+#        changelog edit, no release commit). Tags HEAD if v<version> is missing.
 #
 # After this script succeeds, run ./scripts/deploy-release.sh to push to GitHub.
 
@@ -18,36 +21,79 @@ require_repo_root
 require_clean_tree
 
 # ── Step 1: Determine version ──────────────────────────────────────────────────
-VERSION="$(resolve_version "${1:-}")"
-echo "📦 Releasing v${VERSION}"
-echo ""
+KEEP_VERSION=0
+REQUESTED=""
+for arg in "$@"; do
+  case "$arg" in
+    --current) KEEP_VERSION=1 ;;
+    -*)
+      echo "❌ Unknown option: $arg"
+      echo "   Usage: ./scripts/create-release.sh [version] | --current"
+      exit 1
+      ;;
+    *) REQUESTED="$arg" ;;
+  esac
+done
 
-# ── Step 2: Bump version in project ───────────────────────────────────────────
-echo "🔢 Updating version numbers..."
-perl -0pi -e "s/(MARKETING_VERSION = )[^;]+;/\${1}${VERSION};/g" "$PROJECT_FILE"
+if [ "$KEEP_VERSION" = 1 ]; then
+  if [ -n "$REQUESTED" ]; then
+    echo "❌ --current cannot be combined with an explicit version"
+    exit 1
+  fi
+  VERSION="$(current_version)"
+  if [ -z "$VERSION" ]; then
+    echo "❌ Could not read MARKETING_VERSION from $PROJECT_FILE"
+    exit 1
+  fi
+  echo "📦 Packaging current version v${VERSION} (no bump)"
+else
+  VERSION="$(resolve_version "${REQUESTED}")"
+  echo "📦 Releasing v${VERSION}"
+fi
+echo ""
 
 CURRENT_BUILD=$(perl -ne 'print $1 and exit if /CURRENT_PROJECT_VERSION = (\d+);/' "$PROJECT_FILE")
-NEXT_BUILD=$((CURRENT_BUILD + 1))
-perl -0pi -e "s/(CURRENT_PROJECT_VERSION = )\d+;/\${1}${NEXT_BUILD};/g" "$PROJECT_FILE"
 
-echo "  Version : v${VERSION}"
-echo "  Build   : ${NEXT_BUILD}"
+if [ "$KEEP_VERSION" = 1 ]; then
+  echo "🔢 Using version numbers already in the project..."
+  echo "  Version : v${VERSION}"
+  echo "  Build   : ${CURRENT_BUILD}"
 
-# ── Step 3: Update CHANGELOG ──────────────────────────────────────────────────
-if [ -f "$CHANGELOG" ]; then
   echo ""
-  echo "📝 Updating CHANGELOG..."
-  RELEASE_DATE=$(date +%Y-%m-%d)
-  perl -0pi -e "s/## \[Unreleased\]\n- \n/## [Unreleased]\n- \n\n## [${VERSION}] - ${RELEASE_DATE}\n- \n/" "$CHANGELOG"
-fi
+  if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+    echo "📌 Tag v${VERSION} already exists"
+  else
+    echo "💾 Tagging HEAD as v${VERSION} (local only)..."
+    git tag "v${VERSION}"
+    echo "📌 Tagged: v${VERSION}"
+  fi
+else
+  # ── Step 2: Bump version in project ───────────────────────────────────────────
+  echo "🔢 Updating version numbers..."
+  perl -0pi -e "s/(MARKETING_VERSION = )[^;]+;/\${1}${VERSION};/g" "$PROJECT_FILE"
 
-# ── Step 4: Commit + tag (local only) ─────────────────────────────────────────
-echo ""
-echo "💾 Creating release commit + tag (local only)..."
-git add "$PROJECT_FILE" "$CHANGELOG"
-git commit -m "release: v${VERSION}"
-git tag "v${VERSION}"
-echo "📌 Tagged: v${VERSION}"
+  NEXT_BUILD=$((CURRENT_BUILD + 1))
+  perl -0pi -e "s/(CURRENT_PROJECT_VERSION = )\d+;/\${1}${NEXT_BUILD};/g" "$PROJECT_FILE"
+
+  echo "  Version : v${VERSION}"
+  echo "  Build   : ${NEXT_BUILD}"
+
+  # ── Step 3: Update CHANGELOG ──────────────────────────────────────────────────
+  if [ -f "$CHANGELOG" ]; then
+    echo ""
+    echo "📝 Updating CHANGELOG..."
+    RELEASE_DATE=$(date +%Y-%m-%d)
+    perl -0pi -e "s/## \[Unreleased\]\n- \n/## [Unreleased]\n- \n\n## [${VERSION}] - ${RELEASE_DATE}\n- \n/" "$CHANGELOG"
+  fi
+
+  # ── Step 4: Commit + tag (local only) ─────────────────────────────────────────
+  echo ""
+  echo "💾 Creating release commit + tag (local only)..."
+  git add "$PROJECT_FILE" "$CHANGELOG"
+  git commit -m "release: v${VERSION}"
+  git tag "v${VERSION}"
+  echo "📌 Tagged: v${VERSION}"
+fi
 
 # ── Step 5: Check notarization credentials ────────────────────────────────────
 echo ""

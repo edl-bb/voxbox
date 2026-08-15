@@ -6,6 +6,8 @@
 
 **Fast, Offline Voice-to-Text for macOS**
 
+![VoxBox dashboard](branding/dashboard.png)
+
 [![Download](https://img.shields.io/badge/Download-VoxBox.dmg-blueviolet?logo=apple&logoColor=white)](https://github.com/edl-bb/VoxBox/releases/latest)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange?logo=swift)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%2026.0+-blue?logo=apple)](https://www.apple.com/macos/)
@@ -105,15 +107,6 @@ voxbox/
 - **[WhisperKit](https://github.com/argmaxinc/WhisperKit)** - Local Whisper inference
 - **[KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts)** - Global hotkeys
 - **AVFoundation** - Audio capture
-
----
-
-## Contributing
-
-1. Fork & clone
-2. Create a branch: `git checkout -b feature/my-feature`
-3. Make changes and run `make lint`
-4. Submit a PR
 
 ---
 
