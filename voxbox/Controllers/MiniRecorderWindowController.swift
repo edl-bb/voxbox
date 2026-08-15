@@ -174,6 +174,25 @@ class MiniRecorderWindowController: NSObject {
         NotificationCenter.default.post(name: .recordingCancelRequested, object: nil)
     }
 
+    /// Copy the newest history transcript. Recovery path when auto-paste missed
+    /// the focused field — does not re-paste, just puts the text on the clipboard.
+    func copyLastTranscriptToClipboard() {
+        if let text = HistoryService.shared.lastTranscript {
+            ClipboardService.shared.copy(text: text)
+            NotificationCenter.default.post(name: .lastTranscriptCopied, object: nil)
+            AppLogger.info("Copied last transcript to clipboard", category: AppLogger.clipboard)
+        } else {
+            NotificationCenter.default.post(name: .lastTranscriptCopyFailed, object: nil)
+            AppLogger.info("Copy last transcript: nothing to copy", category: AppLogger.clipboard)
+        }
+
+        guard let panel = panel else { return }
+        positionPanel()
+        if !panel.isVisible {
+            panel.orderFrontRegardless()
+        }
+    }
+
     private func setupPanel() {
         // Initialize View with callbacks
         observeAppActivations()

@@ -29,11 +29,11 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
     var summary: String {
         switch self {
         case .formatting:
-            return "Fixes spacing, capitalisation, punctuation and paragraph breaks. Never touches your words."
+            return "Capitals, commas, and paragraph breaks only. Does not add or drop words."
         case .lightCleanup:
-            return "Also removes fillers like “um” and “uh”, false starts and repeated words, and fixes obvious grammar slips."
+            return "Drops false starts and repeated words, and fixes obvious grammar. Not the same as the filler-word toggle above — this can rewrite a phrase."
         case .polish:
-            return "Also smooths choppy dictated phrasing into fluent sentences. Meaning and tone are preserved."
+            return "Turns choppy dictation into fluent sentences. Meaning and tone stay the same; wording may change."
         }
     }
 
@@ -132,6 +132,11 @@ final class TranscriptFormatterService {
 
     private init() {}
 
+    static func shouldFormat(_ text: String) -> Bool {
+        guard isEnabled, isModelAvailable else { return false }
+        return words(in: text).count >= minimumWordCount
+    }
+
     /// Clean up `text` at the user's chosen intensity, returning the input
     /// unchanged whenever the feature is off, the model is unavailable, the
     /// text is too short, the model errors, or the guardrail rejects the
@@ -141,7 +146,8 @@ final class TranscriptFormatterService {
         guard Self.isModelAvailable else { return text }
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard Self.words(in: trimmed).count >= Self.minimumWordCount else { return text }
+        let wordCount = Self.words(in: trimmed).count
+        guard wordCount >= Self.minimumWordCount else { return text }
 
         let intensity = Self.intensity
         do {
@@ -152,9 +158,9 @@ final class TranscriptFormatterService {
             )
             let cleaned = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            guard !cleaned.isEmpty,
-                Self.changeRatio(from: trimmed, to: cleaned) <= intensity.maximumChangeRatio
-            else {
+            let ratio = Self.changeRatio(from: trimmed, to: cleaned)
+            let accepted = !cleaned.isEmpty && ratio <= intensity.maximumChangeRatio
+            guard accepted else {
                 AppLogger.debug(
                     "On-device formatting rejected by guardrail; keeping raw transcript",
                     category: AppLogger.transcription)

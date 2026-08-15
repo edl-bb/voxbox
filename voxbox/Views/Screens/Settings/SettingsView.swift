@@ -3,6 +3,7 @@ import KeyboardShortcuts
 import SwiftUI
 
 struct SettingsView: View {
+    var onOpenDictionary: (() -> Void)?
     @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
@@ -32,7 +33,7 @@ struct SettingsView: View {
             // Tab content
             switch selectedTab {
             case .general:
-                GeneralSettingsTab()
+                GeneralSettingsTab(onOpenDictionary: onOpenDictionary)
             case .audio:
                 AudioSettingsTab()
             case .permissions:
@@ -85,6 +86,7 @@ struct SettingsTabButton: View {
 // MARK: - General Settings Tab
 
 struct GeneralSettingsTab: View {
+    var onOpenDictionary: (() -> Void)?
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @AppStorage("selectedHotkey") private var selectedHotkey: HotkeyOption = .fn
     @AppStorage("recordingMode") private var recordingMode: Int = 0  // 0: Hold to record, 1: Toggle
@@ -96,7 +98,7 @@ struct GeneralSettingsTab: View {
     @AppStorage(PillPosition.defaultsKey) private var recorderPillPosition: PillPosition = .defaultPosition
     @AppStorage("transcriptionLanguage") private var transcriptionLanguage: String = "auto"
     @AppStorage("recentTranscriptionLanguages") private var recentLanguagesString: String = ""
-    @AppStorage("enableAutoEdit") private var enableAutoEdit: Bool = false
+    @AppStorage(AutoEdit.defaultsKey) private var enableAutoEdit: Bool = false
     @AppStorage(SmartTrailingPunctuation.defaultsKey)
     private var smartTrailingPunctuation: Bool = true
     @AppStorage(TranscriptFormatterService.enabledKey)
@@ -144,7 +146,8 @@ struct GeneralSettingsTab: View {
                 // Shortcuts
                 SettingsSection {
                     SettingsSectionHeader(
-                        icon: "command", title: "Shortcuts", subtitle: "Configure recording hotkeys"
+                        icon: "command", title: "Shortcuts",
+                        subtitle: "Recording and clipboard hotkeys"
                     )
 
                     VStack(spacing: 16) {
@@ -216,6 +219,22 @@ struct GeneralSettingsTab: View {
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
                             .padding(.top, 2)
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Copy last transcript")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                KeyboardShortcuts.Recorder("", name: .copyLastTranscript)
+                            }
+
+                            Text(
+                                "Puts the most recent transcript on the clipboard so you can paste it if auto-paste missed the field. Default is ⌃⌥C."
+                            )
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
                         }
 
                     }
@@ -344,12 +363,12 @@ struct GeneralSettingsTab: View {
                     SettingsSectionHeader(
                         icon: "wand.and.stars",
                         title: "Transcript Cleanup",
-                        subtitle: "Lightweight post-processing for dictation"
+                        subtitle: "Instant rules, then optional on-device AI"
                     )
 
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Text("Enable Auto Edit")
+                            Text("Remove filler words")
                                 .font(Typography.bodyMedium)
                                 .foregroundStyle(Color.textPrimary)
                             Spacer()
@@ -357,8 +376,21 @@ struct GeneralSettingsTab: View {
                                 .labelsHidden()
                         }
 
+                        Text("Strips um, uh, and similar fillers. Instant — no AI.")
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+
+                        HStack {
+                            Text("Strip stray period")
+                                .font(Typography.bodyMedium)
+                                .foregroundStyle(Color.textPrimary)
+                            Spacer()
+                            Toggle("", isOn: $smartTrailingPunctuation)
+                                .labelsHidden()
+                        }
+
                         Text(
-                            "Auto Edit removes common filler words like \"um\" and \"uh\" after transcription. It stays fully offline and does not rewrite the meaning of what you said."
+                            "If you dictate only an email, URL, number, or single word, drops the extra period the model adds. Sentences are left alone."
                         )
                         .font(Typography.captionSmall)
                         .foregroundStyle(Color.textMuted)
@@ -367,7 +399,7 @@ struct GeneralSettingsTab: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
-                                Text("Clean up with on-device AI")
+                                Text("On-device AI")
                                     .font(Typography.bodyMedium)
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
@@ -378,7 +410,7 @@ struct GeneralSettingsTab: View {
 
                             if !TranscriptFormatterService.isModelAvailable {
                                 Text(
-                                    "Apple's on-device model isn't available on this Mac right now (it may still be downloading system assets)."
+                                    "Apple Intelligence isn’t available on this Mac right now."
                                 )
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
@@ -400,7 +432,7 @@ struct GeneralSettingsTab: View {
                             }
 
                             Text(
-                                "Uses the Apple Intelligence model built into macOS — nothing is downloaded and nothing leaves your Mac. If the result changes your words more than the chosen level allows, the raw transcript is kept."
+                                "Optional. Runs on this Mac for longer dictations only. If the edit is too heavy, the original is kept."
                             )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
@@ -408,43 +440,40 @@ struct GeneralSettingsTab: View {
 
                         Divider()
 
-                        HStack {
-                            Text("Smart trailing punctuation")
-                                .font(Typography.bodyMedium)
-                                .foregroundStyle(Color.textPrimary)
-                            Spacer()
-                            Toggle("", isOn: $smartTrailingPunctuation)
-                                .labelsHidden()
-                        }
+                        Button {
+                            onOpenDictionary?()
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "character.book.closed")
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(Color.textMuted)
+                                    .frame(width: 22)
 
-                        Text(
-                            "When a dictation is just an email address, URL, number, or single word, the sentence-final period the model adds is removed so the text pastes clean. Full sentences are never touched."
-                        )
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Custom replacements & snippets")
+                                        .font(Typography.bodyMedium)
+                                        .foregroundStyle(Color.textPrimary)
+                                    Text(
+                                        "Say “my email” to insert your address. Always on, every model."
+                                    )
+                                    .font(Typography.captionSmall)
+                                    .foregroundStyle(Color.textMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                }
 
-                        Divider()
+                                Spacer(minLength: 8)
 
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: "character.book.closed")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color.textMuted)
-                                .padding(.top, 2)
-
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Custom replacements & snippets")
-                                    .font(Typography.bodyMedium)
-                                    .foregroundStyle(Color.textPrimary)
-                                Text(
-                                    "Word replacements and spoken snippets (say “my email” → your address) now live in the Dictionary tab in the sidebar. They apply on every model, always on."
-                                )
-                                .font(Typography.captionSmall)
-                                .foregroundStyle(Color.textMuted)
-                                .fixedSize(horizontal: false, vertical: true)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.textMuted)
                             }
-
-                            Spacer(minLength: 0)
+                            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .disabled(onOpenDictionary == nil)
                     }
                 }
 

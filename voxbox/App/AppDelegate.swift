@@ -409,6 +409,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard UserDefaults.standard.integer(forKey: "recordingMode") == 0 else { return }
             self.miniRecorderController?.stopRecording()
         }
+
+        KeyboardShortcuts.onKeyDown(for: .copyLastTranscript) { [weak self] in
+            self?.miniRecorderController?.copyLastTranscriptToClipboard()
+        }
     }
 
     private func handleModifierComboEvent(_ event: NSEvent) {

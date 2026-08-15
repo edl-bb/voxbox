@@ -3,7 +3,7 @@ import OSLog
 
 /// Unified logging for VoxBox
 /// Usage: AppLogger.service.info("Model downloaded")
-enum AppLogger {
+nonisolated enum AppLogger {
     /// General app lifecycle events
     static let app = Logger(subsystem: subsystem, category: "App")
     
@@ -38,7 +38,7 @@ enum AppLogger {
 }
 
 // MARK: - Convenience Methods
-extension AppLogger {
+nonisolated extension AppLogger {
     /// Log with emoji prefix for better visual scanning
     static func info(_ message: String, category: Logger = AppLogger.service) {
         category.info("ℹ️ \(message)")

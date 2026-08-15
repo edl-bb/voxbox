@@ -32,6 +32,14 @@ class HistoryService: ObservableObject {
     
     @Published var items: [HistoryItem] = []
     @Published private(set) var statsEntries: [HistoryStatsEntry] = []
+
+    /// Newest completed transcript, if any. Used by the copy-last-transcript shortcut.
+    var lastTranscript: String? {
+        guard let text = items.first?.transcript.trimmingCharacters(in: .whitespacesAndNewlines),
+            !text.isEmpty
+        else { return nil }
+        return text
+    }
     
     private let saveKey = "history_items"
     private let statsSaveKey = "history_stats_entries"

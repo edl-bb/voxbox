@@ -50,7 +50,7 @@ struct MainView: View {
         case .aiModels:
             AIModelsView()
         case .settings:
-            SettingsView()
+            SettingsView(onOpenDictionary: { selection = .dictionary })
         case .none:
             DashboardView(selection: $selection)
         }

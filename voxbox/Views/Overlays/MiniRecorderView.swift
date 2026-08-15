@@ -448,6 +448,15 @@ struct MiniRecorderView: View {
         .onReceive(NotificationCenter.default.publisher(for: .recordingCancelRequested)) { _ in
             cancelRecording()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .transcriptCleanupStarted)) { _ in
+            if isProcessing { statusMessage = "Tidying up..." }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .lastTranscriptCopied)) { _ in
+            flashClipboardStatus("Copied to clipboard")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .lastTranscriptCopyFailed)) { _ in
+            flashClipboardStatus("No transcript yet")
+        }
         .onAppear {
             initializedService()
             audioRecorder.fetchAvailableDevices()
@@ -637,6 +646,21 @@ struct MiniRecorderView: View {
             stopAndTranscribe()
         } else {
             startRecording()
+        }
+    }
+
+    /// Brief pill confirmation for the copy-last-transcript shortcut.
+    /// Skipped while recording or transcribing so those HUDs stay intact.
+    private func flashClipboardStatus(_ message: String) {
+        guard !isListening, !isProcessing, !isWarmingUp else { return }
+        isProcessing = true
+        statusMessage = message
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            guard statusMessage == message else { return }
+            isProcessing = false
+            statusMessage = "Transcribing..."
+            onCancel?()
         }
     }
 

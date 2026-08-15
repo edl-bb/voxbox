@@ -4,6 +4,10 @@ import AppKit
 
 extension KeyboardShortcuts.Name {
     static let toggleRecord = Self("toggleRecord", default: .init(.space, modifiers: [.control, .option]))
+    /// Copies the most recent transcript. Independent of the recording hotkey
+    /// so it still works when the primary shortcut is a single modifier (Fn).
+    static let copyLastTranscript = Self(
+        "copyLastTranscript", default: .init(.c, modifiers: [.control, .option]))
 }
 
 extension Notification.Name {
@@ -17,4 +21,11 @@ extension Notification.Name {
     /// Posted when the user picks a new "recorder pill position" in Settings so
     /// the window controller can move the pill without touching visibility.
     static let recorderPillPositionChanged = Notification.Name("recorderPillPositionChanged")
+    /// Posted when on-device AI cleanup is about to run, so the pill can
+    /// switch from “Transcribing…” to “Tidying up…”.
+    static let transcriptCleanupStarted = Notification.Name("transcriptCleanupStarted")
+    /// Posted after the copy-last-transcript shortcut writes the clipboard.
+    static let lastTranscriptCopied = Notification.Name("lastTranscriptCopied")
+    /// Posted when the shortcut fired but history has no transcript yet.
+    static let lastTranscriptCopyFailed = Notification.Name("lastTranscriptCopyFailed")
 }

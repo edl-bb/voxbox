@@ -106,10 +106,17 @@ class TranscriptionManager {
         if AustralianEnglishSpelling.isAustralianEnglish(language) {
             text = AustralianEnglishSpelling.apply(to: text)
         }
-        // Optional on-device AI cleanup runs after dictionary rules (so custom
-        // replacements are already in place) and before trailing punctuation.
+        // Dictionary → deterministic filler strip → optional on-device AI →
+        // trailing-period heuristic. Auto Edit runs here so Parakeet and
+        // Whisper both see it on the text that is pasted, not only in history.
         let withRules = DictionaryService.apply(to: text)
-        let formatted = await TranscriptFormatterService.shared.format(withRules)
+        let withAutoEdit = AutoEdit.apply(to: withRules)
+        if TranscriptFormatterService.shouldFormat(withAutoEdit) {
+            await MainActor.run {
+                NotificationCenter.default.post(name: .transcriptCleanupStarted, object: nil)
+            }
+        }
+        let formatted = await TranscriptFormatterService.shared.format(withAutoEdit)
         return SmartTrailingPunctuation.apply(to: formatted)
     }
 }
