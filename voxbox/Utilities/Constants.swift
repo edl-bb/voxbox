@@ -36,11 +36,5 @@ enum Constants {
         static let timeoutInterval: TimeInterval = 30.0
         static let maxRetryCount = 3
     }
-    
-    // MARK: - Storage
-    enum Storage {
-        // Kept as the legacy SpeakType suite so existing users' settings survive the VoxBox rebrand.
-        static let userDefaultsSuiteName = "com.speaktype.defaults"
-    }
 }
 
