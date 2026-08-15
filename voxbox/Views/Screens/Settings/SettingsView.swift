@@ -109,6 +109,8 @@ struct GeneralSettingsTab: View {
     private var audioRetentionSeconds: Double = RetentionService.defaultAudioRetention
     @AppStorage(RetentionService.transcriptRetentionKey)
     private var transcriptRetentionSeconds: Double = RetentionService.defaultTranscriptRetention
+    @AppStorage(UpdateService.autoUpdateDefaultsKey)
+    private var checkForUpdatesDaily = false
 
     private var recentLanguageCodes: [String] {
         recentLanguagesString.split(separator: ",").map(String.init).filter { !$0.isEmpty }
@@ -593,12 +595,24 @@ struct GeneralSettingsTab: View {
                         subtitle: "VoxBox \(AppVersion.currentVersion)")
 
                     VStack(spacing: 16) {
-                        Text(
-                            "Updates are strictly manual. The app never contacts the internet on its own — it only checks GitHub when you click the button below."
-                        )
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Check for updates daily")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                Toggle("", isOn: $checkForUpdatesDaily)
+                                    .labelsHidden()
+                            }
+
+                            Text(
+                                checkForUpdatesDaily
+                                    ? "Once a day at launch, VoxBox asks GitHub if a newer version is available and prompts you if there is."
+                                    : "Off by default. The app only checks GitHub when you tap the button below."
+                            )
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+                        }
 
                         Button(action: {
                             Task {

@@ -79,6 +79,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.showUpdateWindow()
             }
             .store(in: &cancellables)
+
+        // Daily check is opt-in (Settings → Updates). Off by default so a
+        // fresh install never contacts the network on its own.
+        UpdateService.shared.checkForUpdatesOnLaunch()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -461,9 +465,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Update Checking
     //
-    // There is deliberately no automatic launch-time update check: the app
-    // makes zero network requests unless the user explicitly asks (manual
-    // "Check for Updates" in Settings, model downloads, license activation).
+    // Launch-time checks run only when the user has opted into "Check for
+    // updates daily". Otherwise the app stays offline until they tap
+    // "Check for Updates" (or download a model).
 
     private func showUpdateWindow() {
         guard let update = UpdateService.shared.availableUpdate else { return }

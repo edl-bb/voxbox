@@ -13,7 +13,7 @@
 [![Platform](https://img.shields.io/badge/Platform-macOS%2026.0+-blue?logo=apple)](https://www.apple.com/macos/)
 [![License](https://img.shields.io/badge/License-MIT-red)](LICENSE)
 
-*Press a hotkey, speak, and instantly paste text anywhere on your Mac.*
+*Press a hotkey, speak, and paste text anywhere on your Mac.*
 
 </div>
 
@@ -21,36 +21,53 @@
 
 ## What is VoxBox?
 
-VoxBox is a **privacy-first, offline voice dictation tool** for macOS. Unlike online dictation services, everything runs **100% locally** using OpenAI's Whisper AI model via [WhisperKit](https://github.com/argmaxinc/WhisperKit). Support for Parakeet coming soon!
+VoxBox is a privacy-first dictation app for macOS. Speech is transcribed **on your Mac** with [WhisperKit](https://github.com/argmaxinc/WhisperKit) or Parakeet — nothing is sent to a cloud speech API.
 
-- **Privacy First** - Zero data leaves your Mac
-- **Lightning Fast** - Optimized for Apple Silicon
-- **Works Everywhere** - Any app, any text field
-- **Open Source** - Audit every line of code yourself
+It is a fork of [SpeakType](https://github.com/karansinghgit/speaktype). VoxBox adds on-device AI cleanup so longer dictations stay readable, plus support for Australian English and a few other quality-of-life improvements.
+
+- **Private** — transcription and cleanup stay on the device
+- **Local models** — choose your preferred transcription model and use it offline. Optional text cleanup utilises on device Apple Intelligence models.
+- **Works anywhere** — use VoxBox with any app or website.
 
 ---
 
-## Installation
+## On-device cleanup
 
-### Requirements
+Raw speech-to-text gets messy on longer takes: fillers, false starts, missing punctuation. VoxBox can run an optional **on-device Apple Intelligence** pass after the speech model (so nothing leaves your Mac):
 
-- macOS 26.0+ (Tahoe or newer)
-- Apple Silicon (M1+) recommended
-- 2GB available storage (for AI models)
+- **Formatting** — capitals, commas, paragraph breaks only
+- **Light cleanup** — also drops fillers and fixes obvious grammar
+- **Polish** — smooths choppy dictation into fluent sentences
 
-### Download
+A guardrail keeps the original if the edit is too heavy. That is why you can dictate a full thought or a longer note and still get usable text.
 
-**[Download Latest Release](https://github.com/edl-bb/VoxBox/releases/latest)**
+Instant, non-AI options are also available to strip "um's" and "ahh's" if you want the fastest experience possible.
 
-1. Download `VoxBox.dmg`
+---
+
+## VoxBox quality of life improvements
+
+- **Copy on finish** — the transcript stays on the clipboard (default on)
+- **Copy last transcript** — ⌃⌥C if auto-paste missed the field
+- **Australian English** — transcribe as English, then convert American spellings offline
+- **Custom hotkey** — any key combination, not only a single modifier
+- **Retention** — auto-delete audio and old transcripts; stats are kept
+- **Model download progress** – improved visibility when models are downloading in the background so you know how long you need to wait to begin transcribing.
+
+---
+
+## Install
+
+**Requires** macOS 26+, Apple Silicon recommended, and at least 2GB for models.
+
+1. [Download the latest `VoxBox.dmg`](https://github.com/edl-bb/VoxBox/releases/latest)
 2. Drag **VoxBox** to **Applications**
-3. Grant Microphone + Accessibility + Documents Folder permissions
-4. Download an AI model from Settings → AI Models
+3. Grant **Microphone** (required) and **Accessibility** (for auto-paste)
+4. Download a model from the **AI Models** screen
 
-Press `fn` to start dictating.
+Press `fn` to dictate (or set your own shortcut in Settings).
 
-### Build from Source
-
+### Build from source
 ```bash
 git clone https://github.com/edl-bb/VoxBox.git
 cd VoxBox
@@ -61,73 +78,19 @@ make build && make run
 
 ## Usage
 
-1. Press hotkey (`fn` by default)
-2. Speak your text
-3. Release hotkey
-4. Text appears!
+1. Press the hotkey
+2. Speak — a sentence or a longer note
+3. Release (or press again in toggle mode)
+4. Text pastes into the focused field, or lands on the clipboard
 
-**Tips:**
-- Speak naturally - Whisper handles accents well
-- Say punctuation: "comma", "period", "question mark"
-- Best results with 3-10 second clips
+If paste misses, press **⌃⌥C** and paste yourself.
 
----
-
-## Development
-
-```bash
-make build          # Build debug
-make run            # Run app
-make clean          # Clean build
-make test           # Run tests
-make dmg            # Create DMG installer
-```
-
-### Current Issues
-
-⚠️ When loading a model for the first time / switching to another model, there is a startup delay of 30-60 seconds. 
-
-So the first transcription will appear ultra slow, but it will go back to instantaneous dictation right after it's warmed up. 
-
-### Project Structure
-
-```
-voxbox/
-├── App/           # Entry point
-├── Views/         # SwiftUI interface
-├── Models/        # Data models
-├── Services/      # Core functionality
-├── Controllers/   # Window management
-└── Resources/     # Assets & config
-```
-
-### Tech Stack
-
-- **Swift 5.9+** / SwiftUI + AppKit
-- **[WhisperKit](https://github.com/argmaxinc/WhisperKit)** - Local Whisper inference
-- **[KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts)** - Global hotkeys
-- **AVFoundation** - Audio capture
+The first model load can take 30–60 seconds. After that, dictation is fast.
 
 ---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
 
----
-
-## Credits
-
-VoxBox is based on **[SpeakType](https://github.com/karansinghgit/speaktype)** by **Karan Singh** (2048 Labs), the original project from which VoxBox was formed. Huge thanks to Karan for the foundation this app is built on.
-
-- [SpeakType](https://github.com/karansinghgit/speaktype) by Karan Singh - the original project
-- [WhisperKit](https://github.com/argmaxinc/WhisperKit) by Argmax
-- [OpenAI Whisper](https://github.com/openai/whisper)
-
----
-
-<div align="center">
-
-**Made with ❤️ by Cubbei Studios**
-
-</div>
+VoxBox is based on **[SpeakType](https://github.com/karansinghgit/speaktype)** by **Karan Singh** (2048 Labs). Whisper via [WhisperKit](https://github.com/argmaxinc/WhisperKit) / [OpenAI Whisper](https://github.com/openai/whisper).

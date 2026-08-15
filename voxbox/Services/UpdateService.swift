@@ -30,7 +30,7 @@ class UpdateService: NSObject, ObservableObject {
     // User Defaults keys
     private let lastCheckDateKey = "lastUpdateCheckDate"
     private let skippedVersionKey = "skippedVersion"
-    private let autoUpdateKey = "autoUpdate"
+    static let autoUpdateDefaultsKey = "autoUpdate"
     private let lastReminderDateKey = "lastUpdateReminderDate"
 
     private var activeDownloadSession: URLSession?
@@ -85,6 +85,13 @@ class UpdateService: NSObject, ObservableObject {
         }
     }
 
+    /// Opt-in daily check: at most once per 24 hours, and only if the
+    /// Settings toggle is on. Skipped versions stay skipped (`silent: true`).
+    func checkForUpdatesOnLaunch() {
+        guard isAutoUpdateEnabled, shouldCheckForUpdates() else { return }
+        Task { await checkForUpdates(silent: true) }
+    }
+
     /// Check if enough time has passed since last check (24 hours)
     func shouldCheckForUpdates() -> Bool {
         guard let lastCheck = lastCheckDate else { return true }
@@ -133,8 +140,8 @@ class UpdateService: NSObject, ObservableObject {
     // MARK: - Auto Update
 
     var isAutoUpdateEnabled: Bool {
-        get { UserDefaults.standard.bool(forKey: autoUpdateKey) }
-        set { UserDefaults.standard.set(newValue, forKey: autoUpdateKey) }
+        get { UserDefaults.standard.bool(forKey: Self.autoUpdateDefaultsKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Self.autoUpdateDefaultsKey) }
     }
 
     // MARK: - Update Installation

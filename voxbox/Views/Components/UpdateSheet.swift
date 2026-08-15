@@ -156,7 +156,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(.white)
             .padding(.horizontal, 24)
             .padding(.vertical, 10)
-            .background(Color.blue)
+            .background(Color.brandAccent)
             .cornerRadius(8)
             .opacity(configuration.isPressed ? 0.8 : 1.0)
     }

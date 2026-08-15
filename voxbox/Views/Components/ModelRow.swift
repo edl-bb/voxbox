@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A single AI-model card. Clean two-font layout (Clash Display for the name,
-/// Satoshi for everything else) with a single warm terracotta accent.
+/// Satoshi for everything else) with a single logo-blue accent.
 struct ModelRow: View {
     let model: AIModel
     @Binding var selectedModel: String

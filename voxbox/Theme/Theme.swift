@@ -65,7 +65,7 @@ enum VoxBoxTheme {
     }
     
     var accent: Color {
-        return Color(hex: "2C2C54")
+        return Color(hex: "3D6AE8")
     }
 }
 

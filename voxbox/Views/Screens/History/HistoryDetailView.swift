@@ -25,7 +25,7 @@ struct HistoryDetailView: View {
                     
                     Text(formatDuration(item.duration))
                         .font(Typography.labelMedium)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.brandAccent)
                 }
                 
                 // Badges and copy button
@@ -35,7 +35,7 @@ struct HistoryDetailView: View {
                         .font(Typography.badge)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.blue)
+                        .background(Color.brandAccent)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                     
@@ -53,7 +53,7 @@ struct HistoryDetailView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.purple)
+                        .background(Color.brandAccent)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                     }
@@ -72,7 +72,7 @@ struct HistoryDetailView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.blue)
+                        .background(Color.brandAccent)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                     }
@@ -137,7 +137,7 @@ struct HistoryDetailView: View {
                             Button(action: togglePlayback) {
                                 Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
                                     .font(.title2)
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.brandAccent)
                             }
                             .buttonStyle(.plain)
                             

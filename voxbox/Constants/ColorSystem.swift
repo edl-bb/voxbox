@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - VoxBox Design System
-// Inspired by Wispr Flow - warm, seamless, typographically rich
+// VoxBox palette — logo violet → deep blue → teal, on near-black / cream
 
 extension Color {
 
@@ -16,9 +16,9 @@ extension Color {
     static let inkLight = Color(hex: "252525")
     static let inkSurface = Color(hex: "2F2F2F")
 
-    /// Accent - lavender tint for selected states (like Flow)
-    static let lavender = Color(hex: "F0EBFF")
-    static let lavenderDark = Color(hex: "3D3560")
+    /// Selection wash — logo violet, quiet enough for sidebar rows
+    static let lavender = Color(hex: "E8EEFF")
+    static let lavenderDark = Color(hex: "243056")
 
     // MARK: - Semantic Colors
 
@@ -81,8 +81,8 @@ extension Color {
             name: "bgSelected",
             dynamicProvider: { appearance in
                 appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                    ? NSColor(hex: "3D3560")  // Dark lavender
-                    : NSColor(hex: "F0EBFF")  // Light lavender
+                    ? NSColor(hex: "243056")  // Deep navy-violet (logo)
+                    : NSColor(hex: "E8EEFF")  // Cool blue wash
             }))
 
     // MARK: - Borders
@@ -114,7 +114,7 @@ extension Color {
                     : NSColor(hex: "E8E6E3")
             }))
 
-    static let borderActive = Color(hex: "2C2C54")
+    static let borderActive = Color(hex: "4C7CFF")
 
     // MARK: - Text
 
@@ -184,50 +184,49 @@ extension Color {
                     ? NSColor(hex: "FFFFFF")  // White in Dark Mode for high contrast
                     : NSColor(hex: "1A1A1A")  // Black in Light Mode
             }))
-    // MARK: - Brand accent (AI Models redesign)
-    // A single warm terracotta accent for everything expressive — recommended /
-    // selected states, primary actions, metric bars, the multilingual badge.
-    // Warm-on-warm with the cream background, and one hue instead of many.
+    // MARK: - Brand accent
+    // Pulled from the V-wave logo: violet → deep blue → cyan. One hue for
+    // selected models, primary actions, and metric bars.
 
     static let brandAccent = Color(
         nsColor: NSColor(
             name: "brandAccent",
             dynamicProvider: { appearance in
                 appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                    ? NSColor(hex: "E0A288")   // softer, muted terracotta
-                    : NSColor(hex: "C67A5F")
+                    ? NSColor(hex: "5B8CFF")
+                    : NSColor(hex: "3D6AE8")
             }))
     static let brandAccentSoft = Color(
         nsColor: NSColor(
             name: "brandAccentSoft",
             dynamicProvider: { appearance in
                 appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                    ? NSColor(hex: "E58C68").withAlphaComponent(0.18)
-                    : NSColor(hex: "BF5B3F").withAlphaComponent(0.10)
+                    ? NSColor(hex: "5B8CFF").withAlphaComponent(0.20)
+                    : NSColor(hex: "3D6AE8").withAlphaComponent(0.10)
             }))
 
-    static let accentSuccess = Color(hex: "22C55E")
+    static let accentSuccess = Color(hex: "2EC8B8")
     static let accentWarning = Color(hex: "F59E0B")
     static let accentError = Color(hex: "EF4444")
-    static let accentBlue = Color(hex: "3B82F6")
+    static let accentBlue = Color(hex: "4C7CFF")
 
     // Chart colors
     static let chartRed = Color(hex: "A62D35")
-    static let chartBlue = Color(hex: "2D5DA6")
-    static let chartGreen = Color(hex: "22C55E")
+    static let chartBlue = Color(hex: "4C7CFF")
+    static let chartGreen = Color(hex: "2EC8B8")
 
     // Legacy
-    static let navyInk = Color(hex: "2C2C54")
-    static let navyLight = Color(hex: "3D3D6B")
+    static let navyInk = Color(hex: "243056")
+    static let navyLight = Color(hex: "3D4A78")
     static let navyMuted = Color(hex: "6B6B6B")
     static let charcoal = Color(hex: "1A1A1A")
     static let charcoalLight = Color(hex: "252525")
     static let charcoalSurface = Color(hex: "2F2F2F")
     static let accentWarm = Color(hex: "F59E0B")
-    static let accentCool = Color(hex: "3B82F6")
+    static let accentCool = Color(hex: "4C7CFF")
     static let accentRed = Color(hex: "EF4444")
     static let accentRedSoft = Color(hex: "EF4444").opacity(0.1)
-    static let accentBlueSoft = Color(hex: "3B82F6").opacity(0.1)
+    static let accentBlueSoft = Color(hex: "4C7CFF").opacity(0.1)
 
     // MARK: - Buttons
 
@@ -254,10 +253,10 @@ extension Color {
 
     // MARK: - Badges
 
-    static let badgeVoiceBg = Color(hex: "22C55E").opacity(0.12)
-    static let badgeVoiceText = Color(hex: "22C55E")
-    static let badgeMusicBg = Color(hex: "3B82F6").opacity(0.12)
-    static let badgeMusicText = Color(hex: "3B82F6")
+    static let badgeVoiceBg = Color(hex: "2EC8B8").opacity(0.12)
+    static let badgeVoiceText = Color(hex: "2EC8B8")
+    static let badgeMusicBg = Color(hex: "4C7CFF").opacity(0.12)
+    static let badgeMusicText = Color(hex: "4C7CFF")
     static let badgeMutedBg = Color(hex: "9A9A9A").opacity(0.12)
     static let badgeMutedText = Color(hex: "9A9A9A")
 
@@ -267,7 +266,7 @@ extension Color {
     static let gradientButton = LinearGradient(
         colors: [Color(hex: "1A1A1A")], startPoint: .leading, endPoint: .trailing)
     static let gradientSidebarActive = LinearGradient(
-        colors: [Color(hex: "F0EBFF")], startPoint: .leading, endPoint: .trailing)
+        colors: [Color(hex: "E8EEFF")], startPoint: .leading, endPoint: .trailing)
     static let gradientWarm = LinearGradient(
         colors: [Color.clear], startPoint: .leading, endPoint: .trailing)
 }
