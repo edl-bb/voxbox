@@ -257,7 +257,7 @@ class WhisperService {
             let text = Self.normalizedTranscription(
                 from: results.map { $0.text }.joined(separator: " "))
 
-            print("Transcription complete: \(text.prefix(50))...")
+            print("Transcription complete (\(text.count) characters)")
             return text
         } catch {
             print("Transcription failed: \(error.localizedDescription)")
@@ -285,7 +285,7 @@ class WhisperService {
         )
         let text = Self.normalizedTranscription(from: results.map { $0.text }.joined(separator: " "))
 
-        print("🔪 Chunk done: \(text.prefix(40))...")
+        print("🔪 Chunk done (\(text.count) characters)")
         // Clean up temp chunk file after transcription
         try? FileManager.default.removeItem(at: audioFile)
         return text
@@ -294,7 +294,10 @@ class WhisperService {
     private func decodingOptions(for language: String) -> DecodingOptions {
         var options = DecodingOptions()
         options.task = .transcribe
-        options.language = (language == "auto") ? nil : language
+        // Whisper has no regional variants — collapse codes like "en-AU" to
+        // their base language in case a caller bypasses TranscriptionManager.
+        let baseLanguage = language.components(separatedBy: "-").first ?? language
+        options.language = (language == "auto") ? nil : baseLanguage
         return options
     }
 

@@ -10,9 +10,13 @@ enum HotkeyOption: String, Codable, CaseIterable, Identifiable {
     case leftControl = "leftControl"
     case rightOption = "rightOption"
     case leftOption = "leftOption"
-    
+    /// A user-recorded key combination (e.g. ⌘D), handled by the
+    /// KeyboardShortcuts package rather than the modifier-key event tap.
+    /// Combinations collide far less with other apps than single modifiers.
+    case custom = "custom"
+
     var id: String { rawValue }
-    
+
     /// Display name with appropriate symbols
     var displayName: String {
         switch self {
@@ -30,9 +34,11 @@ enum HotkeyOption: String, Codable, CaseIterable, Identifiable {
             return "Right ⌥"
         case .leftOption:
             return "Left ⌥"
+        case .custom:
+            return "Custom Shortcut"
         }
     }
-    
+
     /// macOS keycode for this modifier key
     var keyCode: UInt16 {
         switch self {
@@ -50,6 +56,10 @@ enum HotkeyOption: String, Codable, CaseIterable, Identifiable {
             return 61
         case .leftOption:
             return 58
+        case .custom:
+            // Sentinel that never matches a real event — custom combinations
+            // are dispatched through KeyboardShortcuts, not the modifier tap.
+            return 0xFFFF
         }
     }
     
@@ -64,6 +74,8 @@ enum HotkeyOption: String, Codable, CaseIterable, Identifiable {
             return .control
         case .rightOption, .leftOption:
             return .option
+        case .custom:
+            return []
         }
     }
     

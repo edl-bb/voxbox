@@ -23,7 +23,7 @@ enum ModelStorage {
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask
         ).first!
-        return appSupport.appendingPathComponent("SpeakType", isDirectory: true)
+        return appSupport.appendingPathComponent("VoxBox", isDirectory: true)
     }
 
     /// Directory that holds the WhisperKit CoreML model variants.

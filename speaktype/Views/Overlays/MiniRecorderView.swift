@@ -61,7 +61,7 @@ struct MiniRecorderView: View {
 
     private var spokenLanguageHelpText: String {
         if transcriptionLanguage == "auto" {
-            return "Spoken language hint: Auto-detect. SpeakType will try to detect the language you are speaking."
+            return "Spoken language hint: Auto-detect. VoxBox will try to detect the language you are speaking."
         }
 
         return
@@ -566,8 +566,9 @@ struct MiniRecorderView: View {
                             endPoint: .bottom),
                         lineWidth: 0.75)
                 }
-            } else if #available(macOS 26.0, *) {
+            } else {
                 // Light mode: native Liquid Glass — frosted, refractive, gorgeous.
+                // (Deployment target is macOS 26+, so this is always available.)
                 Color.clear
                     .glassEffect(.regular, in: shape)
                     .overlay {
@@ -588,23 +589,6 @@ struct MiniRecorderView: View {
                         }
                         .clipShape(shape)
                     }
-            } else {
-                // Light mode on macOS 14–15 (no Liquid Glass): behind-window blur.
-                ZStack {
-                    VisualEffectBlur(
-                        material: .hudWindow,
-                        blendingMode: .behindWindow,
-                        cornerRadius: cornerRadius)
-                    shape.strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.55),
-                                Color.white.opacity(0.08),
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom),
-                        lineWidth: 1)
-                }
             }
         } else {
             // Active HUD: deep, opaque near-black so warming/recording/processing
@@ -868,20 +852,11 @@ struct MiniRecorderView: View {
         }
     }
 
+    /// Diagnostics go through the unified logger only. Never write to a shared
+    /// world-readable path like /tmp, and never include transcript content —
+    /// os.Logger redacts interpolated values from persisted logs by default.
     private func debugLog(_ message: String) {
-        let logPath = "/tmp/speaktype_debug.log"
-        let logEntry = "[\(Date())] \(message)\n"
-        if let data = logEntry.data(using: .utf8) {
-            if FileManager.default.fileExists(atPath: logPath) {
-                if let handle = FileHandle(forWritingAtPath: logPath) {
-                    handle.seekToEndOfFile()
-                    handle.write(data)
-                    handle.closeFile()
-                }
-            } else {
-                FileManager.default.createFile(atPath: logPath, contents: data)
-            }
-        }
+        AppLogger.debug(message, category: AppLogger.transcription)
     }
 
     private func processRecording(url: URL) async {
@@ -915,7 +890,7 @@ struct MiniRecorderView: View {
                 await MainActor.run { statusMessage = "Transcribing..." }
             }
             let text = try await transcription.transcribe(audioFile: url, language: transcriptionLanguage)
-            debugLog("Transcription result: \(text.prefix(50))...")
+            debugLog("Transcription finished (\(text.count) characters)")
 
             guard !text.isEmpty else {
                 debugLog("Empty text, cancelling")
@@ -1025,41 +1000,6 @@ struct DoubleChevronIcon: View {
                 .frame(width: 7, height: 4)
         }
         .frame(width: 8, height: 10)
-    }
-}
-
-struct VisualEffectBlur: NSViewRepresentable {
-    var material: NSVisualEffectView.Material
-    var blendingMode: NSVisualEffectView.BlendingMode
-    var cornerRadius: CGFloat = 0
-    /// Force a fixed vibrancy appearance (e.g. `.vibrantDark`) so the frosted
-    /// glass stays dark/premium regardless of the system light/dark setting.
-    var appearanceName: NSAppearance.Name? = nil
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let visualEffectView = NSVisualEffectView()
-        visualEffectView.material = material
-        visualEffectView.blendingMode = blendingMode
-        visualEffectView.state = .active
-
-        visualEffectView.wantsLayer = true
-        visualEffectView.layer?.cornerRadius = cornerRadius
-        visualEffectView.layer?.masksToBounds = true
-
-        if let appearanceName {
-            visualEffectView.appearance = NSAppearance(named: appearanceName)
-        }
-
-        return visualEffectView
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
-        nsView.layer?.cornerRadius = cornerRadius
-        if let appearanceName {
-            nsView.appearance = NSAppearance(named: appearanceName)
-        }
     }
 }
 

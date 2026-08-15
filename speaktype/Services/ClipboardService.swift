@@ -12,52 +12,43 @@ class ClipboardService {
         let dataByType: [NSPasteboard.PasteboardType: Data]
     }
 
-    // Dependency injection for license checking
-    private var licenseManager: LicenseManager {
-        return LicenseManager.shared
-    }
-
     private init() {}
 
-    // Copy text to system clipboard with optional promotional wrapper
-    func copy(text: String) {
-        let finalText = wrapTextIfNeeded(text)
+    /// Pasteboard managers treat this type as "do not record" (nspasteboard.org).
+    private static let concealedType = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
 
+    // Copy text to system clipboard.
+    // `concealed` marks the entry so clipboard-history utilities skip it —
+    // used for transient auto-paste copies that will be restored right after.
+    func copy(text: String, concealed: Bool = false) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(finalText, forType: .string)
+        pasteboard.setString(text, forType: .string)
+        if concealed {
+            pasteboard.setString("", forType: Self.concealedType)
+        }
 
-        // Verify write
-        if let check = pasteboard.string(forType: .string), check == finalText {
-            print("✅ Clipboard Write Verified: '\(check.prefix(20))...'")
-        } else {
-            print("❌ Clipboard Write FAILED!")
+        // Verify write — never log the clipboard content itself.
+        if pasteboard.string(forType: .string) != text {
+            AppLogger.warning("Clipboard write verification failed", category: AppLogger.clipboard)
         }
     }
 
     @discardableResult
     func copyForTemporaryPaste(text: String) -> ClipboardSnapshot {
         let snapshot = currentSnapshot()
-        copy(text: text)
+        copy(text: text, concealed: true)
         return snapshot
     }
 
     func restore(_ snapshot: ClipboardSnapshot, ifCurrentStringMatches expectedText: String) {
         let pasteboard = NSPasteboard.general
-        let expectedFinalText = wrapTextIfNeeded(expectedText)
-
-        guard pasteboard.string(forType: .string) == expectedFinalText else {
+        guard pasteboard.string(forType: .string) == expectedText else {
             print("Skipping clipboard restore because pasteboard changed after paste")
             return
         }
 
         restore(snapshot)
-    }
-
-    // Wrap text with promotional message for free users
-    private func wrapTextIfNeeded(_ text: String) -> String {
-        // License check disabled - always allow unwrapped text
-        return text
     }
 
     private func currentSnapshot() -> ClipboardSnapshot {
@@ -127,20 +118,6 @@ class ClipboardService {
             cmdUp?.post(tap: .cghidEventTap)
 
             print("Simulated Cmd+V")
-        }
-    }
-
-    // Fallback using AppleScript (more robust for some apps)
-    func appleScriptPaste() {
-        let script = "tell application \"System Events\" to keystroke \"v\" using command down"
-        if let appleScript = NSAppleScript(source: script) {
-            var error: NSDictionary?
-            appleScript.executeAndReturnError(&error)
-            if let error = error {
-                print("AppleScript Paste Error: \(error)")
-            } else {
-                print("Executed AppleScript Paste")
-            }
         }
     }
 

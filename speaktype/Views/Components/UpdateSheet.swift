@@ -4,10 +4,9 @@ import SwiftUI
 struct UpdateSheet: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var updateService = UpdateService.shared
-    @AppStorage("autoUpdate") private var autoUpdate = false
 
     let update: AppVersion
-    let appName = "SpeakType"
+    let appName = "VoxBox"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -108,19 +107,8 @@ struct UpdateSheet: View {
                 .padding(.top, 12)
             }
 
-            // Auto-update checkbox (hidden while installing)
-            if !updateService.isInstalling {
-                HStack(spacing: 8) {
-                    Toggle(isOn: $autoUpdate) {
-                        Text("Automatically download and install updates in the future")
-                            .font(Typography.bodySmall)
-                            .foregroundStyle(.secondary)
-                    }
-                    .toggleStyle(.checkbox)
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-            }
+            // No auto-update option: update checks are strictly manual so the
+            // app never contacts the internet on its own.
 
             // Action buttons
             HStack(spacing: 12) {

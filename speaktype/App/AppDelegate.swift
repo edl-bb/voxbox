@@ -16,6 +16,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var localKeyDownMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // One-time migration for the VoxBox rebrand: move the old SpeakType
+        // Application Support folder (downloaded models, recordings) to the
+        // new name so nothing has to re-download.
+        migrateLegacyStorageIfNeeded()
+
         miniRecorderController = MiniRecorderWindowController()
         // Prepare the resting pill. It stays hidden until recording unless the
         // user opts into always showing it (issue #100).
@@ -59,7 +64,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup dynamic hotkey monitoring based on user selection
         setupHotkeyMonitoring()
 
-        checkForUpdatesOnLaunch()
+        // Enforce local data retention (auto-delete old WAVs / expired
+        // transcripts) now and hourly from here on.
+        RetentionService.shared.start()
 
         UpdateService.shared.showUpdateWindowPublisher
             .receive(on: DispatchQueue.main)
@@ -71,6 +78,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
+    }
+
+    /// Rename `~/Library/Application Support/SpeakType` → `VoxBox` once, so
+    /// models and recordings from a pre-rebrand install carry over. No-op when
+    /// there is nothing to migrate or the new folder already exists.
+    private func migrateLegacyStorageIfNeeded() {
+        let fileManager = FileManager.default
+        guard
+            let appSupport = fileManager.urls(
+                for: .applicationSupportDirectory, in: .userDomainMask
+            ).first
+        else { return }
+
+        let legacy = appSupport.appendingPathComponent("SpeakType", isDirectory: true)
+        let current = appSupport.appendingPathComponent("VoxBox", isDirectory: true)
+
+        guard fileManager.fileExists(atPath: legacy.path),
+            !fileManager.fileExists(atPath: current.path)
+        else { return }
+
+        do {
+            try fileManager.moveItem(at: legacy, to: current)
+            AppLogger.info("Migrated legacy SpeakType storage to VoxBox", category: AppLogger.app)
+        } catch {
+            AppLogger.error(
+                "Legacy storage migration failed", error: error, category: AppLogger.app)
+        }
     }
 
     // MARK: - Dock icon visibility (accessory ↔ regular)
@@ -201,6 +235,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupHotkeyMonitoring() {
         setupSuppressingHotkeyEventTap()
+        setupCustomShortcutHandlers()
 
         // Add global monitor for hotkey events
         globalFlagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) {
@@ -338,6 +373,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Wire the user-recorded key combination (HotkeyOption.custom, e.g. ⌘D).
+    /// KeyboardShortcuts delivers keyDown/keyUp for the recorded combo, which
+    /// maps cleanly onto both recording modes: hold-to-record uses down/up,
+    /// toggle mode flips on each press. Handlers are inert unless the selected
+    /// hotkey is the custom one, so a stored combo can't fire while Fn is active.
+    private func setupCustomShortcutHandlers() {
+        KeyboardShortcuts.onKeyDown(for: .toggleRecord) { [weak self] in
+            guard let self, self.getSelectedHotkey() == .custom else { return }
+
+            let recordingMode = UserDefaults.standard.integer(forKey: "recordingMode")
+            if recordingMode == 1 {
+                if AudioRecordingService.shared.isRecording {
+                    self.miniRecorderController?.stopRecording()
+                } else {
+                    self.miniRecorderController?.startRecording()
+                }
+            } else {
+                self.miniRecorderController?.startRecording()
+            }
+        }
+
+        KeyboardShortcuts.onKeyUp(for: .toggleRecord) { [weak self] in
+            guard let self, self.getSelectedHotkey() == .custom else { return }
+            guard UserDefaults.standard.integer(forKey: "recordingMode") == 0 else { return }
+            self.miniRecorderController?.stopRecording()
+        }
+    }
+
     private func handleModifierComboEvent(_ event: NSEvent) {
         guard isHotkeyPressed else { return }
         guard UserDefaults.standard.integer(forKey: "recordingMode") == 0 else { return }
@@ -383,19 +446,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Update Checking
-
-    private func checkForUpdatesOnLaunch() {
-        let updateService = UpdateService.shared
-        let autoUpdate = UserDefaults.standard.bool(forKey: "autoUpdate")
-        guard autoUpdate && updateService.shouldCheckForUpdates() else { return }
-
-        Task {
-            await updateService.checkForUpdates(silent: true)
-            if updateService.availableUpdate != nil && updateService.shouldShowReminder() {
-                await MainActor.run { self.showUpdateWindow() }
-            }
-        }
-    }
+    //
+    // There is deliberately no automatic launch-time update check: the app
+    // makes zero network requests unless the user explicitly asks (manual
+    // "Check for Updates" in Settings, model downloads, license activation).
 
     private func showUpdateWindow() {
         guard let update = UpdateService.shared.availableUpdate else { return }

@@ -89,6 +89,24 @@ class HistoryService: ObservableObject {
         saveHistory()
     }
     
+    /// Replace the stored transcript of an item (e.g. after a dictionary
+    /// correction is retro-applied). Stats are left untouched.
+    func updateTranscript(id: UUID, transcript: String) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        let item = items[index]
+        guard item.transcript != transcript else { return }
+        items[index] = HistoryItem(
+            id: item.id,
+            date: item.date,
+            transcript: transcript,
+            duration: item.duration,
+            audioFileURL: item.audioFileURL,
+            modelUsed: item.modelUsed,
+            transcriptionTime: item.transcriptionTime
+        )
+        saveHistory()
+    }
+
     func clearAll() {
         // Delete the audio files backing every transcript so they don't leak on
         // disk (matches `deleteItem`'s `deleteAudioFile: true` default). Stats are
@@ -96,6 +114,44 @@ class HistoryService: ObservableObject {
         items.forEach(removeAudioFileIfNeeded(for:))
         items.removeAll()
         saveHistory()
+    }
+
+    /// Enforce the user's retention settings (see `RetentionService`).
+    ///
+    /// Items older than `transcriptCutoff` are removed entirely (audio included).
+    /// Remaining items older than `audioCutoff` lose their WAV file but keep the
+    /// transcript. Stats entries are always preserved. Pass `nil` to keep forever.
+    func applyRetention(audioCutoff: Date?, transcriptCutoff: Date?) {
+        var changed = false
+
+        if let transcriptCutoff {
+            let expired = items.filter { $0.date < transcriptCutoff }
+            if !expired.isEmpty {
+                expired.forEach(removeAudioFileIfNeeded(for:))
+                items.removeAll { $0.date < transcriptCutoff }
+                changed = true
+            }
+        }
+
+        if let audioCutoff {
+            for index in items.indices
+            where items[index].date < audioCutoff && items[index].audioFileURL != nil {
+                let item = items[index]
+                removeAudioFileIfNeeded(for: item)
+                items[index] = HistoryItem(
+                    id: item.id,
+                    date: item.date,
+                    transcript: item.transcript,
+                    duration: item.duration,
+                    audioFileURL: nil,
+                    modelUsed: item.modelUsed,
+                    transcriptionTime: item.transcriptionTime
+                )
+                changed = true
+            }
+        }
+
+        if changed { saveHistory() }
     }
 
     func totalWordCount() -> Int {

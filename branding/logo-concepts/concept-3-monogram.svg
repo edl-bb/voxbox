@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Concept 3 — "V-wave monogram": the V of VoxBox drawn as a plunging
+       waveform stroke; strong wordmark potential. -->
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1C1C24"/>
+      <stop offset="1" stop-color="#0B0B10"/>
+    </linearGradient>
+    <linearGradient id="v3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7C6CFF"/>
+      <stop offset="1" stop-color="#37E2D5"/>
+    </linearGradient>
+  </defs>
+  <!-- Background layer: near-black premium tile -->
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="url(#bg3)"/>
+  <!-- Glyph layer: V built from waveform bars, descending then ascending -->
+  <g fill="url(#v3)">
+    <rect x="120" y="150" width="30" height="90" rx="15"/>
+    <rect x="176" y="150" width="30" height="150" rx="15"/>
+    <rect x="232" y="150" width="30" height="212" rx="15"/>
+    <rect x="288" y="150" width="30" height="150" rx="15"/>
+    <rect x="344" y="150" width="30" height="90" rx="15"/>
+  </g>
+</svg>

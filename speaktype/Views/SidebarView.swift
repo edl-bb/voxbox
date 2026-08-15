@@ -28,11 +28,17 @@ struct SidebarView: View {
 
             Spacer()
 
-            // 2048 Labs branding link
+            // In-flight model downloads — visible from anywhere in the app,
+            // not just Settings → AI Models. Hidden when nothing is active.
+            ActiveDownloadsView()
+                .padding(.horizontal, SidebarConstants.itemHorizontalPadding)
+                .padding(.bottom, 10)
+
+            // Cubbei Studios branding link
             Button(action: {
-                NSWorkspace.shared.open(URL(string: "https://2048labs.com")!)
+                NSWorkspace.shared.open(URL(string: "https://cubbei.com")!)
             }) {
-                Text("2048 LABS")
+                Text("CUBBEI STUDIOS")
                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                     .tracking(3)
                     .foregroundStyle(Color.textMuted.opacity(0.25))
@@ -91,7 +97,7 @@ private struct SidebarHeader: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 48, height: 48)
 
-            Text("SpeakType")
+            Text("VoxBox")
                 .font(Typography.sidebarLogo)
                 .foregroundStyle(Color.textPrimary)
 
@@ -134,42 +140,6 @@ struct SidebarButton: View {
                 isHovered = hovering
             }
         }
-    }
-}
-
-private struct SidebarPromoCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text("Try SpeakType Pro")
-                    .font(Typography.sidebarPromoTitle)
-                    .foregroundStyle(Color.textPrimary)
-                Text("✨")
-                    .font(.system(size: 12))
-            }
-
-            Text("Upgrade for unlimited words")
-                .font(Typography.sidebarPromoSubtitle)
-                .foregroundStyle(Color.textMuted)
-
-            Button(action: {}) {
-                Text("Upgrade to Pro")
-                    .font(Typography.sidebarPromoButton)
-                    .foregroundStyle(Color.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color.bgCard)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.border, lineWidth: 0.5)
-                    )
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

@@ -8,9 +8,9 @@
 # one place — instead of editing each script.
 
 # ── Identity & signing ────────────────────────────────────────────────────────
-APP_BUNDLE_ID="com.2048labs.speaktype"
-DEV_BUNDLE_ID="com.2048labs.speaktype.dev"
-APPLE_ID="mail2048labs@gmail.com"
+APP_BUNDLE_ID="dev.cubbei.voxbox"
+DEV_BUNDLE_ID="dev.cubbei.voxbox.dev"
+APPLE_ID="" # set to the Apple ID of the signing developer account
 APPLE_TEAM_ID="${APPLE_TEAM_ID:-PCV4UMSRZX}"
 NOTARY_PROFILE="AC_PASSWORD"          # xcrun notarytool --keychain-profile name
 SIGN_IDENTITY="Developer ID Application"
@@ -19,7 +19,7 @@ SIGN_IDENTITY="Developer ID Application"
 SCHEME="speaktype"
 PROJECT_FILE="speaktype.xcodeproj/project.pbxproj"
 CHANGELOG="CHANGELOG.md"
-GITHUB_REPO="karansinghgit/speaktype"
+GITHUB_REPO="edl-bb/VoxBox"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

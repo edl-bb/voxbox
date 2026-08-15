@@ -6,8 +6,12 @@ import Security
 /// Service to check for app updates and manage update preferences
 class UpdateService: NSObject, ObservableObject {
     static let shared = UpdateService()
-    static let trustedUpdateBundleIdentifier = "com.2048labs.speaktype"
-    static let trustedUpdateTeamIdentifier = "PCV4UMSRZX"
+    static let trustedUpdateBundleIdentifier = "dev.cubbei.voxbox"
+    /// Apple Developer Team ID that release builds must be signed with.
+    /// Empty means "no release signing configured yet": update *checks* still
+    /// work, but installs are refused fail-closed until the team ID of the
+    /// signing account is filled in here.
+    static let trustedUpdateTeamIdentifier = ""
 
     @Published var availableUpdate: AppVersion?
     @Published var isCheckingForUpdates = false
@@ -49,9 +53,13 @@ class UpdateService: NSObject, ObservableObject {
 
         do {
             let url = URL(
-                string: "https://api.github.com/repos/karansinghgit/speaktype/releases/latest")!
+                string: "https://api.github.com/repos/edl-bb/VoxBox/releases/latest")!
             var request = URLRequest(url: url)
             request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+            // Neutral UA so the default one doesn't leak app version + macOS build.
+            request.setValue("VoxBox", forHTTPHeaderField: "User-Agent")
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.timeoutInterval = 15
 
             let (data, _) = try await URLSession.shared.data(for: request)
             let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
@@ -131,10 +139,28 @@ class UpdateService: NSObject, ObservableObject {
 
     // MARK: - Update Installation
 
+    /// Hosts an update DMG may be downloaded from. Anything else is rejected
+    /// before a single byte is fetched, even if the release API response was
+    /// tampered with.
+    static let trustedDownloadHosts: Set<String> = [
+        "github.com",
+        "objects.githubusercontent.com",
+        "release-assets.githubusercontent.com",
+    ]
+
+    static func isTrustedDownloadURL(_ url: URL) -> Bool {
+        url.scheme == "https" && trustedDownloadHosts.contains(url.host ?? "")
+    }
+
     /// Download the DMG, mount it, copy the .app over the running installation, and relaunch.
     func installUpdate(url downloadURLString: String) {
         guard let downloadURL = URL(string: downloadURLString) else {
             setError("Invalid download URL.")
+            return
+        }
+
+        guard Self.isTrustedDownloadURL(downloadURL) else {
+            setError("Update download URL is not a trusted GitHub release host.")
             return
         }
 
@@ -213,7 +239,7 @@ class UpdateService: NSObject, ObservableObject {
 
     private func downloadWithProgress(from url: URL) async throws -> URL {
         let dest = FileManager.default.temporaryDirectory
-            .appendingPathComponent("SpeakType-update-\(UUID().uuidString).dmg")
+            .appendingPathComponent("VoxBox-update-\(UUID().uuidString).dmg")
 
         return try await withCheckedThrowingContinuation { continuation in
             let configuration = URLSessionConfiguration.ephemeral
@@ -284,6 +310,14 @@ class UpdateService: NSObject, ObservableObject {
     }
 
     private func verifyCandidateApp(at appURL: URL) throws {
+        // Fail closed while no release-signing team is configured — a fork
+        // without its own Developer ID must never install downloaded bundles.
+        guard !Self.trustedUpdateTeamIdentifier.isEmpty else {
+            throw UpdateError.invalidCandidateApp(
+                "Updates are disabled: no release signing team is configured for this build."
+            )
+        }
+
         guard
             let bundle = Bundle(url: appURL),
             let bundleIdentifier = bundle.bundleIdentifier
@@ -326,12 +360,28 @@ class UpdateService: NSObject, ObservableObject {
         let destURL = URL(fileURLWithPath: runningPath)
         let fm = FileManager.default
 
-        // Remove old app
-        if fm.fileExists(atPath: destURL.path) {
-            try fm.removeItem(at: destURL)
+        // Stage the new app next to the old one (same volume) first, so a
+        // failed copy — disk full, permissions, detached DMG — never leaves the
+        // user with no app at all. Only then swap it into place.
+        let stagedURL = destURL.deletingLastPathComponent()
+            .appendingPathComponent(".speaktype-update-\(UUID().uuidString).app")
+        do {
+            try fm.copyItem(at: sourceApp, to: stagedURL)
+        } catch {
+            try? fm.removeItem(at: stagedURL)
+            throw UpdateError.copyFailed(error.localizedDescription)
         }
-        // Copy new app
-        try fm.copyItem(at: sourceApp, to: destURL)
+
+        do {
+            if fm.fileExists(atPath: destURL.path) {
+                _ = try fm.replaceItemAt(destURL, withItemAt: stagedURL)
+            } else {
+                try fm.moveItem(at: stagedURL, to: destURL)
+            }
+        } catch {
+            try? fm.removeItem(at: stagedURL)
+            throw UpdateError.copyFailed(error.localizedDescription)
+        }
     }
 
     private func verifyGatekeeperAcceptance(of appURL: URL) throws {
@@ -358,18 +408,21 @@ class UpdateService: NSObject, ObservableObject {
     }
 
     private func relaunch() {
-        // Use a shell to wait for the current process to exit, then reopen the app
+        // Use a shell to wait for the current process to exit, then reopen the
+        // app. The bundle path is passed as a positional argument ($0) instead
+        // of being interpolated into the script, so shell metacharacters in the
+        // install path can never become commands.
         let bundlePath = Bundle.main.bundlePath
         let pid = ProcessInfo.processInfo.processIdentifier
 
         let script = """
             while kill -0 \(pid) 2>/dev/null; do sleep 0.2; done
-            open "\(bundlePath)"
+            /usr/bin/open "$0"
             """
 
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/bin/sh")
-        proc.arguments = ["-c", script]
+        proc.arguments = ["-c", script, bundlePath]
         try? proc.run()
 
         DispatchQueue.main.async {

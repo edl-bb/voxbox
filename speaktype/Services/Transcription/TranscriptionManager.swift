@@ -97,8 +97,20 @@ class TranscriptionManager {
     /// URL, number, or single token loses the model's sentence-final period.
     func transcribe(audioFile: URL, language: String = "auto") async throws -> String {
         let kind = AIModel.engineKind(for: currentModelVariant)
-        let text = try await engine(for: kind).transcribe(audioFile: audioFile, language: language)
-        return SmartTrailingPunctuation.apply(to: DictionaryService.apply(to: text))
+        // Regional English variants (en-AU) decode as plain "en"; the regional
+        // spelling pass runs afterwards, before user dictionary rules so custom
+        // replacements always have the final say.
+        let engineLanguage = AustralianEnglishSpelling.engineLanguage(for: language)
+        var text = try await engine(for: kind).transcribe(
+            audioFile: audioFile, language: engineLanguage)
+        if AustralianEnglishSpelling.isAustralianEnglish(language) {
+            text = AustralianEnglishSpelling.apply(to: text)
+        }
+        // Optional on-device AI cleanup runs after dictionary rules (so custom
+        // replacements are already in place) and before trailing punctuation.
+        let withRules = DictionaryService.apply(to: text)
+        let formatted = await TranscriptFormatterService.shared.format(withRules)
+        return SmartTrailingPunctuation.apply(to: formatted)
     }
 }
 

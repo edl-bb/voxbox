@@ -17,12 +17,6 @@ struct speaktypeApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-    // License Manager
-    @StateObject private var licenseManager = LicenseManager.shared
-
-    // Trial Manager
-    @StateObject private var trialManager = TrialManager.shared
-
     init() {
         // Register bundled fonts (Satoshi, Source Sans 3) so Font.custom resolves
         // them regardless of what's installed on the machine.
@@ -46,8 +40,6 @@ struct speaktypeApp: App {
                     }
                 }
             }
-            .environmentObject(licenseManager)
-            .environmentObject(trialManager)
             .preferredColorScheme(appTheme.colorScheme)
             .tint(Color.navyInk)
         }
@@ -61,8 +53,9 @@ struct speaktypeApp: App {
         // Note: Mini Recorder is now managed manually by AppDelegate -> MiniRecorderWindowController
         // to prevent SwiftUI from auto-opening the main dashboard on activation.
 
-        // Menu Bar Extra (Always running listener)
-        MenuBarExtra("SpeakType", systemImage: "waveform", isInserted: $showMenuBarIcon) {
+        // Menu Bar Extra (Always running listener). The label is the V-wave
+        // monogram, animated while a recording is in progress.
+        MenuBarExtra(isInserted: $showMenuBarIcon) {
             ThemeProvider {
                 MenuBarDashboardView(
                     openDashboard: openDashboard,
@@ -70,13 +63,15 @@ struct speaktypeApp: App {
                 )
             }
             .preferredColorScheme(appTheme.colorScheme)
+        } label: {
+            MenuBarIconView()
         }
         .menuBarExtraStyle(.window)
     }
 
     private func openDashboard() {
         // Using URL forces the specific window group to handle the request consistently.
-        if let url = URL(string: "speaktype://open") {
+        if let url = URL(string: "voxbox://open") {
             NSWorkspace.shared.open(url)
         }
     }

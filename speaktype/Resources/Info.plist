@@ -21,15 +21,15 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>14.0</string>
+	<string>26.0</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.karansinghgit.speaktype</string>
+            <string>dev.cubbei.voxbox</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>speaktype</string>
+                <string>voxbox</string>
             </array>
         </dict>
     </array>
@@ -38,8 +38,6 @@
 
 	<key>NSMicrophoneUsageDescription</key>
 	<string>SpeakType needs access to your microphone to record your voice for transcription. All processing is done locally on your device.</string>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>SpeakType needs permission to send keystrokes to paste transcribed text into the active application.</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<true/>
 	<key>NSSupportsSuddenTermination</key>

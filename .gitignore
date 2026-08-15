@@ -10,7 +10,6 @@ DerivedData/
 .swiftpm/
 .build/
 Packages/
-Package.resolved
 
 # Distribution
 dist/

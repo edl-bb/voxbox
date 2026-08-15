@@ -12,8 +12,6 @@ struct DashboardView: View {
     @State private var leftColumnHeight: CGFloat = 0
 
     // Trial & License
-    @EnvironmentObject var trialManager: TrialManager
-    @EnvironmentObject var licenseManager: LicenseManager
 
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("transcriptionLanguage") private var transcriptionLanguage: String = "auto"
@@ -72,11 +70,6 @@ struct DashboardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Trial Banner - Hidden (logic kept for future use)
-                // if !licenseManager.isPro {
-                //     TrialBanner(status: trialManager.trialStatus)
-                // }
-
                 // Two horizontal boxes: Stats + Activity Chart
                 HStack(alignment: .top, spacing: 20) {
                     // Left: Stats Card

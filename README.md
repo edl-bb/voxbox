@@ -1,15 +1,14 @@
-# SpeakType
+# VoxBox
 
 <div align="center">
 
-![SpeakType Icon](speaktype/Assets.xcassets/AppIcon.appiconset/icon_256x256.png)
+![VoxBox Icon](branding/voxbox-logo.png)
 
 **Fast, Offline Voice-to-Text for macOS**
 
-![SpeakType app screenshot](image.png)
-[![Download](https://img.shields.io/badge/Download-SpeakType.dmg-blueviolet?logo=apple&logoColor=white)](https://github.com/karansinghgit/speaktype/releases/latest)
+[![Download](https://img.shields.io/badge/Download-VoxBox.dmg-blueviolet?logo=apple&logoColor=white)](https://github.com/edl-bb/VoxBox/releases/latest)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange?logo=swift)](https://swift.org)
-[![Platform](https://img.shields.io/badge/Platform-macOS%2013.0+-blue?logo=apple)](https://www.apple.com/macos/)
+[![Platform](https://img.shields.io/badge/Platform-macOS%2026.0+-blue?logo=apple)](https://www.apple.com/macos/)
 [![License](https://img.shields.io/badge/License-MIT-red)](LICENSE)
 
 *Press a hotkey, speak, and instantly paste text anywhere on your Mac.*
@@ -18,9 +17,9 @@
 
 ---
 
-## What is SpeakType?
+## What is VoxBox?
 
-SpeakType is a **privacy-first, offline voice dictation tool** for macOS. Unlike online dictation services, everything runs **100% locally** using OpenAI's Whisper AI model via [WhisperKit](https://github.com/argmaxinc/WhisperKit). Support for Parakeet coming soon!
+VoxBox is a **privacy-first, offline voice dictation tool** for macOS. Unlike online dictation services, everything runs **100% locally** using OpenAI's Whisper AI model via [WhisperKit](https://github.com/argmaxinc/WhisperKit). Support for Parakeet coming soon!
 
 - **Privacy First** - Zero data leaves your Mac
 - **Lightning Fast** - Optimized for Apple Silicon
@@ -33,16 +32,16 @@ SpeakType is a **privacy-first, offline voice dictation tool** for macOS. Unlike
 
 ### Requirements
 
-- macOS 13.0+ (Ventura or newer)
+- macOS 26.0+ (Tahoe or newer)
 - Apple Silicon (M1+) recommended
 - 2GB available storage (for AI models)
 
 ### Download
 
-**[Download Latest Release](https://github.com/karansinghgit/speaktype/releases/latest)**
+**[Download Latest Release](https://github.com/edl-bb/VoxBox/releases/latest)**
 
-1. Download `SpeakType.dmg`
-2. Drag **SpeakType** to **Applications**
+1. Download `VoxBox.dmg`
+2. Drag **VoxBox** to **Applications**
 3. Grant Microphone + Accessibility + Documents Folder permissions
 4. Download an AI model from Settings → AI Models
 
@@ -51,8 +50,8 @@ Press `fn` to start dictating.
 ### Build from Source
 
 ```bash
-git clone https://github.com/karansinghgit/speaktype.git
-cd speaktype
+git clone https://github.com/edl-bb/VoxBox.git
+cd VoxBox
 make build && make run
 ```
 
@@ -133,8 +132,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Made with ❤️ for developers**
+**Made with ❤️ by Cubbei Studios**
 
-*Privacy-first • Open Source *
+*Privacy-first • Open Source*
+
+VoxBox was formerly known as SpeakType (bundle identifier `dev.cubbei.voxbox`).
 
 </div>

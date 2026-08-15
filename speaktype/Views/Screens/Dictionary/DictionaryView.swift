@@ -10,6 +10,7 @@ struct DictionaryView: View {
     @State private var editorEntry: DictionaryEntry?
     @State private var isPresentingEditor = false
     @State private var entryPendingDeletion: DictionaryEntry?
+    @State private var didRecopyLatestTranscript = false
 
     var body: some View {
         ScrollView {
@@ -41,13 +42,26 @@ struct DictionaryView: View {
                 if dictionary.entries.contains(where: { $0.id == result.id }) {
                     dictionary.update(result)
                 } else {
-                    dictionary.addEntry(
+                    // New rules retro-apply to the most recent transcript and
+                    // put the corrected text on the clipboard, so a mistake you
+                    // just spotted can be pasted over immediately.
+                    let corrected = dictionary.addCorrectionAndApply(
                         trigger: result.trigger,
                         replacement: result.replacement,
                         matchWholeWord: result.matchWholeWord
                     )
+                    if corrected != nil {
+                        didRecopyLatestTranscript = true
+                    }
                 }
             }
+        }
+        .alert("Rule added", isPresented: $didRecopyLatestTranscript) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(
+                "Your most recent transcript was updated with this rule and copied to the clipboard."
+            )
         }
         .alert(
             "Delete Rule?",
@@ -118,7 +132,7 @@ struct DictionaryView: View {
                     .font(Typography.labelLarge)
                     .foregroundStyle(Color.textPrimary)
                 Text(
-                    "Say a trigger like “my email” and SpeakType inserts your real address. Or fix a name the model keeps mishearing. Everything runs offline on your Mac."
+                    "Say a trigger like “my email” and VoxBox inserts your real address. Or fix a name the model keeps mishearing. Everything runs offline on your Mac."
                 )
                 .font(Typography.captionSmall)
                 .foregroundStyle(Color.textMuted)
