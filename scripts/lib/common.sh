@@ -11,8 +11,8 @@
 APP_BUNDLE_ID="com.cubbei.VoxBox"
 DEV_BUNDLE_ID="com.cubbei.VoxBox.dev"
 LEGACY_BUNDLE_ID="dev.cubbei.voxbox"
-APPLE_ID="" # set to the Apple ID of the signing developer account
-APPLE_TEAM_ID="${APPLE_TEAM_ID:-PCV4UMSRZX}"
+APPLE_ID="${APPLE_ID:-email@example.com}" # set to the Apple ID of the signing developer account
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-team-id-here}"
 NOTARY_PROFILE="AC_PASSWORD"          # xcrun notarytool --keychain-profile name
 SIGN_IDENTITY="Developer ID Application"
 
