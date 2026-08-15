@@ -9,7 +9,7 @@ set -e
 
 source "$(dirname "$0")/lib/common.sh"
 
-echo "🚀 SpeakType Release Builder"
+echo "🚀 VoxBox Release Builder"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -73,8 +73,8 @@ xcodebuild -scheme "$SCHEME" \
   OTHER_CODE_SIGN_FLAGS="--timestamp --options=runtime" \
   clean build
 
-APP_PATH="build/Build/Products/Release/speaktype.app"
-[ -z "$APP_PATH" ] && { echo "❌ Could not find speaktype.app!"; exit 1; }
+APP_PATH="build/Build/Products/Release/voxbox.app"
+[ -z "$APP_PATH" ] && { echo "❌ Could not find voxbox.app!"; exit 1; }
 [ -d "$APP_PATH" ] || { echo "❌ Release app not found at $APP_PATH"; exit 1; }
 
 BUILT_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PATH/Contents/Info.plist")
@@ -90,7 +90,7 @@ echo "✅ App signature verified"
 
 # ── Step 7: Create + sign DMG ─────────────────────────────────────────────────
 mkdir -p dist
-DMG_NAME="SpeakType-${VERSION}.dmg"
+DMG_NAME="VoxBox-${VERSION}.dmg"
 DMG_PATH="dist/${DMG_NAME}"
 
 echo ""
@@ -109,7 +109,7 @@ DMG_STAGING="$(mktemp -d)"
 cp -R "$APP_PATH" "$DMG_STAGING/"
 ln -s /Applications "$DMG_STAGING/Applications"
 hdiutil create \
-  -volname "SpeakType" \
+  -volname "VoxBox" \
   -srcfolder "$DMG_STAGING" \
   -fs HFS+ \
   -format UDZO \

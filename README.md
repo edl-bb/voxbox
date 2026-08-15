@@ -90,7 +90,7 @@ So the first transcription will appear ultra slow, but it will go back to instan
 ### Project Structure
 
 ```
-speaktype/
+voxbox/
 ├── App/           # Entry point
 ├── Views/         # SwiftUI interface
 ├── Models/        # Data models

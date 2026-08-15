@@ -7,13 +7,14 @@ set -e
 
 source "$(dirname "$0")/lib/common.sh"
 
-echo "🧹 Cleaning SpeakType (dev + release)..."
+echo "🧹 Cleaning VoxBox (dev + release)..."
 echo ""
 
 # Kill ALL running instances (both dev and release)
-pkill -9 -i speaktype 2>/dev/null || true
+pkill -9 -i voxbox 2>/dev/null || true
+killall "VoxBox" 2>/dev/null || true
 killall "SpeakType" 2>/dev/null || true
-killall "speaktype" 2>/dev/null || true
+killall "voxbox" 2>/dev/null || true
 sleep 1
 echo "✅ Killed all running instances"
 
@@ -33,14 +34,14 @@ rm -rf ~/Library/Saved\ Application\ State/${APP_BUNDLE_ID}.savedState 2>/dev/nu
 rm -rf ~/Library/Saved\ Application\ State/${APP_BUNDLE_ID}.dev.savedState 2>/dev/null || true
 rm -rf ~/Library/Preferences/${APP_BUNDLE_ID}.plist 2>/dev/null || true
 rm -rf ~/Library/Preferences/${APP_BUNDLE_ID}.dev.plist 2>/dev/null || true
-rm -rf ~/Library/Application\ Support/SpeakType 2>/dev/null || true
-rm -rf ~/Library/Application\ Support/SpeakType-Dev 2>/dev/null || true
+rm -rf ~/Library/Application\ Support/VoxBox ~/Library/Application\ Support/SpeakType 2>/dev/null || true
+rm -rf ~/Library/Application\ Support/VoxBox-Dev ~/Library/Application\ Support/SpeakType-Dev 2>/dev/null || true
 echo "✅ Removed app preferences & data"
 
 # Remove BOTH dev and release installed versions
-rm -rf /Applications/speaktype.app 2>/dev/null || true
-rm -rf /Applications/SpeakType.app 2>/dev/null || true
-rm -rf ~/Applications/SpeakType-Dev.app 2>/dev/null || true
+rm -rf /Applications/voxbox.app 2>/dev/null || true
+rm -rf /Applications/VoxBox.app /Applications/SpeakType.app 2>/dev/null || true
+rm -rf ~/Applications/VoxBox-Dev.app ~/Applications/SpeakType-Dev.app 2>/dev/null || true
 echo "✅ Removed dev & release apps"
 
 echo ""

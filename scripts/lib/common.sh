@@ -1,5 +1,5 @@
 #!/bin/bash
-# common.sh — Shared configuration and helpers for SpeakType scripts.
+# common.sh — Shared configuration and helpers for VoxBox scripts.
 #
 # Source it from any script in scripts/:
 #     source "$(dirname "$0")/lib/common.sh"
@@ -16,8 +16,8 @@ NOTARY_PROFILE="AC_PASSWORD"          # xcrun notarytool --keychain-profile name
 SIGN_IDENTITY="Developer ID Application"
 
 # ── Project layout ────────────────────────────────────────────────────────────
-SCHEME="speaktype"
-PROJECT_FILE="speaktype.xcodeproj/project.pbxproj"
+SCHEME="voxbox"
+PROJECT_FILE="voxbox.xcodeproj/project.pbxproj"
 CHANGELOG="CHANGELOG.md"
 GITHUB_REPO="edl-bb/VoxBox"
 

@@ -50,6 +50,6 @@ dist/
 !dmg-assets/*.sh
 !dmg-assets/*.py
 !dmg-assets/*.svg
-speaktype.xcodeproj/project.xcworkspace/xcuserdata/
+voxbox.xcodeproj/project.xcworkspace/xcuserdata/
 Config.xcconfig
 env.example
