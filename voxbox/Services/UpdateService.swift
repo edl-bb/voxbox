@@ -8,10 +8,8 @@ class UpdateService: NSObject, ObservableObject {
     static let shared = UpdateService()
     static let trustedUpdateBundleIdentifier = "com.cubbei.VoxBox"
     /// Apple Developer Team ID that release builds must be signed with.
-    /// Empty means "no release signing configured yet": update *checks* still
-    /// work, but installs are refused fail-closed until the team ID of the
-    /// signing account is filled in here.
-    static let trustedUpdateTeamIdentifier = ""
+    /// Installs fail closed if this does not match the downloaded app's signature.
+    static let trustedUpdateTeamIdentifier = "K8S7G9UFR8"
 
     @Published var availableUpdate: AppVersion?
     @Published var isCheckingForUpdates = false

@@ -24,7 +24,7 @@ help:
 	@echo "  make test-ui       - Run UI tests only"
 	@echo ""
 	@echo "Distribution:"
-	@echo "  make create-release         - 🔨 Bump version, build, sign, notarize → dist/*.dmg"
+	@echo "  make create-release         - 🔨 Bump version, commit all open files, build, sign, notarize → dist/*.dmg"
 	@echo "  make create-release-current - 📦 Same as create-release, but keep the current version"
 	@echo "  make deploy-release         - 🚀 Push tag + upload DMG to GitHub releases"
 	@echo "  make run-release    - Run the last Release build locally"

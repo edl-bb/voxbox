@@ -6,6 +6,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 VoxBox versions start at 1.0.0. This is a fork of SpeakType; earlier SpeakType releases are not listed here.
 
+## [1.0.4] - 2026-08-15
+- In-app Install Update verifies the downloaded app against the VoxBox signing team, so updates can complete after download.
+
 ## [1.0.3] - 2026-08-15
 - UI accents follow the VoxBox logo (deep blue, violet, teal) instead of the old orange and purple.
 - Optional daily update check in Settings → Updates, off by default. When on, VoxBox asks GitHub once a day at launch and prompts if a newer version is available. Manual Check for Updates is unchanged.

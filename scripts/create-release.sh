@@ -2,6 +2,8 @@
 # create-release.sh — Build, sign, notarize, and produce a DMG in dist/
 # Usage: ./scripts/create-release.sh [version]
 #        If no version is given, patch version is auto-bumped.
+#        Bumps MARKETING_VERSION + build, commits all open files
+#        ("v<version> Released. Refer to changelog for details"), tags, then builds.
 #        ./scripts/create-release.sh --current
 #        Uses MARKETING_VERSION already in the Xcode project (no bump, no
 #        changelog edit, no release commit). Tags HEAD if v<version> is missing.
@@ -18,7 +20,6 @@ echo ""
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 require_repo_root
-require_clean_tree
 
 # ── Step 1: Determine version ──────────────────────────────────────────────────
 KEEP_VERSION=0
@@ -40,6 +41,8 @@ if [ "$KEEP_VERSION" = 1 ]; then
     echo "❌ --current cannot be combined with an explicit version"
     exit 1
   fi
+  # --current does not create a release commit, so the tree must already be clean.
+  require_clean_tree
   VERSION="$(current_version)"
   if [ -z "$VERSION" ]; then
     echo "❌ Could not read MARKETING_VERSION from $PROJECT_FILE"
@@ -79,18 +82,24 @@ else
   echo "  Build   : ${NEXT_BUILD}"
 
   # ── Step 3: Update CHANGELOG ──────────────────────────────────────────────────
-  if [ -f "$CHANGELOG" ]; then
+  # Only insert a dated heading when the file still has the Unreleased stub and
+  # this version is not already listed (so a hand-written entry is left alone).
+  if [ -f "$CHANGELOG" ] && ! grep -q "^## \[${VERSION}\]" "$CHANGELOG"; then
     echo ""
     echo "📝 Updating CHANGELOG..."
     RELEASE_DATE=$(date +%Y-%m-%d)
     perl -0pi -e "s/## \[Unreleased\]\n- \n/## [Unreleased]\n- \n\n## [${VERSION}] - ${RELEASE_DATE}\n- \n/" "$CHANGELOG"
   fi
 
-  # ── Step 4: Commit + tag (local only) ─────────────────────────────────────────
+  # ── Step 4: Commit everything (including the bump) + tag ─────────────────────
+  # Version/build edits are uncommitted until this point. Commit them together
+  # with any other open work so the later build runs against a clean tree.
   echo ""
   echo "💾 Creating release commit + tag (local only)..."
-  git add "$PROJECT_FILE" "$CHANGELOG"
-  git commit -m "release: v${VERSION}"
+  git add -A
+  echo "   Staging:"
+  git status --short
+  git commit -m "v${VERSION} Released. Refer to changelog for details"
   git tag "v${VERSION}"
   echo "📌 Tagged: v${VERSION}"
 fi
