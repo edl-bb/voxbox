@@ -8,7 +8,7 @@ on:
       - main
       # CI on the working branch directly, so builds are verified before a PR
       # is opened (this session cannot open PRs itself).
-      - claude/security-audit-enhancements-7tv1bh
+      - claude/license-speaktype-attribution-nr8616
 
 concurrency:
   group: ci-${{ github.ref }}
