@@ -4,13 +4,13 @@ set -euo pipefail
 
 source "$(dirname "$0")/lib/common.sh"
 
-APP_NAME="SpeakType-Dev"
+APP_NAME="VoxBox-Dev"
 BUNDLE_ID="$DEV_BUNDLE_ID"
 DERIVED_DATA_PATH="$PWD/build/dev-derived"
 BUILD_PRODUCTS_PATH="$DERIVED_DATA_PATH/Build/Products/Debug"
 DEST_APP_PATH="$HOME/Applications/${APP_NAME}.app"
 
-if [ ! -f "speaktype.xcodeproj/project.pbxproj" ]; then
+if [ ! -f "voxbox.xcodeproj/project.pbxproj" ]; then
   echo "Error: run this script from the project root."
   exit 1
 fi
@@ -19,8 +19,8 @@ mkdir -p "$HOME/Applications"
 
 echo "Building ${APP_NAME} from current checkout..."
 xcodebuild \
-  -project speaktype.xcodeproj \
-  -scheme speaktype \
+  -project voxbox.xcodeproj \
+  -scheme voxbox \
   -configuration Debug \
   -derivedDataPath "$DERIVED_DATA_PATH" \
   PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
@@ -37,7 +37,7 @@ echo "Installing ${APP_NAME} to $DEST_APP_PATH..."
 mkdir -p "$DEST_APP_PATH"
 rsync -a --delete "$BUILD_APP_PATH/" "$DEST_APP_PATH/"
 
-DEV_PROCESS_PATH="$DEST_APP_PATH/Contents/MacOS/speaktype"
+DEV_PROCESS_PATH="$DEST_APP_PATH/Contents/MacOS/voxbox"
 if pgrep -f "$DEV_PROCESS_PATH" >/dev/null 2>&1; then
   echo "Stopping existing ${APP_NAME} instance..."
   pkill -f "$DEV_PROCESS_PATH" || true
@@ -45,9 +45,9 @@ if pgrep -f "$DEV_PROCESS_PATH" >/dev/null 2>&1; then
 fi
 
 # Prevent duplicate menu bar items while developing by stopping installed app variants.
-for PROD_PATH in "/Applications/speaktype.app/Contents/MacOS/speaktype" "/Applications/SpeakType.app/Contents/MacOS/speaktype"; do
+for PROD_PATH in "/Applications/voxbox.app/Contents/MacOS/voxbox" "/Applications/VoxBox.app/Contents/MacOS/voxbox" "/Applications/SpeakType.app/Contents/MacOS/speaktype"; do
   if pgrep -f "$PROD_PATH" >/dev/null 2>&1; then
-    echo "Stopping running production SpeakType instance at $PROD_PATH..."
+    echo "Stopping running production VoxBox instance at $PROD_PATH..."
     pkill -f "$PROD_PATH" || true
     sleep 1
   fi

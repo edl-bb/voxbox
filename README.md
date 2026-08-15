@@ -90,7 +90,7 @@ So the first transcription will appear ultra slow, but it will go back to instan
 ### Project Structure
 
 ```
-speaktype/
+voxbox/
 ├── App/           # Entry point
 ├── Views/         # SwiftUI interface
 ├── Models/        # Data models
@@ -125,6 +125,9 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Credits
 
+VoxBox is based on **[SpeakType](https://github.com/karansinghgit/speaktype)** by **Karan Singh** (2048 Labs), the original project from which VoxBox was formed. Huge thanks to Karan for the foundation this app is built on.
+
+- [SpeakType](https://github.com/karansinghgit/speaktype) by Karan Singh - the original project
 - [WhisperKit](https://github.com/argmaxinc/WhisperKit) by Argmax
 - [OpenAI Whisper](https://github.com/openai/whisper)
 
@@ -136,6 +139,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 *Privacy-first • Open Source*
 
-VoxBox was formerly known as SpeakType (bundle identifier `dev.cubbei.voxbox`).
+VoxBox is a fork of [SpeakType](https://github.com/karansinghgit/speaktype) by Karan Singh (bundle identifier `dev.cubbei.voxbox`).
 
 </div>

@@ -1,8 +1,8 @@
-# SwiftLint Configuration for SpeakType
+# SwiftLint Configuration for VoxBox
 
 # Paths to include during linting
 included:
-  - speaktype
+  - voxbox
 
 # Paths to ignore during linting
 excluded:

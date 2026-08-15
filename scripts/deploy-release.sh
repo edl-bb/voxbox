@@ -9,7 +9,7 @@ set -e
 
 source "$(dirname "$0")/lib/common.sh"
 
-echo "🚀 SpeakType Release Deployer"
+echo "🚀 VoxBox Release Deployer"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -33,7 +33,7 @@ if [ -f "dist/.release-dmg" ]; then
   DMG_PATH=$(cat dist/.release-dmg)
 else
   # Fall back to the conventional name
-  DMG_PATH="dist/SpeakType-${VERSION}.dmg"
+  DMG_PATH="dist/VoxBox-${VERSION}.dmg"
 fi
 
 if [ ! -f "$DMG_PATH" ]; then
@@ -95,12 +95,12 @@ fi
 # Fall back to --generate-notes if we end up with nothing
 if [ -z "$NOTES" ]; then
   gh release create "v${VERSION}" "$DMG_PATH" \
-    --title "SpeakType v${VERSION}" \
+    --title "VoxBox v${VERSION}" \
     --generate-notes \
     --latest
 else
   gh release create "v${VERSION}" "$DMG_PATH" \
-    --title "SpeakType v${VERSION}" \
+    --title "VoxBox v${VERSION}" \
     --notes "$NOTES" \
     --latest
 fi

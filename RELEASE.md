@@ -133,7 +133,7 @@ See [CODESIGNING.md](CODESIGNING.md) for detailed troubleshooting.
 ### Build Errors
 
 If Xcode build fails:
-1. Clean build folder: `xcodebuild clean -scheme speaktype`
+1. Clean build folder: `xcodebuild clean -scheme voxbox`
 2. Verify certificate is valid: `security find-identity -v -p codesigning`
 3. Check Xcode version: `xcodebuild -version`
 

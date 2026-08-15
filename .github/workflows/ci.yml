@@ -8,7 +8,7 @@ on:
       - main
       # CI on the working branch directly, so builds are verified before a PR
       # is opened (this session cannot open PRs itself).
-      - claude/security-audit-enhancements-7tv1bh
+      - claude/license-speaktype-attribution-nr8616
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: SourcePackages
-          key: ${{ runner.os }}-spm-${{ hashFiles('speaktype.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('voxbox.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-spm-
 
@@ -44,7 +44,7 @@ jobs:
       - name: Build for testing
         run: |
           xcodebuild build-for-testing \
-            -scheme speaktype \
+            -scheme voxbox \
             -configuration Debug \
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
@@ -53,9 +53,9 @@ jobs:
       - name: Unit tests
         run: |
           xcodebuild test-without-building \
-            -scheme speaktype \
+            -scheme voxbox \
             -destination 'platform=macOS' \
-            -only-testing:speaktypeTests \
+            -only-testing:voxboxTests \
             -clonedSourcePackagesDirPath SourcePackages \
             CODE_SIGNING_ALLOWED=NO
 
