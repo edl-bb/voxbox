@@ -28,6 +28,10 @@ struct SidebarView: View {
 
             Spacer()
 
+            PermissionStatusBar()
+                .padding(.horizontal, SidebarConstants.itemHorizontalPadding)
+                .padding(.bottom, 12)
+
             // In-flight model downloads — visible from anywhere in the app,
             // not just Settings → AI Models. Hidden when nothing is active.
             ActiveDownloadsView()

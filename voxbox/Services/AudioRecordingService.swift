@@ -52,7 +52,7 @@ class AudioRecordingService: NSObject, ObservableObject {
     private var smoothedAudioLevel: Float = 0.0
     private var smoothedAudioFrequency: Float = 0.0
 
-    private let audioQueue = DispatchQueue(label: "dev.cubbei.voxbox.audioQueue")
+    private let audioQueue = DispatchQueue(label: "com.cubbei.VoxBox.audioQueue")
 
     private func validatedAudioFileURL(
         at url: URL,
@@ -263,7 +263,10 @@ class AudioRecordingService: NSObject, ObservableObject {
         audioQueue.async { self.cancelIdleSessionStop() }
 
         // 2. Wrap setup in a Task so stopRecording can wait for it
-        setupTask = Task { @MainActor in
+        // Do not hop to MainActor here. After isListening=true the main thread
+        // is busy composing the HUD; a MainActor task never started and
+        // startRunning never ran. Capture setup can proceed off the UI thread.
+        setupTask = Task.detached { [self] in
             // Ensure the capture session is running before setting up the writer.
             let didColdStart = await withCheckedContinuation {
                 (continuation: CheckedContinuation<Bool, Never>) in

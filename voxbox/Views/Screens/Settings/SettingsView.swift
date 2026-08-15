@@ -741,9 +741,7 @@ struct AudioSettingsTab: View {
 // MARK: - Permissions Settings Tab
 
 struct PermissionsSettingsTab: View {
-    @State private var micStatus: AVAuthorizationStatus = .notDetermined
-    @State private var accessibilityStatus: Bool = false
-    @State private var timer: Timer?
+    @ObservedObject private var permissions = PermissionService.shared
 
     var body: some View {
         ScrollView {
@@ -751,27 +749,47 @@ struct PermissionsSettingsTab: View {
                 SettingsSection {
                     SettingsSectionHeader(
                         icon: "shield", title: "App Permissions",
-                        subtitle: "Required for full functionality")
+                        subtitle: "Required for recording and auto-paste")
+
+                    HStack {
+                        Spacer()
+                        PermissionStatusBar()
+                        Spacer()
+                    }
+                    .padding(.bottom, 8)
 
                     VStack(spacing: 10) {
                         SettingsPermissionItem(
                             icon: "mic.fill",
                             color: Color.textSecondary,
-                            title: "Microphone Access",
-                            desc: "Record your voice for transcription",
-                            isGranted: micStatus == .authorized,
-                            action: { openSettings(for: "Privacy_Microphone") }
+                            title: "Microphone",
+                            desc: permissions.isMicGranted
+                                ? "On — VoxBox can hear you"
+                                : "Off — recording will not work until this is enabled",
+                            isGranted: permissions.isMicGranted,
+                            action: {
+                                if permissions.isMicGranted {
+                                    permissions.manageMicrophone()
+                                } else {
+                                    permissions.requestMicrophone()
+                                }
+                            }
                         )
 
                         SettingsPermissionItem(
                             icon: "hand.raised.fill",
                             color: Color.textSecondary,
-                            title: "Accessibility Access",
-                            desc: "Paste transcribed text directly",
-                            isGranted: accessibilityStatus,
+                            title: "Accessibility",
+                            desc: permissions.isAccessibilityGranted
+                                ? "On — transcripts paste into the focused app"
+                                : "Off — transcripts are copied to the clipboard instead",
+                            isGranted: permissions.isAccessibilityGranted,
                             action: {
-                                ClipboardService.shared.requestAccessibilityPermission()
-                                // System dialog handles opening Settings when user clicks "Open System Settings"
+                                if permissions.isAccessibilityGranted {
+                                    permissions.manageAccessibility()
+                                } else {
+                                    permissions.requestAccessibility()
+                                }
                             }
                         )
                     }
@@ -779,31 +797,7 @@ struct PermissionsSettingsTab: View {
             }
             .padding(24)
         }
-        .onAppear {
-            checkPermissions()
-            startPolling()
-        }
-        .onDisappear {
-            timer?.invalidate()
-        }
-    }
-
-    private func startPolling() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            checkPermissions()
-        }
-    }
-
-    private func checkPermissions() {
-        micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-        accessibilityStatus = AXIsProcessTrusted()
-    }
-
-    private func openSettings(for pane: String) {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")
-        {
-            NSWorkspace.shared.open(url)
-        }
+        .onAppear { permissions.refresh() }
     }
 }
 
@@ -926,22 +920,25 @@ struct SettingsPermissionItem: View {
 
             Spacer()
 
-            if isGranted {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Color.textSecondary)
-                    .font(.system(size: 20))
-            } else {
-                Button("Enable") {
-                    action()
-                }
+            Text(isGranted ? "On" : "Off")
                 .font(Typography.labelSmall)
-                .foregroundStyle(Color.textPrimary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.bgHover)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .buttonStyle(.plain)
+                .foregroundStyle(isGranted ? Color.green : Color.orange)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(
+                    Capsule().fill((isGranted ? Color.green : Color.orange).opacity(0.12))
+                )
+
+            Button(isGranted ? "Manage" : "Enable") {
+                action()
             }
+            .font(Typography.labelSmall)
+            .foregroundStyle(Color.textPrimary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.bgHover)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .buttonStyle(.plain)
         }
         .padding(16)
         .background(Color.bgCard)

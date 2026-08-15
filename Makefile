@@ -232,13 +232,19 @@ uninstall:
 	@echo "🗑️  Uninstalling VoxBox completely..."
 	@pkill -9 voxbox 2>/dev/null || true
 	@echo "   Killed running app"
+	@tccutil reset Accessibility com.cubbei.VoxBox 2>/dev/null || true
+	@tccutil reset Microphone com.cubbei.VoxBox 2>/dev/null || true
 	@tccutil reset Accessibility dev.cubbei.voxbox 2>/dev/null || true
 	@tccutil reset Microphone dev.cubbei.voxbox 2>/dev/null || true
 	@echo "   Reset accessibility & microphone permissions"
+	@defaults delete com.cubbei.VoxBox 2>/dev/null || true
 	@defaults delete dev.cubbei.voxbox 2>/dev/null || true
 	@rm -rf ~/Library/Application\ Support/VoxBox ~/Library/Application\ Support/SpeakType 2>/dev/null || true
+	@rm -rf ~/Library/Preferences/com.cubbei.VoxBox.plist 2>/dev/null || true
 	@rm -rf ~/Library/Preferences/dev.cubbei.voxbox.plist 2>/dev/null || true
+	@rm -rf ~/Library/Caches/com.cubbei.VoxBox 2>/dev/null || true
 	@rm -rf ~/Library/Caches/dev.cubbei.voxbox 2>/dev/null || true
+	@rm -rf ~/Library/Saved\ Application\ State/com.cubbei.VoxBox.savedState 2>/dev/null || true
 	@rm -rf ~/Library/Saved\ Application\ State/dev.cubbei.voxbox.savedState 2>/dev/null || true
 	@echo "   Removed app data and preferences"
 	@rm -rf ~/Library/Developer/Xcode/DerivedData/voxbox-* 2>/dev/null || true

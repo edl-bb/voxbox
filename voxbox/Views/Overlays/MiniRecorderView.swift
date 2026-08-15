@@ -1,3 +1,4 @@
+import ApplicationServices
 import AVFoundation
 import Combine
 import CoreMedia
@@ -12,7 +13,7 @@ struct MiniRecorderView: View {
     @State private var statusMessage = "Transcribing..."
     @State private var isWarmingUp = false
     @State private var showAccessibilityWarning = false
-    var onCommit: ((String) -> Void)?
+    var onCommit: ((String) async -> TranscriptDelivery)?
     var onCancel: (() -> Void)?
 
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
@@ -93,11 +94,10 @@ struct MiniRecorderView: View {
     @State private var localEscapeMonitor: Any?
 
     @Environment(\.colorScheme) private var colorScheme
-    // The pill window follows the system appearance, which can disagree with the
-    // in-app theme override — so resolve "dark" from the app theme first.
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
 
-    /// Whether the glass pill should use its dark treatment.
+    /// Dark idle pill uses an opaque SwiftUI fill (same as the original SpeakType
+    /// treatment). Light idle uses behind-window blur — not Liquid Glass.
     private var pillIsDark: Bool {
         switch appTheme {
         case .dark: return true
@@ -107,8 +107,6 @@ struct MiniRecorderView: View {
     }
 
     // MARK: - State for Animation
-    @State private var phase: CGFloat = 0
-
     /// Whether the pill is hovered — reveals the mic/mode/language controls inline.
     @State private var expanded = false
 
@@ -252,7 +250,10 @@ struct MiniRecorderView: View {
     private static let waveBarSpacing: CGFloat = 2.0
 
     // Default Init for Preview
-    init(onCommit: ((String) -> Void)? = nil, onCancel: (() -> Void)? = nil) {
+    init(
+        onCommit: ((String) async -> TranscriptDelivery)? = nil,
+        onCancel: (() -> Void)? = nil
+    ) {
         self.onCommit = onCommit
         self.onCancel = onCancel
     }
@@ -276,7 +277,7 @@ struct MiniRecorderView: View {
         switch displayPhase {
         case .idle: return 58
         case .warming: return 200
-        case .processing: return 210
+        case .processing: return 248
         case .recording: return expanded ? 460 : 250
         }
     }
@@ -475,18 +476,13 @@ struct MiniRecorderView: View {
             audioRecorder.stopSessionIfIdle()
         }
         .onChange(of: isListening) {
-            // Only animate when actually recording to save CPU
             if isListening {
                 recordingStart = Date()
-                withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                    phase = .pi * 4
-                }
                 withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) {
                     dotPulse = true
                 }
             } else {
                 recordingStart = nil
-                phase = 0
                 dotPulse = false
             }
         }
@@ -544,16 +540,6 @@ struct MiniRecorderView: View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         if displayPhase == .idle {
             if pillIsDark {
-                // Dark mode: a near-black premium pill rendered PURELY in SwiftUI.
-                // We deliberately avoid a behind-window NSVisualEffectView here: as
-                // a freshly-inserted AppKit view it crossfades its material in on
-                // the light→dark switch (under the system's appearance-transition),
-                // so the pill took ~a second to darken while dark→light (SwiftUI
-                // glass) was instant. An opaque SwiftUI fill flips with `colorScheme`
-                // immediately in both directions. This mirrors the active-HUD look
-                // below (`Color(white: 0.05)`), plus a faint top sheen for edge
-                // definition. We also skip Liquid Glass in dark: its material paints
-                // a luminous edge that reads as a white frost ring no matter the tint.
                 ZStack {
                     shape.fill(Color(white: 0.06))
                     shape.strokeBorder(
@@ -567,32 +553,25 @@ struct MiniRecorderView: View {
                         lineWidth: 0.75)
                 }
             } else {
-                // Light mode: native Liquid Glass — frosted, refractive, gorgeous.
-                // (Deployment target is macOS 26+, so this is always available.)
-                Color.clear
-                    .glassEffect(.regular, in: shape)
-                    .overlay {
-                        // Soft frost hugging the inside edge; clear center.
-                        ZStack {
-                            shape
-                                .stroke(Color.white.opacity(0.14), lineWidth: 6)
-                                .blur(radius: 4)
-                            shape.strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.35),
-                                        Color.white.opacity(0.06),
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom),
-                                lineWidth: 1)
-                        }
-                        .clipShape(shape)
-                    }
+                // Original SpeakType light idle: behind-window HUD blur.
+                // Do not use `.glassEffect` — that path froze the app on invoke.
+                ZStack {
+                    VisualEffectBlur(
+                        material: .hudWindow,
+                        blendingMode: .behindWindow,
+                        cornerRadius: cornerRadius)
+                    shape.strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.55),
+                                Color.white.opacity(0.08),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom),
+                        lineWidth: 1)
+                }
             }
         } else {
-            // Active HUD: deep, opaque near-black so warming/recording/processing
-            // text stays fully legible over any backdrop.
             ZStack {
                 shape.fill(Color(white: 0.05))
                 shape.strokeBorder(Color.white.opacity(0.10), lineWidth: 0.8)
@@ -917,15 +896,28 @@ struct MiniRecorderView: View {
             )
 
             debugLog("Calling onCommit...")
-            await MainActor.run {
-                if !cancelCommit {
-                    onCommit?(text)
+            if cancelCommit {
+                await MainActor.run {
+                    isProcessing = false
+                    onCancel?()
                 }
-                isProcessing = false
+                return
+            }
 
-                // If we cancelled by dismissing early, the window might already be closed,
-                // but if we waited for it (e.g. short transcription), close it now.
-                if cancelCommit {
+            let delivery = await onCommit?(text) ?? .copiedToClipboard
+            await MainActor.run {
+                switch delivery {
+                case .copiedToClipboard:
+                    statusMessage = "Copied to clipboard"
+                    isProcessing = true
+                case .pasted:
+                    isProcessing = false
+                }
+            }
+            if delivery == .copiedToClipboard {
+                try? await Task.sleep(nanoseconds: 1_600_000_000)
+                await MainActor.run {
+                    isProcessing = false
                     onCancel?()
                 }
             }
@@ -1003,6 +995,36 @@ struct DoubleChevronIcon: View {
     }
 }
 
+struct VisualEffectBlur: NSViewRepresentable {
+    var material: NSVisualEffectView.Material
+    var blendingMode: NSVisualEffectView.BlendingMode
+    var cornerRadius: CGFloat = 0
+    var appearanceName: NSAppearance.Name? = nil
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let visualEffectView = NSVisualEffectView()
+        visualEffectView.material = material
+        visualEffectView.blendingMode = blendingMode
+        visualEffectView.state = .active
+        visualEffectView.wantsLayer = true
+        visualEffectView.layer?.cornerRadius = cornerRadius
+        visualEffectView.layer?.masksToBounds = true
+        if let appearanceName {
+            visualEffectView.appearance = NSAppearance(named: appearanceName)
+        }
+        return visualEffectView
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+        nsView.layer?.cornerRadius = cornerRadius
+        if let appearanceName {
+            nsView.appearance = NSAppearance(named: appearanceName)
+        }
+    }
+}
+
 // MARK: - Key Event Handler
 
 struct KeyEventHandlerView: NSViewRepresentable {
@@ -1017,9 +1039,6 @@ struct KeyEventHandlerView: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {
         if let view = nsView as? KeyCaptureView {
             view.onEscape = onEscape
-            DispatchQueue.main.async {
-                view.window?.makeFirstResponder(view)
-            }
         }
     }
 
@@ -1027,14 +1046,6 @@ struct KeyEventHandlerView: NSViewRepresentable {
         var onEscape: (() -> Void)?
 
         override var acceptsFirstResponder: Bool { true }
-
-        override func viewDidMoveToWindow() {
-            super.viewDidMoveToWindow()
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.window?.makeFirstResponder(self)
-            }
-        }
 
         override func keyDown(with event: NSEvent) {
             if event.keyCode == 53 {  // Escape key

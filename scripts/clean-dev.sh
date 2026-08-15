@@ -18,22 +18,33 @@ killall "voxbox" 2>/dev/null || true
 sleep 1
 echo "✅ Killed all running instances"
 
-# Reset ALL permissions
+# Reset ALL permissions (current + legacy IDs so Settings
+# does not keep showing the old name)
 tccutil reset Microphone ${APP_BUNDLE_ID} 2>/dev/null || true
 tccutil reset Accessibility ${APP_BUNDLE_ID} 2>/dev/null || true
 tccutil reset Microphone ${APP_BUNDLE_ID}.dev 2>/dev/null || true
 tccutil reset Accessibility ${APP_BUNDLE_ID}.dev 2>/dev/null || true
+tccutil reset Microphone ${LEGACY_BUNDLE_ID} 2>/dev/null || true
+tccutil reset Accessibility ${LEGACY_BUNDLE_ID} 2>/dev/null || true
+tccutil reset Microphone com.2048labs.speaktype 2>/dev/null || true
+tccutil reset Accessibility com.2048labs.speaktype 2>/dev/null || true
+tccutil reset Microphone com.2048labs.SpeakType 2>/dev/null || true
+tccutil reset Accessibility com.2048labs.SpeakType 2>/dev/null || true
 echo "✅ Reset microphone & accessibility permissions"
 
 # Remove app preferences and data
 defaults delete ${APP_BUNDLE_ID} 2>/dev/null || true
 defaults delete ${APP_BUNDLE_ID}.dev 2>/dev/null || true
+defaults delete ${LEGACY_BUNDLE_ID} 2>/dev/null || true
 rm -rf ~/Library/Caches/${APP_BUNDLE_ID} 2>/dev/null || true
 rm -rf ~/Library/Caches/${APP_BUNDLE_ID}.dev 2>/dev/null || true
+rm -rf ~/Library/Caches/${LEGACY_BUNDLE_ID} 2>/dev/null || true
 rm -rf ~/Library/Saved\ Application\ State/${APP_BUNDLE_ID}.savedState 2>/dev/null || true
 rm -rf ~/Library/Saved\ Application\ State/${APP_BUNDLE_ID}.dev.savedState 2>/dev/null || true
+rm -rf ~/Library/Saved\ Application\ State/${LEGACY_BUNDLE_ID}.savedState 2>/dev/null || true
 rm -rf ~/Library/Preferences/${APP_BUNDLE_ID}.plist 2>/dev/null || true
 rm -rf ~/Library/Preferences/${APP_BUNDLE_ID}.dev.plist 2>/dev/null || true
+rm -rf ~/Library/Preferences/${LEGACY_BUNDLE_ID}.plist 2>/dev/null || true
 rm -rf ~/Library/Application\ Support/VoxBox ~/Library/Application\ Support/SpeakType 2>/dev/null || true
 rm -rf ~/Library/Application\ Support/VoxBox-Dev ~/Library/Application\ Support/SpeakType-Dev 2>/dev/null || true
 echo "✅ Removed app preferences & data"

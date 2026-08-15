@@ -53,6 +53,8 @@ class ParakeetEngine: SpeechToTextEngine {
 
     /// FluidAudio's actor that owns the loaded CoreML models.
     private var manager: AsrManager?
+    private var activeLoadTask: Task<Void, Error>?
+    private var activeLoadVariant = ""
 
     private init() {}
 
@@ -60,6 +62,30 @@ class ParakeetEngine: SpeechToTextEngine {
         // Already loaded this exact model.
         if isInitialized, currentModelVariant == variant, manager != nil { return }
 
+        if let activeLoadTask {
+            if activeLoadVariant == variant {
+                try await activeLoadTask.value
+                return
+            }
+            _ = try? await activeLoadTask.value
+            if isInitialized, currentModelVariant == variant, manager != nil { return }
+        }
+
+        let task = Task {
+            try await self.performModelLoad(variant: variant)
+        }
+        activeLoadTask = task
+        activeLoadVariant = variant
+        defer {
+            if activeLoadVariant == variant {
+                activeLoadTask = nil
+                activeLoadVariant = ""
+            }
+        }
+        try await task.value
+    }
+
+    private func performModelLoad(variant: String) async throws {
         isLoading = true
         isInitialized = false
         loadingStage = "Preparing Parakeet model…"

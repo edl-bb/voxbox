@@ -18,7 +18,7 @@
                BlueprintIdentifier = "362947212F0DBC4E00BE895D"
                BuildableName = "voxbox.app"
                BlueprintName = "voxbox"
-               ReferencedContainer = "container:voxbox.xcodeproj">
+               ReferencedContainer = "container:VoxBox.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -38,7 +38,7 @@
                BlueprintIdentifier = "3629472E2F0DBC5100BE895D"
                BuildableName = "voxboxTests.xctest"
                BlueprintName = "voxboxTests"
-               ReferencedContainer = "container:voxbox.xcodeproj">
+               ReferencedContainer = "container:VoxBox.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -49,7 +49,7 @@
                BlueprintIdentifier = "362947382F0DBC5100BE895D"
                BuildableName = "voxboxUITests.xctest"
                BlueprintName = "voxboxUITests"
-               ReferencedContainer = "container:voxbox.xcodeproj">
+               ReferencedContainer = "container:VoxBox.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -71,7 +71,7 @@
             BlueprintIdentifier = "362947212F0DBC4E00BE895D"
             BuildableName = "voxbox.app"
             BlueprintName = "voxbox"
-            ReferencedContainer = "container:voxbox.xcodeproj">
+            ReferencedContainer = "container:VoxBox.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -88,7 +88,7 @@
             BlueprintIdentifier = "362947212F0DBC4E00BE895D"
             BuildableName = "voxbox.app"
             BlueprintName = "voxbox"
-            ReferencedContainer = "container:voxbox.xcodeproj">
+            ReferencedContainer = "container:VoxBox.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

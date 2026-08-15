@@ -137,8 +137,4 @@ VoxBox is based on **[SpeakType](https://github.com/karansinghgit/speaktype)** b
 
 **Made with ❤️ by Cubbei Studios**
 
-*Privacy-first • Open Source*
-
-VoxBox is a fork of [SpeakType](https://github.com/karansinghgit/speaktype) by Karan Singh (bundle identifier `dev.cubbei.voxbox`).
-
 </div>

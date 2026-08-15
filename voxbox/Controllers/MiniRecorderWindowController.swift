@@ -1,10 +1,16 @@
 import Cocoa
 import SwiftUI
 
+enum TranscriptDelivery {
+    case pasted
+    case copiedToClipboard
+}
+
 class MiniRecorderWindowController: NSObject {
     private var panel: NSPanel?
     private var hostingController: NSHostingController<AnyView>?
     private var lastActiveApp: NSRunningApplication?
+    private var appActivationObserver: NSObjectProtocol?
     private var shouldRestoreClipboardAfterAutoPaste: Bool {
         UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
     }
@@ -98,8 +104,7 @@ class MiniRecorderWindowController: NSObject {
 
     // Start recording - show panel and begin recording
     func startRecording() {
-        // Capture previous app to restore focus later
-        lastActiveApp = NSWorkspace.shared.frontmostApplication
+        rememberPasteTarget(from: NSWorkspace.shared.frontmostApplication)
 
         if panel == nil {
             setupPanel()
@@ -111,12 +116,13 @@ class MiniRecorderWindowController: NSObject {
         // Become interactive so the recording HUD (stop dot, hover controls) works.
         panel.ignoresMouseEvents = false
 
+        // Show the idle pill first. Previous runs died after isListening=true and
+        // never reached a deferred orderFront, so the HUD never appeared.
         if !panel.isVisible {
             print("Showing Mini Recorder Panel")
             panel.orderFrontRegardless()
         }
 
-        // Trigger instant recording
         NotificationCenter.default.post(name: .recordingStartRequested, object: nil)
     }
 
@@ -170,9 +176,11 @@ class MiniRecorderWindowController: NSObject {
 
     private func setupPanel() {
         // Initialize View with callbacks
+        observeAppActivations()
+
         let recorderView = MiniRecorderView(
             onCommit: { [weak self] text in
-                self?.handleCommit(text: text)
+                await self?.handleCommit(text: text) ?? .copiedToClipboard
             },
             onCancel: { [weak self] in
                 // Don't hide — the pill stays on screen and settles back to idle.
@@ -229,59 +237,74 @@ class MiniRecorderWindowController: NSObject {
         self.panel = p
     }
 
-    private func handleCommit(text: String) {
-        Task {
-            // 1. Copy to clipboard for manual paste. When the user wants the
-            // transcript kept on the clipboard, never snapshot/restore; otherwise
-            // snapshot first if they asked for the old clipboard back.
-            let previousClipboard: ClipboardService.ClipboardSnapshot?
-            if !shouldKeepTranscriptOnClipboard && shouldRestoreClipboardAfterAutoPaste {
-                previousClipboard = ClipboardService.shared.copyForTemporaryPaste(text: text)
-            } else {
-                previousClipboard = nil
-                ClipboardService.shared.copy(text: text)
-            }
-
-            // 2. Settle the pill back to its resting state (keep it on screen).
-            await MainActor.run {
-                self.returnToIdle()
-            }
-
-            // 3. Check accessibility - if not granted, just copy to clipboard silently
-            let accessibilityTrusted = ClipboardService.shared.isAccessibilityTrusted
-
-            if !accessibilityTrusted {
-                // Text is already copied to clipboard, just return
-                // Don't show annoying popup - user can paste manually with Cmd+V
-                print(
-                    "⚠️ Accessibility not granted - text copied to clipboard, user can paste with Cmd+V"
-                )
-                return
-            }
-
-            // 4. Re-activate the target app
-            if let app = self.lastActiveApp {
-                _ = await MainActor.run {
-                    app.activate()
-                }
-            }
-
-            // 5. Wait for focus
-            try? await Task.sleep(nanoseconds: 500_000_000)
-
-            // 6. Paste using CGEvent (Accessibility permission only)
-            await MainActor.run {
-                ClipboardService.shared.paste()
-            }
-
-            guard let previousClipboard else { return }
-
-            try? await Task.sleep(nanoseconds: 350_000_000)
-
-            await MainActor.run {
-                ClipboardService.shared.restore(previousClipboard, ifCurrentStringMatches: text)
-            }
+    private func observeAppActivations() {
+        guard appActivationObserver == nil else { return }
+        appActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                as? NSRunningApplication
+            self?.rememberPasteTarget(from: app)
         }
+    }
+
+    private func rememberPasteTarget(from app: NSRunningApplication?) {
+        guard let app, !app.isTerminated else { return }
+        guard app.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
+        lastActiveApp = app
+    }
+
+    private func resolvedPasteTarget() -> NSRunningApplication? {
+        guard let app = lastActiveApp, !app.isTerminated else { return nil }
+        guard app.bundleIdentifier != Bundle.main.bundleIdentifier else { return nil }
+        return app
+    }
+
+    private func handleCommit(text: String) async -> TranscriptDelivery {
+        let accessibilityTrusted = ClipboardService.shared.isAccessibilityTrusted
+        let target = resolvedPasteTarget()
+        let canPaste = accessibilityTrusted && target != nil
+
+        if !canPaste {
+            ClipboardService.shared.copy(text: text)
+            print(
+                "⚠️ Auto-paste unavailable — transcript copied to clipboard"
+            )
+            return .copiedToClipboard
+        }
+
+        let previousClipboard: ClipboardService.ClipboardSnapshot?
+        if !shouldKeepTranscriptOnClipboard && shouldRestoreClipboardAfterAutoPaste {
+            previousClipboard = ClipboardService.shared.copyForTemporaryPaste(text: text)
+        } else {
+            previousClipboard = nil
+            ClipboardService.shared.copy(text: text)
+        }
+
+        await MainActor.run {
+            self.returnToIdle()
+        }
+
+        _ = await MainActor.run {
+            target?.activate()
+        }
+
+        try? await Task.sleep(nanoseconds: 500_000_000)
+
+        await MainActor.run {
+            ClipboardService.shared.paste()
+        }
+
+        guard let previousClipboard else { return .pasted }
+
+        try? await Task.sleep(nanoseconds: 350_000_000)
+
+        await MainActor.run {
+            ClipboardService.shared.restore(previousClipboard, ifCurrentStringMatches: text)
+        }
+        return .pasted
     }
 
     private func showAccessibilityAlert() {

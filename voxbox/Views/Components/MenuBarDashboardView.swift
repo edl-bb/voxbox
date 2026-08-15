@@ -71,6 +71,8 @@ struct MenuBarDashboardView: View {
 
             Spacer(minLength: 12)
 
+            PermissionStatusBar(compact: true)
+
             Button(action: openDashboard) {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.forward.app")

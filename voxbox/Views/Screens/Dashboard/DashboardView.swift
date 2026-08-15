@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 struct DashboardView: View {
     @Binding var selection: SidebarItem?
     @StateObject private var historyService = HistoryService.shared
-    @StateObject private var audioRecorder = AudioRecordingService()
+    @ObservedObject private var audioRecorder = AudioRecordingService.shared
     private var transcription: TranscriptionManager { TranscriptionManager.shared }
     @State private var leftColumnHeight: CGFloat = 0
 

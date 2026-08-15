@@ -3,10 +3,18 @@ import SwiftUI
 
 struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
-    @State private var currentPage = 0
+    /// Returning users who lost a TCC grant skip welcome / Globe Key and land
+    /// on the permissions step so auto-paste can be restored.
+    var startAtPermissions: Bool = false
+    @State private var currentPage: Int
+
+    init(startAtPermissions: Bool = false) {
+        self.startAtPermissions = startAtPermissions
+        _currentPage = State(initialValue: startAtPermissions ? 2 : 0)
+    }
 
     var body: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             ZStack {
                 // Background - Match main app exactly
                 Color.bgApp.ignoresSafeArea()
@@ -24,9 +32,10 @@ struct OnboardingView: View {
                         })
                         .transition(.opacity)
                     } else {
-                        PermissionsPage(finishAction: {
-                            completeOnboarding()
-                        })
+                        PermissionsPage(
+                            finishAction: { completeOnboarding() },
+                            skipAction: { completeOnboarding() }
+                        )
                         .transition(.opacity)
                     }
                 }
@@ -34,8 +43,7 @@ struct OnboardingView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(minWidth: 600, minHeight: 500)  // Lower minimum size
-        .frame(minWidth: 600, minHeight: 500)  // Lower minimum size
+        .frame(minWidth: 600, minHeight: 500)
     }
 
     func completeOnboarding() {
@@ -148,6 +156,7 @@ struct GetStartedButton: View {
 
 struct PermissionsPage: View {
     var finishAction: () -> Void
+    var skipAction: () -> Void
     @State private var micStatus: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityStatus: Bool = false
     @State private var timer: Timer?
@@ -198,10 +207,26 @@ struct PermissionsPage: View {
 
             Spacer()
 
-            ContinueButton(
-                isEnabled: micStatus == .authorized && accessibilityStatus,
-                action: finishAction
-            )
+            VStack(spacing: 14) {
+                ContinueButton(
+                    isEnabled: micStatus == .authorized,
+                    action: {
+                        finishAction()
+                    }
+                )
+
+                if !accessibilityStatus {
+                    Button(action: {
+                        skipAction()
+                    }) {
+                        Text("Skip for now")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("You can enable Accessibility later from the sidebar. Transcripts will copy to the clipboard until then.")
+                }
+            }
             .padding(.bottom, 48)
         }
         .padding(.horizontal, 60)

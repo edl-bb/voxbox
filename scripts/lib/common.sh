@@ -8,8 +8,9 @@
 # one place — instead of editing each script.
 
 # ── Identity & signing ────────────────────────────────────────────────────────
-APP_BUNDLE_ID="dev.cubbei.voxbox"
-DEV_BUNDLE_ID="dev.cubbei.voxbox.dev"
+APP_BUNDLE_ID="com.cubbei.VoxBox"
+DEV_BUNDLE_ID="com.cubbei.VoxBox.dev"
+LEGACY_BUNDLE_ID="dev.cubbei.voxbox"
 APPLE_ID="" # set to the Apple ID of the signing developer account
 APPLE_TEAM_ID="${APPLE_TEAM_ID:-PCV4UMSRZX}"
 NOTARY_PROFILE="AC_PASSWORD"          # xcrun notarytool --keychain-profile name

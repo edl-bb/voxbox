@@ -21,6 +21,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // new name so nothing has to re-download.
         migrateLegacyStorageIfNeeded()
 
+        // Scan local models at launch so the pill does not race an empty
+        // downloadProgress map when the dashboard has never appeared.
+        _ = ModelDownloadService.shared
+
         miniRecorderController = MiniRecorderWindowController()
         // Prepare the resting pill. It stays hidden until recording unless the
         // user opts into always showing it (issue #100).
@@ -63,6 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Setup dynamic hotkey monitoring based on user selection
         setupHotkeyMonitoring()
+        PermissionService.shared.startMonitoring()
 
         // Enforce local data retention (auto-delete old WAVs / expired
         // transcripts) now and hourly from here on.
@@ -151,7 +156,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func refreshDockIconVisibility() {
         let dashboardOpen = NSApp.windows.contains(where: isDashboardWindow)
         let target: NSApplication.ActivationPolicy = dashboardOpen ? .regular : .accessory
-        guard NSApp.activationPolicy() != target else { return }
+        let current = NSApp.activationPolicy()
+        guard current != target else { return }
         NSApp.setActivationPolicy(target)
         if target == .regular {
             NSApp.activate(ignoringOtherApps: true)
@@ -233,7 +239,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Hotkey Monitoring
 
+    private static var didRegisterHotkeyMonitors = false
+
     private func setupHotkeyMonitoring() {
+        guard !Self.didRegisterHotkeyMonitors else { return }
+        Self.didRegisterHotkeyMonitors = true
         setupSuppressingHotkeyEventTap()
         setupCustomShortcutHandlers()
 

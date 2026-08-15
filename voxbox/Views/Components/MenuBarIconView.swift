@@ -5,11 +5,13 @@ import SwiftUI
 /// template image so it adapts to the menu bar's light/dark appearance and
 /// tinting like a native icon.
 ///
-/// While a recording is in progress the bars step through a small equalizer
-/// animation (frames cycled by a TimelineView, which re-renders the status
-/// item), then settle back into the resting V shape.
+/// The status-item label stays a single `Image`. A `TimelineView` here
+/// previously killed the process on macOS 26 as soon as recording started
+/// (last log before SIGKILL was this body installing the timeline).
+/// Recording motion is a timer that swaps pre-rendered frames instead.
 struct MenuBarIconView: View {
-    @ObservedObject private var audioRecorder = AudioRecordingService.shared
+    @State private var isRecording = false
+    @State private var frameIndex = 0
 
     /// Resting bar heights — the V of VoxBox (fractions of full height).
     private static let idleHeights: [CGFloat] = [0.42, 0.68, 1.0, 0.68, 0.42]
@@ -25,21 +27,33 @@ struct MenuBarIconView: View {
         [0.38, 0.70, 1.00, 0.85, 0.48],
     ]
 
-    /// Pre-rendered template images. Rendered once — the TimelineView only
-    /// swaps images. `idleImage` is also reused by the menu bar dashboard
-    /// header so the mark matches everywhere.
+    /// Pre-rendered template images. Rendered once; recording only swaps
+    /// which image is shown. `idleImage` is also reused by the menu bar
+    /// dashboard header so the mark matches everywhere.
     static let idleImage = renderFrame(heights: idleHeights)
     private static let recordingImages = recordingFrames.map { renderFrame(heights: $0) }
 
-    var body: some View {
-        if audioRecorder.isRecording {
-            TimelineView(.periodic(from: .now, by: 0.22)) { context in
-                let tick = Int(context.date.timeIntervalSinceReferenceDate / 0.22)
-                Image(nsImage: Self.recordingImages[tick % Self.recordingImages.count])
-            }
-        } else {
-            Image(nsImage: Self.idleImage)
+    private var currentImage: NSImage {
+        if isRecording, !Self.recordingImages.isEmpty {
+            return Self.recordingImages[frameIndex % Self.recordingImages.count]
         }
+        return Self.idleImage
+    }
+
+    var body: some View {
+        Image(nsImage: currentImage)
+            .onReceive(AudioRecordingService.shared.$isRecording) { recording in
+                isRecording = recording
+                if !recording { frameIndex = 0 }
+            }
+            .task(id: isRecording) {
+                guard isRecording, !Self.recordingImages.isEmpty else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 220_000_000)
+                    guard !Task.isCancelled else { return }
+                    frameIndex = (frameIndex + 1) % Self.recordingImages.count
+                }
+            }
     }
 
     /// Draw the five V-wave capsules into an 18×18pt template NSImage

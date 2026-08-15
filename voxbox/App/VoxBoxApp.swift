@@ -17,6 +17,16 @@ struct VoxBoxApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    private var isUITesting: Bool {
+        ProcessInfo.processInfo.arguments.contains("--uitesting")
+    }
+
+    /// Onboarding is first-run only. Missing Accessibility must not hide the
+    /// dashboard — auto-paste is optional; the permission pills stay in Settings.
+    private var showsMainApp: Bool {
+        hasCompletedOnboarding || isUITesting
+    }
+
     init() {
         // Register bundled fonts (Satoshi, Source Sans 3) so Font.custom resolves
         // them regardless of what's installed on the machine.
@@ -33,7 +43,7 @@ struct VoxBoxApp: App {
         WindowGroup(id: "main-dashboard") {
             ThemeProvider {
                 Group {
-                    if hasCompletedOnboarding {
+                    if showsMainApp {
                         MainView()
                     } else {
                         OnboardingView()
