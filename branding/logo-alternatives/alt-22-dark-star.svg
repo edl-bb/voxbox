@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 22 "Dark Star" — a radial gradient anchored dark at the TOP
+       CENTRE of the glyph: brightness grows with distance from that point,
+       so every bar tip lightens and the apex is furthest = brightest.
+       This is the literal "darkest top-middle" reading. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111119"/>
+      <stop offset="1" stop-color="#06060A"/>
+    </linearGradient>
+    <radialGradient id="v" gradientUnits="userSpaceOnUse" cx="512" cy="280" r="500">
+      <stop offset="0" stop-color="#101E4F"/>
+      <stop offset="0.55" stop-color="#2E6BFF"/>
+      <stop offset="1" stop-color="#8FD4FF"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <g fill="#2E6BFF" filter="url(#glow)" opacity="0.4">
+    <rect x="258" y="300" width="60" height="180" rx="30"/>
+    <rect x="370" y="300" width="60" height="300" rx="30"/>
+    <rect x="482" y="300" width="60" height="424" rx="30"/>
+    <rect x="594" y="300" width="60" height="300" rx="30"/>
+    <rect x="706" y="300" width="60" height="180" rx="30"/>
+  </g>
+  <g fill="url(#v)">
+    <rect x="258" y="300" width="60" height="180" rx="30"/>
+    <rect x="370" y="300" width="60" height="300" rx="30"/>
+    <rect x="482" y="300" width="60" height="424" rx="30"/>
+    <rect x="594" y="300" width="60" height="300" rx="30"/>
+    <rect x="706" y="300" width="60" height="180" rx="30"/>
+  </g>
+</svg>

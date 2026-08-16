@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 26 "Tip Bloom" — the glow lives ONLY at the bar tips: soft light
+       pooling under each rounded end, strongest at the apex. The bar tops
+       stay dark and matte. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111119"/>
+      <stop offset="1" stop-color="#06060A"/>
+    </linearGradient>
+    <linearGradient id="v" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="724">
+      <stop offset="0" stop-color="#16307F"/>
+      <stop offset="0.55" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#8FD4FF"/>
+    </linearGradient>
+    <filter id="tipglow" x="-200%" y="-200%" width="500%" height="500%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <!-- light pooled at each tip only; apex pool slightly larger/brighter -->
+  <g fill="#6FB4FF" filter="url(#tipglow)">
+    <circle cx="288" cy="450" r="34" opacity="0.5"/>
+    <circle cx="400" cy="570" r="34" opacity="0.55"/>
+    <circle cx="512" cy="694" r="44" opacity="0.75"/>
+    <circle cx="624" cy="570" r="34" opacity="0.55"/>
+    <circle cx="736" cy="450" r="34" opacity="0.5"/>
+  </g>
+  <g fill="url(#v)">
+    <rect x="258" y="300" width="60" height="180" rx="30"/>
+    <rect x="370" y="300" width="60" height="300" rx="30"/>
+    <rect x="482" y="300" width="60" height="424" rx="30"/>
+    <rect x="594" y="300" width="60" height="300" rx="30"/>
+    <rect x="706" y="300" width="60" height="180" rx="30"/>
+  </g>
+</svg>

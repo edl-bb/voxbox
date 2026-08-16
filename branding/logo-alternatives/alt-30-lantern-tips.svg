@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 30 "Lantern Tips" — dark matte bars that ignite in their last
+       stretch: an ice-bright capsule fused into each tip, with a whisper of
+       glow beneath. The five lit tips draw the V by themselves. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111119"/>
+      <stop offset="1" stop-color="#06060A"/>
+    </linearGradient>
+    <linearGradient id="bar" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="724">
+      <stop offset="0" stop-color="#152A66"/>
+      <stop offset="1" stop-color="#2E6BFF"/>
+    </linearGradient>
+    <linearGradient id="tip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5FA8FF"/>
+      <stop offset="1" stop-color="#CFE8FF"/>
+    </linearGradient>
+    <filter id="tipglow" x="-200%" y="-200%" width="500%" height="500%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <!-- dark bodies -->
+  <g fill="url(#bar)">
+    <rect x="258" y="300" width="60" height="180" rx="30"/>
+    <rect x="370" y="300" width="60" height="300" rx="30"/>
+    <rect x="482" y="300" width="60" height="424" rx="30"/>
+    <rect x="594" y="300" width="60" height="300" rx="30"/>
+    <rect x="706" y="300" width="60" height="180" rx="30"/>
+  </g>
+  <!-- soft light under the lit tips -->
+  <g fill="#6FB4FF" filter="url(#tipglow)" opacity="0.5">
+    <rect x="258" y="384" width="60" height="96" rx="30"/>
+    <rect x="370" y="492" width="60" height="108" rx="30"/>
+    <rect x="482" y="600" width="60" height="124" rx="30"/>
+    <rect x="594" y="492" width="60" height="108" rx="30"/>
+    <rect x="706" y="384" width="60" height="96" rx="30"/>
+  </g>
+  <!-- lit tip capsules -->
+  <g fill="url(#tip)">
+    <rect x="258" y="384" width="60" height="96" rx="30"/>
+    <rect x="370" y="492" width="60" height="108" rx="30"/>
+    <rect x="482" y="600" width="60" height="124" rx="30"/>
+    <rect x="594" y="492" width="60" height="108" rx="30"/>
+    <rect x="706" y="384" width="60" height="96" rx="30"/>
+  </g>
+</svg>

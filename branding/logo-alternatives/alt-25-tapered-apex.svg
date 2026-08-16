@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 25 "Tapered Apex" — apex-light gradient on the tapered geometry:
+       the heaviest bar is also the brightest at its tip, doubling down on
+       the V's point. Subtle bloom. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111119"/>
+      <stop offset="1" stop-color="#06060A"/>
+    </linearGradient>
+    <linearGradient id="v" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="724">
+      <stop offset="0" stop-color="#16307F"/>
+      <stop offset="0.55" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#8FD4FF"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <g fill="#2E6BFF" filter="url(#glow)" opacity="0.45">
+    <rect x="266" y="300" width="44" height="180" rx="22"/>
+    <rect x="372" y="300" width="56" height="300" rx="28"/>
+    <rect x="476" y="300" width="72" height="424" rx="36"/>
+    <rect x="596" y="300" width="56" height="300" rx="28"/>
+    <rect x="714" y="300" width="44" height="180" rx="22"/>
+  </g>
+  <g fill="url(#v)">
+    <rect x="266" y="300" width="44" height="180" rx="22"/>
+    <rect x="372" y="300" width="56" height="300" rx="28"/>
+    <rect x="476" y="300" width="72" height="424" rx="36"/>
+    <rect x="596" y="300" width="56" height="300" rx="28"/>
+    <rect x="714" y="300" width="44" height="180" rx="22"/>
+  </g>
+</svg>
