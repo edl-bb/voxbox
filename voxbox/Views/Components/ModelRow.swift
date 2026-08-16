@@ -120,6 +120,7 @@ struct ModelRow: View, Equatable {
                 .foregroundStyle(Color.textPrimary)
 
             LanguageBadge(isEnglishOnly: model.isEnglishOnly)
+            StreamingCapabilityBadge(supportsStreaming: StreamingMode.modelSupportsStreaming(model.variant))
 
             if isActive && isDownloaded {
                 statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandAccent)
@@ -309,6 +310,22 @@ struct LanguageBadge: View {
             .padding(.horizontal, 7).padding(.vertical, 3)
             .background(Capsule().fill(tint.opacity(0.14)))
             .foregroundStyle(tint)
+    }
+}
+
+struct StreamingCapabilityBadge: View {
+    let supportsStreaming: Bool
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: supportsStreaming ? "checkmark" : "minus")
+                .font(.system(size: 8, weight: .bold))
+            Text(supportsStreaming ? "STREAMING" : "BATCH")
+                .font(Typography.uiBold(9)).tracking(0.6)
+        }
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(Capsule().fill((supportsStreaming ? Color.accentSuccess : Color.textMuted).opacity(0.14)))
+        .foregroundStyle(supportsStreaming ? Color.accentSuccess : Color.textMuted)
     }
 }
 

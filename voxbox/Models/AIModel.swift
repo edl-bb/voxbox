@@ -76,6 +76,29 @@ struct AIModel: Identifiable, Equatable {
             engine: .apple
         ),
         AIModel(
+            name: "Whisper Large v3 Compact",
+            variant: "openai_whisper-large-v3-v20240930_626MB",
+            details: "Multilingual • Argmax compressed large-v3",
+            rating: "Excellent",
+            size: "626 MB",
+            speed: 7.4,
+            accuracy: 9.4,
+            expectedSizeBytes: 600_000_000,
+            minimumRAMGB: 8
+        ),
+        AIModel(
+            name: "Distil-Whisper Large v3",
+            variant: "distil-whisper_distil-large-v3_594MB",
+            details: "English-only • Distilled large-v3 • WhisperKit",
+            rating: "Excellent",
+            size: "594 MB",
+            speed: 8.6,
+            accuracy: 9.0,
+            expectedSizeBytes: 560_000_000,
+            minimumRAMGB: 4,
+            englishOnlyOverride: true
+        ),
+        AIModel(
             name: "Whisper Large v3 Turbo",
             variant: "openai_whisper-large-v3_turbo",
             details: "Multilingual • Best Accuracy • Optimized",
@@ -177,6 +200,8 @@ struct AIModel: Identifiable, Equatable {
     /// `nonisolated` so download callbacks can read sizes off the main actor.
     nonisolated static func expectedSize(for variant: String) -> Int64 {
         switch variant {
+        case "openai_whisper-large-v3-v20240930_626MB": return 600_000_000
+        case "distil-whisper_distil-large-v3_594MB": return 560_000_000
         case "openai_whisper-large-v3_turbo": return 1_400_000_000
         case "openai_whisper-medium": return 1_300_000_000
         case "openai_whisper-small.en": return 200_000_000

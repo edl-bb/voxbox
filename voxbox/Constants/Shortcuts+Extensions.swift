@@ -32,4 +32,6 @@ extension Notification.Name {
     static let openSettingsRequested = Notification.Name("openSettingsRequested")
     /// Posted when any dashboard sidebar route is requested (Settings, AI Models).
     static let dashboardRouteRequested = Notification.Name("dashboardRouteRequested")
+    /// Posted when picking a batch model turns streaming mode off.
+    static let streamingRevertedToBatch = Notification.Name("streamingRevertedToBatch")
 }

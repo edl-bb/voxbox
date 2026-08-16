@@ -5,18 +5,22 @@ import SwiftUI
 /// (⌘, while the window is closed, or the no-model pill).
 enum DashboardRoute {
     static var pending: SidebarItem?
+    /// Honored once by the model page, then cleared. Used when Settings sends the user to pick a Streaming model.
+    static var pendingDecodeFilter: CatalogDecodeFilter?
     /// Bound from a living SwiftUI scene so we can open the WindowGroup in-process.
     static var openWindow: ((String) -> Void)?
 
-    static func open(_ item: SidebarItem) {
+    static func open(_ item: SidebarItem, decodeFilter: CatalogDecodeFilter? = nil) {
         pending = item
+        if let decodeFilter { pendingDecodeFilter = decodeFilter }
         presentWindow()
         NotificationCenter.default.post(name: .dashboardRouteRequested, object: nil)
     }
 
     /// Switch sidebar page in the existing dashboard window. Does not open a new one.
-    static func reveal(_ item: SidebarItem) {
+    static func reveal(_ item: SidebarItem, decodeFilter: CatalogDecodeFilter? = nil) {
         pending = item
+        if let decodeFilter { pendingDecodeFilter = decodeFilter }
         NotificationCenter.default.post(name: .dashboardRouteRequested, object: nil)
     }
 
@@ -66,6 +70,8 @@ struct DashboardWindowOpener: ViewModifier {
 struct MainView: View {
     @State private var selection: SidebarItem? = .dashboard
     @AppStorage("hasShownModelPrompt") private var hasShownModelPrompt: Bool = false
+    @State private var showStreamingRevertToast = false
+    @State private var streamingRevertToastTask: Task<Void, Never>?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -83,6 +89,28 @@ struct MainView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.bgSidebar)
+        .overlay(alignment: .bottom) {
+            if showStreamingRevertToast {
+                HStack(spacing: 8) {
+                    Image(systemName: "waveform.slash")
+                        .foregroundStyle(Color.brandAccent)
+                    Text(StreamingModeCopy.revertedToBatch)
+                        .font(Typography.labelMedium)
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Material.ultraThinMaterial)
+                .background(Color.black.opacity(0.8))
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .shadow(radius: 10)
+                .padding(.horizontal, 32)
+                .padding(.bottom, 30)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showStreamingRevertToast)
         .onAppear {
             if applyPendingRoute() { return }
             // If no model downloaded and haven't shown prompt, go to AI Models
@@ -98,6 +126,15 @@ struct MainView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSettingsRequested)) { _ in
             _ = applyPendingRoute()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .streamingRevertedToBatch)) { _ in
+            streamingRevertToastTask?.cancel()
+            showStreamingRevertToast = true
+            streamingRevertToastTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_200_000_000)
+                guard !Task.isCancelled else { return }
+                showStreamingRevertToast = false
+            }
         }
     }
 
@@ -126,7 +163,13 @@ struct MainView: View {
         case .aiModels:
             AIModelsView()
         case .settings:
-            SettingsView(onOpenDictionary: { selection = .dictionary })
+            SettingsView(
+                onOpenDictionary: { selection = .dictionary },
+                onOpenModels: {
+                    DashboardRoute.pendingDecodeFilter = .streaming
+                    selection = .aiModels
+                }
+            )
         case .none:
             DashboardView(selection: $selection)
         }

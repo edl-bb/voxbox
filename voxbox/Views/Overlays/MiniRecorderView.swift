@@ -7,6 +7,7 @@ import SwiftUI
 struct MiniRecorderView: View {
     @ObservedObject private var audioRecorder = AudioRecordingService.shared
     private var transcription: TranscriptionManager { TranscriptionManager.shared }
+    private var liveSession = LiveDictationSession.shared
     @State private var isListening = false
 
     @State private var isProcessing = false
@@ -19,6 +20,7 @@ struct MiniRecorderView: View {
     @State private var hasDownloadedModel = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
+    @AppStorage(StreamingMode.defaultsKey) private var streamingMode = false
     @AppStorage("recordingMode") private var recordingMode: Int = 0
     /// Whether we've already shown the one-time accessibility warning (release only).
     @AppStorage("hasShownAccessibilityWarning") private var hasShownAccessibilityWarning = false
@@ -281,12 +283,19 @@ struct MiniRecorderView: View {
         case .warming: return 280
         case .processing: return 360
         case .needsModel: return 380
-        case .recording: return expanded ? 460 : 250
+        case .recording:
+            // Live text needs room to scroll; twice the resting recording width.
+            return showsLiveHUD ? 500 : (expanded ? 460 : 250)
         }
     }
 
     private var pillHeight: CGFloat {
         displayPhase == .idle ? 24 : 44
+    }
+
+    /// Live text stays in the pill only when the destination field cannot be rewritten.
+    private var showsLiveHUD: Bool {
+        liveSession.isLive && !liveSession.writingToField && !liveSession.hudText.isEmpty
     }
 
     private var pillCornerRadius: CGFloat { pillHeight / 2 }
@@ -346,55 +355,38 @@ struct MiniRecorderView: View {
         HStack(spacing: 10) {
             recordingDot
 
-            // Waveform — live render of the actual microphone input.
-            // Calm/flat when silent, peaks on speech.
-            Canvas { context, size in
-                let raw = audioRecorder.liveWaveSamples
-                guard !raw.isEmpty else { return }
-                let step = Self.waveBarWidth + Self.waveBarSpacing
-                let maxBars = max(1, Int(size.width / step))
-                // Samples are raw linear peak amplitude (0...1), which sits LOW on
-                // the scale — so we auto-gain to your own recent peak, meaning your
-                // voice always fills the bars no matter the mic level. Two knobs:
-                //   noiseGate  – trim dead-silence hiss before measuring.
-                //   presence   – fade the whole waveform toward flat when the loudest
-                //                thing in view is only faint ambient sound (a fan).
-                //                It reaches full quickly, so real speech is never
-                //                dimmed — only near-silence collapses. Raise
-                //                `presenceFull` if the fan still shows; lower it if
-                //                quiet speech looks weak.
-                let noiseGate: Float = 0.02
-                let presenceFull: Float = 0.08
-                let gated = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
-                let peak = gated.max() ?? 0
-                let recentPeak = max(peak, 0.05)
-                let presence = CGFloat(min(1, peak / presenceFull))
-                let midY = size.height / 2
-                for (i, sample) in gated.enumerated() {
-                    let norm = CGFloat(min(1, sample / recentPeak)) * presence
-                    let barHeight = max(2.0, norm * size.height)
-                    let x = CGFloat(i) * step
-                    let rect = CGRect(
-                        x: x, y: midY - barHeight / 2,
-                        width: Self.waveBarWidth, height: barHeight)
-                    context.fill(
-                        Path(roundedRect: rect, cornerRadius: Self.waveBarWidth / 2),
-                        with: .color(.white.opacity(0.9)))
+            ZStack(alignment: .leading) {
+                if showsLiveHUD {
+                    Text(liveSession.hudText)
+                        .font(Typography.pillLabel)
+                        .foregroundColor(.white.opacity(0.92))
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.combined(with: .offset(x: 18)),
+                                removal: .opacity
+                            ))
+                } else {
+                    recordingWaveform
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity,
+                                removal: .scale(scale: 0.4, anchor: .leading).combined(with: .opacity)
+                            ))
                 }
             }
-            .frame(height: 22)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Elapsed recording time.
             TimelineView(.periodic(from: .now, by: 0.5)) { context in
                 Text(elapsedString(context.date))
                     .font(Typography.pillTime)
                     .foregroundColor(.white.opacity(0.6))
             }
 
-            // Mic + mode + language: revealed inline on hover only, to keep
-            // the resting state minimal.
-            if expanded {
+            // Chips stay on the waveform pill. Live text uses the extra width.
+            if expanded && !showsLiveHUD {
                 micControl
                 modeControl
                 languageControl
@@ -402,6 +394,46 @@ struct MiniRecorderView: View {
         }
         .padding(.horizontal, 14)
         .transition(.opacity)
+    }
+
+    /// Live render of the microphone input. Calm when silent, peaks on speech.
+    private var recordingWaveform: some View {
+        Canvas { context, size in
+            let raw = audioRecorder.liveWaveSamples
+            guard !raw.isEmpty else { return }
+            let step = Self.waveBarWidth + Self.waveBarSpacing
+            let maxBars = max(1, Int(size.width / step))
+            // Samples are raw linear peak amplitude (0...1), which sits LOW on
+            // the scale — so we auto-gain to your own recent peak, meaning your
+            // voice always fills the bars no matter the mic level. Two knobs:
+            //   noiseGate  – trim dead-silence hiss before measuring.
+            //   presence   – fade the whole waveform toward flat when the loudest
+            //                thing in view is only faint ambient sound (a fan).
+            //                It reaches full quickly, so real speech is never
+            //                dimmed — only near-silence collapses. Raise
+            //                `presenceFull` if the fan still shows; lower it if
+            //                quiet speech looks weak.
+            let noiseGate: Float = 0.02
+            let presenceFull: Float = 0.08
+            let gated = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
+            let peak = gated.max() ?? 0
+            let recentPeak = max(peak, 0.05)
+            let presence = CGFloat(min(1, peak / presenceFull))
+            let midY = size.height / 2
+            for (i, sample) in gated.enumerated() {
+                let norm = CGFloat(min(1, sample / recentPeak)) * presence
+                let barHeight = max(2.0, norm * size.height)
+                let x = CGFloat(i) * step
+                let rect = CGRect(
+                    x: x, y: midY - barHeight / 2,
+                    width: Self.waveBarWidth, height: barHeight)
+                context.fill(
+                    Path(roundedRect: rect, cornerRadius: Self.waveBarWidth / 2),
+                    with: .color(.white.opacity(0.9)))
+            }
+        }
+        .frame(height: 22)
+        .frame(maxWidth: .infinity)
     }
 
     /// Silhouette for the idle waveform — a soft, symmetric shape.
@@ -434,6 +466,7 @@ struct MiniRecorderView: View {
             y: displayPhase == .idle ? 3 : 5)
         .animation(.spring(response: 0.45, dampingFraction: 0.90), value: displayPhase)
         .animation(.spring(response: 0.40, dampingFraction: 0.92), value: expanded)
+        .animation(.spring(response: 0.55, dampingFraction: 0.86), value: showsLiveHUD)
         .onHover { hovering in
             guard displayPhase == .recording else { return }
             expanded = hovering
@@ -475,6 +508,14 @@ struct MiniRecorderView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .lastTranscriptCopyFailed)) { _ in
             flashClipboardStatus("No transcript yet")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .streamingRevertedToBatch)) { _ in
+            flashClipboardStatus(StreamingModeCopy.revertedToBatch)
+        }
+        .onChange(of: selectedModel) { _, variant in
+            if StreamingMode.disableIfIncompatible(with: variant) {
+                streamingMode = false
+            }
         }
         .onAppear {
             initializedService()
@@ -698,6 +739,7 @@ struct MiniRecorderView: View {
 
     private func cancelRecording() {
         cancelCommit = true
+        liveSession.cancel()
 
         guard isListening || audioRecorder.isRecording else {
             isProcessing = false
@@ -768,8 +810,31 @@ struct MiniRecorderView: View {
         }
 
         cancelCommit = false
-
         debugLog("Starting recording...")
+
+        if StreamingMode.isEnabled(), StreamingMode.modelSupportsLive(selectedModel) {
+            Task {
+                do {
+                    try await liveSession.start(language: transcriptionLanguage)
+                    await MainActor.run {
+                        audioRecorder.startRecording()
+                        isListening = true
+                    }
+                } catch {
+                    debugLog("Live session failed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        isProcessing = true
+                        statusMessage = error.localizedDescription
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            self.isProcessing = false
+                            self.onCancel?()
+                        }
+                    }
+                }
+            }
+            return
+        }
+
         audioRecorder.startRecording()
         isListening = true
     }
@@ -787,6 +852,7 @@ struct MiniRecorderView: View {
                     statusMessage = "Switching input..."
                 }
 
+                liveSession.cancel()
                 _ = await audioRecorder.stopRecording(discardOutput: true)
             }
 
@@ -795,6 +861,14 @@ struct MiniRecorderView: View {
             }
 
             guard shouldResumeRecording else { return }
+
+            if StreamingMode.isEnabled(), StreamingMode.modelSupportsLive(selectedModel) {
+                do {
+                    try await liveSession.start(language: transcriptionLanguage)
+                } catch {
+                    debugLog("Live session failed after input switch: \(error.localizedDescription)")
+                }
+            }
 
             audioRecorder.startRecording()
 
@@ -829,17 +903,9 @@ struct MiniRecorderView: View {
         }
 
         Task {
+            let wasLive = liveSession.isLive
             let url = await audioRecorder.stopRecording()
             debugLog("stopRecording returned: \(url?.absoluteString ?? "nil")")
-
-            guard let url = url else {
-                debugLog("No recording URL, cancelling")
-                await MainActor.run {
-                    isListening = false
-                    onCancel?()
-                }
-                return
-            }
 
             await MainActor.run {
                 isListening = false
@@ -847,9 +913,113 @@ struct MiniRecorderView: View {
                 statusMessage = PillStatusCopy.transcribing
             }
 
+            if wasLive {
+                await finishLiveTake(audioURL: url)
+                return
+            }
+
+            guard let url else {
+                debugLog("No recording URL, cancelling")
+                await MainActor.run {
+                    onCancel?()
+                }
+                return
+            }
+
             // Always use the final full-recording transcription for committed output.
             // Chunk stitching caused repeated phrases at boundaries across languages.
             await processRecording(url: url)
+        }
+    }
+
+    private func finishLiveTake(audioURL: URL?) async {
+        do {
+            let (text, alreadyInField) = try await liveSession.finish()
+            debugLog("Live take finished (\(text.count) characters, inField: \(alreadyInField))")
+
+            guard !text.isEmpty else {
+                if let audioURL {
+                    await processRecording(url: audioURL)
+                    return
+                }
+                await MainActor.run {
+                    statusMessage = "No speech detected"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        self.isProcessing = false
+                        self.onCancel?()
+                    }
+                }
+                return
+            }
+
+            let duration: TimeInterval
+            if let audioURL {
+                duration = await getAudioDuration(url: audioURL)
+            } else if let start = recordingStart {
+                duration = Date().timeIntervalSince(start)
+            } else {
+                duration = 0
+            }
+            let modelName =
+                AIModel.availableModels.first(where: { $0.variant == selectedModel })?.name
+                ?? selectedModel
+            HistoryService.shared.addItem(
+                transcript: text,
+                duration: duration,
+                audioFileURL: audioURL,
+                modelUsed: modelName,
+                transcriptionTime: nil
+            )
+
+            if cancelCommit {
+                await MainActor.run {
+                    isProcessing = false
+                    onCancel?()
+                }
+                return
+            }
+
+            if alreadyInField {
+                if TranscriptClipboardPreference.isEnabled() {
+                    ClipboardService.shared.copy(text: text)
+                }
+                await MainActor.run {
+                    isProcessing = false
+                    onCancel?()
+                }
+                return
+            }
+
+            let delivery = await onCommit?(text) ?? .copiedToClipboard
+            await MainActor.run {
+                switch delivery {
+                case .copiedToClipboard:
+                    statusMessage = PillStatusCopy.noDestination
+                    isProcessing = true
+                case .pasted, .alreadyInField:
+                    isProcessing = false
+                }
+            }
+            if delivery == .copiedToClipboard {
+                try? await Task.sleep(nanoseconds: 1_600_000_000)
+                await MainActor.run {
+                    isProcessing = false
+                    onCancel?()
+                }
+            }
+        } catch {
+            debugLog("Live finish failed: \(error.localizedDescription)")
+            if let audioURL {
+                await processRecording(url: audioURL)
+                return
+            }
+            await MainActor.run {
+                statusMessage = "Transcription failed"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self.isProcessing = false
+                    self.onCancel?()
+                }
+            }
         }
     }
 
@@ -861,6 +1031,7 @@ struct MiniRecorderView: View {
 
         if isListening {
             Task {
+                liveSession.cancel()
                 let url = await audioRecorder.stopRecording()
 
                 await MainActor.run {
@@ -966,7 +1137,7 @@ struct MiniRecorderView: View {
                 case .copiedToClipboard:
                     statusMessage = PillStatusCopy.noDestination
                     isProcessing = true
-                case .pasted:
+                case .pasted, .alreadyInField:
                     isProcessing = false
                 }
             }

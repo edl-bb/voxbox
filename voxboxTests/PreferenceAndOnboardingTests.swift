@@ -1,3 +1,5 @@
+import AppKit
+import ApplicationServices
 import SwiftUI
 import XCTest
 @testable import voxbox
@@ -166,6 +168,258 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         )
         XCTAssertEqual(HotkeyOption.default, .fn)
         XCTAssertEqual(HotkeyOption.defaultsKey, "selectedHotkey")
+    }
+
+    func testStreamingModeSupportsAppleSpeechAndWhisperKit() {
+        XCTAssertEqual(StreamingMode.defaultsKey, "streamingMode")
+        XCTAssertTrue(StreamingMode.modelSupportsStreaming(AppleSpeechCatalog.variant))
+        XCTAssertTrue(StreamingMode.modelSupportsStreaming("openai_whisper-tiny"))
+        XCTAssertTrue(StreamingMode.modelSupportsStreaming("distil-whisper_distil-large-v3_594MB"))
+        XCTAssertFalse(StreamingMode.modelSupportsStreaming(ParakeetCatalog.v3Variant))
+        XCTAssertFalse(StreamingMode.modelSupportsStreaming(""))
+
+        let suite = "voxbox.tests.streaming.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        XCTAssertFalse(StreamingMode.isEnabled(in: defaults))
+        defaults.set(true, forKey: StreamingMode.defaultsKey)
+        XCTAssertTrue(StreamingMode.isEnabled(in: defaults))
+    }
+
+    func testFieldSpanSplicesReplacementAndClampsBounds() {
+        let inserted = FieldSpan.splice(
+            existing: "Hello world", start: 6, length: 0, replacement: "there ")
+        XCTAssertEqual(inserted.value, "Hello there world")
+        XCTAssertEqual(inserted.newLength, 6)
+
+        let revised = FieldSpan.splice(
+            existing: inserted.value, start: 6, length: 6, replacement: "friends ")
+        XCTAssertEqual(revised.value, "Hello friends world")
+        XCTAssertEqual(revised.newLength, 8)
+
+        let reverted = FieldSpan.splice(
+            existing: revised.value, start: 6, length: 8, replacement: "")
+        XCTAssertEqual(reverted.value, "Hello world")
+        XCTAssertEqual(reverted.newLength, 0)
+
+        let clamped = FieldSpan.splice(
+            existing: "Hi", start: 40, length: 8, replacement: "!")
+        XCTAssertEqual(clamped.value, "Hi!")
+        XCTAssertEqual(clamped.newLength, 1)
+
+        let withEmoji = FieldSpan.splice(
+            existing: "Hi 👋 there", start: 3, length: 2, replacement: "wave")
+        XCTAssertEqual(withEmoji.value, "Hi wave there")
+        XCTAssertEqual(withEmoji.newLength, 4)
+
+        XCTAssertEqual(FieldSpan.region("Hello world", start: 6, length: 5), "world")
+        XCTAssertNil(FieldSpan.region("Hi", start: 0, length: 8))
+        XCTAssertEqual(FieldSpan.region("Hello world", start: 6, length: 5) == "world", true)
+    }
+
+    func testKeystrokeLivePlanOnlyAppends() {
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "", next: "Hello"), .type("Hello"))
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(previous: "Hello", next: "Hello there"),
+            .type(" there"))
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello there", next: "Hello"), .none)
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello there", next: "Hi"), .none)
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello", next: "Hello"), .none)
+        XCTAssertEqual(KeystrokeDelta.revertPlan(previous: "Hello there"), .delete(11))
+        XCTAssertEqual(KeystrokeDelta.revertPlan(previous: ""), .none)
+    }
+
+    func testKeystrokeLivePlanRevisesTailAfterPhraseFinalizes() {
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(
+                previous: "hello there this is a test",
+                next: "Hello there this is a test of streaming"),
+            .type(" of streaming"))
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(
+                previous: "hello there this is a test of streaming and I keep talking",
+                next: "Hello there this is a test. and I keep talking more"),
+            .revise(delete: 32, type: ". and I keep talking more"))
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(
+                previous: "a reasonably long hypothesis that should not be wiped",
+                next: "OK"),
+            .none)
+    }
+
+    func testUnicodeTypingChunksLongPhrases() {
+        XCTAssertEqual(UnicodeTyping.chunks(""), [])
+        XCTAssertEqual(UnicodeTyping.chunks("Hello"), ["Hello"])
+        let phrase = String(repeating: "a", count: 45)
+        XCTAssertEqual(
+            UnicodeTyping.chunks(phrase),
+            [String(repeating: "a", count: 20), String(repeating: "a", count: 20), "aaaaa"])
+    }
+
+    func testFormatterStripsCleanTextPreamble() {
+        XCTAssertEqual(
+            TranscriptFormatterService.stripModelPreamble("Here's the clean text:\nHello there."),
+            "Hello there."
+        )
+        XCTAssertEqual(
+            TranscriptFormatterService.stripModelPreamble("Cleaned text: Hello there."),
+            "Hello there."
+        )
+        XCTAssertEqual(
+            TranscriptFormatterService.stripModelPreamble("\"Hello there.\""),
+            "Hello there."
+        )
+        XCTAssertEqual(
+            TranscriptFormatterService.stripModelPreamble("Hello there."),
+            "Hello there."
+        )
+    }
+
+    func testNewWhisperKitCatalogVariantsAreOnCatalog() {
+        XCTAssertEqual(
+            AIModel.engineKind(for: "distil-whisper_distil-large-v3_594MB"),
+            .whisper
+        )
+        XCTAssertEqual(
+            AIModel.engineKind(for: "openai_whisper-large-v3-v20240930_626MB"),
+            .whisper
+        )
+        XCTAssertTrue(StreamingMode.modelSupportsStreaming("distil-whisper_distil-large-v3_594MB"))
+        XCTAssertTrue(
+            AIModel.availableModels.contains { $0.variant == "distil-whisper_distil-large-v3_594MB" }
+        )
+        XCTAssertTrue(
+            AIModel.availableModels.contains {
+                $0.variant == "openai_whisper-large-v3-v20240930_626MB"
+            }
+        )
+    }
+
+    func testCatalogDecodeFilterDefaultsAndIncludes() {
+        XCTAssertEqual(CatalogDecodeFilter.defaultFilter(streamingEnabled: false), .all)
+        XCTAssertEqual(CatalogDecodeFilter.defaultFilter(streamingEnabled: true), .streaming)
+        XCTAssertEqual(
+            CatalogDecodeFilter.defaultFilter(
+                streamingEnabled: false, selectedVariant: ParakeetCatalog.v3Variant),
+            .batch
+        )
+        XCTAssertEqual(
+            CatalogDecodeFilter.defaultFilter(
+                streamingEnabled: false, selectedVariant: "openai_whisper-tiny"),
+            .all
+        )
+
+        XCTAssertTrue(CatalogDecodeFilter.all.includes(variant: AppleSpeechCatalog.variant))
+        XCTAssertTrue(CatalogDecodeFilter.all.includes(variant: ParakeetCatalog.v3Variant))
+        XCTAssertTrue(CatalogDecodeFilter.streaming.includes(variant: AppleSpeechCatalog.variant))
+        XCTAssertFalse(CatalogDecodeFilter.streaming.includes(variant: ParakeetCatalog.v3Variant))
+        XCTAssertFalse(CatalogDecodeFilter.batch.includes(variant: AppleSpeechCatalog.variant))
+        XCTAssertTrue(CatalogDecodeFilter.batch.includes(variant: ParakeetCatalog.v3Variant))
+    }
+
+    func testStreamingModeDisablesWhenBatchModelSelected() {
+        let suite = "voxbox.tests.streaming.revert.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        defaults.set(true, forKey: StreamingMode.defaultsKey)
+        XCTAssertTrue(
+            StreamingMode.disableIfIncompatible(
+                with: ParakeetCatalog.v3Variant, defaults: defaults))
+        XCTAssertFalse(StreamingMode.isEnabled(in: defaults))
+
+        defaults.set(true, forKey: StreamingMode.defaultsKey)
+        XCTAssertFalse(
+            StreamingMode.disableIfIncompatible(
+                with: "openai_whisper-tiny", defaults: defaults))
+        XCTAssertTrue(StreamingMode.isEnabled(in: defaults))
+
+        XCTAssertFalse(StreamingMode.disableIfIncompatible(with: "", defaults: defaults))
+        XCTAssertTrue(StreamingMode.isEnabled(in: defaults))
+        XCTAssertFalse(
+            StreamingMode.shouldRevertToBatch(for: "", streamingEnabled: true))
+        XCTAssertTrue(
+            StreamingMode.shouldRevertToBatch(
+                for: ParakeetCatalog.v3Variant, streamingEnabled: true))
+        XCTAssertTrue(
+            StreamingMode.needsStreamingModel(
+                variant: ParakeetCatalog.v3Variant, streamingEnabled: true))
+        XCTAssertTrue(StreamingMode.needsStreamingModel(variant: "", streamingEnabled: true))
+        XCTAssertFalse(
+            StreamingMode.needsStreamingModel(
+                variant: "openai_whisper-tiny", streamingEnabled: true))
+        XCTAssertFalse(
+            StreamingMode.needsStreamingModel(
+                variant: ParakeetCatalog.v3Variant, streamingEnabled: false))
+    }
+
+    func testDictationTargetUsesElectronManualAccessibilityAttribute() {
+        XCTAssertEqual(
+            DictationTarget.manualAccessibilityAttribute as String,
+            "AXManualAccessibility")
+    }
+
+    func testAXStringValueTreatsNoValueAsEmptyString() {
+        XCTAssertEqual(AXStringValue.read(error: .success, value: "Hello" as CFTypeRef), "Hello")
+        XCTAssertEqual(AXStringValue.read(error: .noValue, value: nil), "")
+        XCTAssertNil(AXStringValue.read(error: .attributeUnsupported, value: nil))
+        XCTAssertNil(AXStringValue.read(error: .success, value: 12 as CFTypeRef))
+    }
+
+    func testTargetFieldInserterWritesIntoAppKitTextField() throws {
+        guard AXIsProcessTrusted() else {
+            throw XCTSkip("Accessibility is not trusted in this test host")
+        }
+
+        let field = NSTextField(string: "Hello ")
+        field.isEditable = true
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 60),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = field
+        window.makeKeyAndOrderFront(nil)
+        XCTAssertTrue(field.becomeFirstResponder())
+        field.currentEditor()?.selectedRange = NSRange(
+            location: (field.stringValue as NSString).length, length: 0)
+        DictationTarget.processIdentifier = ProcessInfo.processInfo.processIdentifier
+
+        let inserter = TargetFieldInserter()
+        XCTAssertTrue(inserter.begin(), "AppKit text fields should bind for live rewrite")
+        XCTAssertTrue(inserter.update("world"))
+        XCTAssertEqual(field.stringValue, "Hello world")
+        inserter.revert()
+        XCTAssertEqual(field.stringValue, "Hello ")
+        window.close()
+    }
+
+    func testTargetFieldInserterWritesIntoEmptyAppKitTextField() throws {
+        guard AXIsProcessTrusted() else {
+            throw XCTSkip("Accessibility is not trusted in this test host")
+        }
+
+        let field = NSTextField(string: "")
+        field.isEditable = true
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 60),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = field
+        window.makeKeyAndOrderFront(nil)
+        XCTAssertTrue(field.becomeFirstResponder())
+        DictationTarget.processIdentifier = ProcessInfo.processInfo.processIdentifier
+
+        let inserter = TargetFieldInserter()
+        XCTAssertTrue(inserter.begin())
+        XCTAssertTrue(inserter.update("hello"))
+        XCTAssertEqual(field.stringValue, "hello")
+        inserter.revert()
+        XCTAssertEqual(field.stringValue, "")
+        window.close()
     }
 
     func testVersionComparisonTreatsPatchAsNewer() {

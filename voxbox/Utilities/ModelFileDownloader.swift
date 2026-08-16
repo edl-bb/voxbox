@@ -51,31 +51,31 @@ final class ConcurrentDownloadProgress: @unchecked Sendable {
     nonisolated init() {}
 
     nonisolated func addFinishedFile(size: Int64) {
-        lock.lock()
-        finishedBytes += max(0, size)
-        finishedFiles += 1
-        lock.unlock()
+        lock.withLock {
+            finishedBytes += max(0, size)
+            finishedFiles += 1
+        }
     }
 
     nonisolated func setInFlight(path: String, written: Int64) {
-        lock.lock()
-        inFlight[path] = max(0, written)
-        lock.unlock()
+        lock.withLock {
+            inFlight[path] = max(0, written)
+        }
     }
 
     nonisolated func completeInFlight(path: String, size: Int64) {
-        lock.lock()
-        inFlight.removeValue(forKey: path)
-        finishedBytes += max(0, size)
-        finishedFiles += 1
-        lock.unlock()
+        lock.withLock {
+            inFlight.removeValue(forKey: path)
+            finishedBytes += max(0, size)
+            finishedFiles += 1
+        }
     }
 
     nonisolated func snapshot() -> (receivedBytes: Int64, finishedFiles: Int) {
-        lock.lock()
-        defer { lock.unlock() }
-        let flying = inFlight.values.reduce(0, +)
-        return (finishedBytes + flying, finishedFiles)
+        lock.withLock {
+            let flying = inFlight.values.reduce(0, +)
+            return (finishedBytes + flying, finishedFiles)
+        }
     }
 }
 
@@ -270,9 +270,9 @@ final class OnceThrowingContinuation<Value: Sendable>: @unchecked Sendable {
     nonisolated init() {}
 
     nonisolated func arm(_ continuation: CheckedContinuation<Value, Error>) {
-        lock.lock()
-        self.continuation = continuation
-        lock.unlock()
+        lock.withLock {
+            self.continuation = continuation
+        }
     }
 
     nonisolated func resume(returning value: Value) {
@@ -284,11 +284,11 @@ final class OnceThrowingContinuation<Value: Sendable>: @unchecked Sendable {
     }
 
     nonisolated private func take() -> CheckedContinuation<Value, Error>? {
-        lock.lock()
-        defer { lock.unlock() }
-        let continuation = self.continuation
-        self.continuation = nil
-        return continuation
+        lock.withLock {
+            let continuation = self.continuation
+            self.continuation = nil
+            return continuation
+        }
     }
 }
 
@@ -326,9 +326,9 @@ final class SharedModelDownloadSession: NSObject, URLSessionDownloadDelegate, @u
     ) async throws -> SharedDownloadResult {
         let task = liveSession.downloadTask(with: remote)
         let gate = OnceThrowingContinuation<SharedDownloadResult>()
-        lock.lock()
-        states[task.taskIdentifier] = DownloadState(onProgress: onProgress, gate: gate)
-        lock.unlock()
+        lock.withLock {
+            states[task.taskIdentifier] = DownloadState(onProgress: onProgress, gate: gate)
+        }
 
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (cont: CheckedContinuation<SharedDownloadResult, Error>) in
@@ -349,9 +349,9 @@ final class SharedModelDownloadSession: NSObject, URLSessionDownloadDelegate, @u
         gate: OnceThrowingContinuation<SharedDownloadResult>
     ) {
         task.cancel()
-        lock.lock()
-        states.removeValue(forKey: task.taskIdentifier)
-        lock.unlock()
+        _ = lock.withLock {
+            states.removeValue(forKey: task.taskIdentifier)
+        }
         gate.resume(throwing: CancellationError())
     }
 
@@ -362,9 +362,9 @@ final class SharedModelDownloadSession: NSObject, URLSessionDownloadDelegate, @u
         totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
-        lock.lock()
-        let onProgress = states[downloadTask.taskIdentifier]?.onProgress
-        lock.unlock()
+        let onProgress = lock.withLock {
+            states[downloadTask.taskIdentifier]?.onProgress
+        }
         onProgress?(totalBytesWritten, totalBytesExpectedToWrite)
     }
 
@@ -379,11 +379,11 @@ final class SharedModelDownloadSession: NSObject, URLSessionDownloadDelegate, @u
         let copy = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         do {
             try FileManager.default.copyItem(at: location, to: copy)
-            lock.lock()
-            states[downloadTask.taskIdentifier]?.copied = copy
-            states[downloadTask.taskIdentifier]?.statusCode = status
-            states[downloadTask.taskIdentifier]?.rateLimitHeader = rateLimit
-            lock.unlock()
+            lock.withLock {
+                states[downloadTask.taskIdentifier]?.copied = copy
+                states[downloadTask.taskIdentifier]?.statusCode = status
+                states[downloadTask.taskIdentifier]?.rateLimitHeader = rateLimit
+            }
         } catch {
             resume(taskIdentifier: downloadTask.taskIdentifier, throwing: error)
         }
@@ -394,9 +394,9 @@ final class SharedModelDownloadSession: NSObject, URLSessionDownloadDelegate, @u
         task: URLSessionTask,
         didCompleteWithError error: Error?
     ) {
-        lock.lock()
-        let state = states.removeValue(forKey: task.taskIdentifier)
-        lock.unlock()
+        let state = lock.withLock {
+            states.removeValue(forKey: task.taskIdentifier)
+        }
         guard let state else { return }
 
         if let error {
@@ -417,9 +417,9 @@ final class SharedModelDownloadSession: NSObject, URLSessionDownloadDelegate, @u
     }
 
     private func resume(taskIdentifier: Int, throwing error: Error) {
-        lock.lock()
-        let gate = states[taskIdentifier]?.gate
-        lock.unlock()
+        let gate = lock.withLock {
+            states[taskIdentifier]?.gate
+        }
         gate?.resume(throwing: error)
     }
 }

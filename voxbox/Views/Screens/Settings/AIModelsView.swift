@@ -5,7 +5,9 @@ struct AIModelsView: View {
     private let downloadService = ModelDownloadService.shared
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("modelUseCase") private var useCaseRaw: String = AIModel.UseCase.dictation.rawValue
+    @AppStorage(StreamingMode.defaultsKey) private var streamingMode = false
     @State private var isPreparingHero = false
+    @State private var decodeFilter: CatalogDecodeFilter = .all
 
     /// Keeps the content from stretching edge-to-edge on a wide window, so the
     /// name and its action never sit at opposite ends of a huge empty band.
@@ -35,7 +37,15 @@ struct AIModelsView: View {
             (title: "Whisper", subtitle: "OpenAI · most accurate, a touch slower",
              models: AIModel.models(for: .whisper)),
         ]
-        .map { ($0.title, $0.subtitle, $0.models.filter { $0.variant != recommendedModel.variant }) }
+        .map {
+            (
+                $0.title,
+                $0.subtitle,
+                $0.models.filter {
+                    $0.variant != recommendedModel.variant && decodeFilter.includes(variant: $0.variant)
+                }
+            )
+        }
         .filter { !$0.2.isEmpty }
     }
 
@@ -56,8 +66,25 @@ struct AIModelsView: View {
         }
         .background(Color.clear)
         .onAppear {
+            if let forced = DashboardRoute.pendingDecodeFilter {
+                DashboardRoute.pendingDecodeFilter = nil
+                decodeFilter = forced
+            } else {
+                decodeFilter = .defaultFilter(
+                    streamingEnabled: streamingMode, selectedVariant: selectedModel)
+            }
             // Refresh download status; never overwrite the persisted selection here (#79).
             Task { await downloadService.refreshDownloadedModels() }
+        }
+        .onChange(of: streamingMode) { _, enabled in
+            decodeFilter = .defaultFilter(
+                streamingEnabled: enabled, selectedVariant: selectedModel)
+        }
+        .onChange(of: selectedModel) { _, variant in
+            if StreamingMode.disableIfIncompatible(with: variant) {
+                streamingMode = false
+                decodeFilter = .batch
+            }
         }
     }
 
@@ -131,8 +158,12 @@ struct AIModelsView: View {
                     .foregroundStyle(Color.textPrimary)
                     .padding(.top, 16)
 
-                LanguageBadge(isEnglishOnly: rec.isEnglishOnly)
-                    .padding(.top, 12)
+                HStack(spacing: 8) {
+                    LanguageBadge(isEnglishOnly: rec.isEnglishOnly)
+                    StreamingCapabilityBadge(
+                        supportsStreaming: StreamingMode.modelSupportsStreaming(rec.variant))
+                }
+                .padding(.top, 12)
 
                 Text(AIModel.recommendationReason(for: rec, capability: capability, useCase: useCase))
                     .font(Typography.ui(15))
@@ -285,6 +316,27 @@ struct AIModelsView: View {
 
     private var listSection: some View {
         VStack(alignment: .leading, spacing: 26) {
+            HStack(spacing: 12) {
+                Text("Models")
+                    .font(Typography.sectionTitle)
+                    .foregroundStyle(Color.textPrimary)
+                Spacer(minLength: 8)
+                Picker("Show", selection: $decodeFilter) {
+                    ForEach(CatalogDecodeFilter.allCases) { filter in
+                        Text(filter.label).tag(filter)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 260)
+                .labelsHidden()
+            }
+
+            if engineGroups.isEmpty {
+                Text(emptyFilterCopy)
+                    .font(Typography.ui(13))
+                    .foregroundStyle(Color.textMuted)
+            }
+
             ForEach(engineGroups, id: \.title) { group in
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -307,6 +359,17 @@ struct AIModelsView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var emptyFilterCopy: String {
+        switch decodeFilter {
+        case .streaming:
+            return "No other streaming models match this filter. Apple Speech is recommended above; WhisperKit rows appear here when they are not the hero."
+        case .batch:
+            return "No batch models match this filter."
+        case .all:
+            return "No models match this filter."
         }
     }
 }

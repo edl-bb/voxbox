@@ -4,6 +4,9 @@ Changes and release notes for VoxBox.
 
 
 ## [Unreleased]
+- App defaults to native included MacOS transcription model when starting fresh.
+- Added support for live transcription streaming. Enable transcription streaming in Settings → Live streaming.
+- Added support for streaming models and additional models.
 - Improved software update checks.
 - Added support for "Open at login" - new toggle available in Settings → General.
 - Sidebar permission chips hide when microphone and Accessibility are both on.

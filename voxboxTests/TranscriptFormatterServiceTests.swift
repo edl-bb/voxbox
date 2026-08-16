@@ -23,13 +23,28 @@ final class TranscriptFormatterServiceTests: XCTestCase {
             0)
     }
 
-    func testFillerRemovalScoresProportionally() {
-        // 2 fillers removed from 10 words → ratio 0.2, inside light-cleanup's 0.35.
+    func testFillerRemovalDoesNotConsumeGuardrailBudget() {
         let ratio = TranscriptFormatterService.changeRatio(
             from: "um so I think uh we should ship the release",
             to: "so I think we should ship the release")
-        XCTAssertEqual(ratio, 0.2, accuracy: 0.001)
+        XCTAssertEqual(ratio, 0, accuracy: 0.001)
         XCTAssertLessThanOrEqual(ratio, FormattingIntensity.lightCleanup.maximumChangeRatio)
+    }
+
+    func testFalseStartRepeatsDoNotConsumeGuardrailBudget() {
+        let ratio = TranscriptFormatterService.changeRatio(
+            from: "I was I was going to send the report tomorrow",
+            to: "I was going to send the report tomorrow")
+        XCTAssertEqual(ratio, 0, accuracy: 0.001)
+        XCTAssertLessThanOrEqual(ratio, FormattingIntensity.lightCleanup.maximumChangeRatio)
+    }
+
+    func testPolishSizedCleanupStaysInsidePolishBudget() {
+        let ratio = TranscriptFormatterService.changeRatio(
+            from: "yeah um so i was i was gonna say we should uh probably just go ahead and ship it you know tomorrow if thats okay",
+            to: "i was going to say we should ship it tomorrow if that is okay")
+        XCTAssertLessThanOrEqual(ratio, FormattingIntensity.polish.maximumChangeRatio)
+        XCTAssertGreaterThan(ratio, FormattingIntensity.formatting.maximumChangeRatio)
     }
 
     func testFullRewriteIsRejectedAtEveryLevel() {

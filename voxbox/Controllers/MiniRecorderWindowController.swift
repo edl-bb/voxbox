@@ -5,6 +5,8 @@ import SwiftUI
 enum TranscriptDelivery {
     case pasted
     case copiedToClipboard
+    /// Live rewrite already put the words in the focused field.
+    case alreadyInField
 }
 
 class MiniRecorderWindowController: NSObject {
@@ -239,7 +241,7 @@ class MiniRecorderWindowController: NSObject {
         // Fixed window, big enough for the largest phase. The pill morphs purely in
         // SwiftUI, centered inside. A window that never resizes means the animation
         // is smooth with no boundary clipping.
-        let fixedSize = NSSize(width: 520, height: 84)
+        let fixedSize = NSSize(width: 560, height: 84)
         let p = NSPanel(
             contentRect: NSRect(origin: .zero, size: fixedSize),
             styleMask: [.nonactivatingPanel, .fullSizeContentView, .borderless],
@@ -297,6 +299,7 @@ class MiniRecorderWindowController: NSObject {
         guard let app, !app.isTerminated else { return }
         guard app.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
         lastActiveApp = app
+        DictationTarget.remember(app)
     }
 
     private func resolvedPasteTarget() -> NSRunningApplication? {

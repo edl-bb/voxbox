@@ -1,4 +1,5 @@
-import AVFoundation
+@preconcurrency import AVFoundation
+import CoreMedia
 import Foundation
 import Speech
 
@@ -21,26 +22,38 @@ enum AppleSpeechCatalog {
     /// otherwise DictationTranscriber. See wayfinder research on
     /// [Apple SpeechAnalyzer starter transcription engine](https://github.com/edl-bb/voxbox/issues/8).
     static func makeModule(language: String) async throws -> AppleSpeechModule {
+        try await makeModule(language: language, live: false)
+    }
+
+    static func makeLiveModule(language: String) async throws -> AppleSpeechModule {
+        try await makeModule(language: language, live: true)
+    }
+
+    private static func makeModule(language: String, live: Bool) async throws -> AppleSpeechModule {
         let desired = preferredLocale(language: language)
+        let speechPreset: SpeechTranscriber.Preset =
+            live ? .progressiveTranscription : .transcription
+        let dictationPreset: DictationTranscriber.Preset =
+            live ? .progressiveLongDictation : .shortDictation
 
         if SpeechTranscriber.isAvailable,
             let locale = await SpeechTranscriber.supportedLocale(equivalentTo: desired)
         {
-            return .speech(SpeechTranscriber(locale: locale, preset: .transcription))
+            return .speech(SpeechTranscriber(locale: locale, preset: speechPreset))
         }
 
         if let locale = await DictationTranscriber.supportedLocale(equivalentTo: desired) {
-            return .dictation(DictationTranscriber(locale: locale, preset: .shortDictation))
+            return .dictation(DictationTranscriber(locale: locale, preset: dictationPreset))
         }
 
         if SpeechTranscriber.isAvailable,
             let fallback = await SpeechTranscriber.installedLocales.first
         {
-            return .speech(SpeechTranscriber(locale: fallback, preset: .transcription))
+            return .speech(SpeechTranscriber(locale: fallback, preset: speechPreset))
         }
 
         if let fallback = await DictationTranscriber.installedLocales.first {
-            return .dictation(DictationTranscriber(locale: fallback, preset: .shortDictation))
+            return .dictation(DictationTranscriber(locale: fallback, preset: dictationPreset))
         }
 
         throw AppleSpeechEngineError.localeNotSupported(language)
@@ -133,6 +146,13 @@ class AppleSpeechEngine: SpeechToTextEngine {
     var isLoading = false
     var loadingStage = ""
     var currentModelVariant = ""
+    var supportsLiveStreaming: Bool { true }
+
+    private var liveAnalyzer: SpeechAnalyzer?
+    private let liveTap = AppleLiveAudioTap()
+    private var liveResultsTask: Task<Void, Never>?
+    private var liveStable = ""
+    private var liveRevisable = ""
 
     private init() {}
 
@@ -180,5 +200,178 @@ class AppleSpeechEngine: SpeechToTextEngine {
         }
 
         return try await transcription
+    }
+
+    func startLive(
+        language: String,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+    ) async throws {
+        cancelLive()
+        guard await AppleSpeechCatalog.isInstalled(language: language) else {
+            throw AppleSpeechEngineError.assetsNotInstalled
+        }
+
+        isTranscribing = true
+        liveStable = ""
+        liveRevisable = ""
+
+        let module = try await AppleSpeechCatalog.makeLiveModule(language: language)
+        let analyzer = SpeechAnalyzer(modules: [module.speechModule])
+        liveAnalyzer = analyzer
+        liveTap.outputFormat = await SpeechAnalyzer.bestAvailableAudioFormat(
+            compatibleWith: [module.speechModule])
+
+        let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
+        liveTap.input = continuation
+        try await analyzer.start(inputSequence: stream)
+
+        liveResultsTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.collectLive(from: module, onUpdate: onUpdate)
+            } catch {
+                AppLogger.error("Live Apple speech failed", error: error, category: AppLogger.transcription)
+            }
+        }
+
+        AudioRecordingService.shared.liveBufferHandler = { [liveTap] sampleBuffer in
+            liveTap.ingest(sampleBuffer)
+        }
+    }
+
+    func finishLive() async throws -> String {
+        AudioRecordingService.shared.liveBufferHandler = nil
+        liveTap.finish()
+        if let analyzer = liveAnalyzer {
+            try await analyzer.finalizeAndFinishThroughEndOfInput()
+        }
+        _ = await liveResultsTask?.value
+        let text = (liveStable + liveRevisable)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        teardownLive()
+        return text
+    }
+
+    func cancelLive() {
+        AudioRecordingService.shared.liveBufferHandler = nil
+        liveTap.finish()
+        liveResultsTask?.cancel()
+        liveResultsTask = nil
+        if let analyzer = liveAnalyzer {
+            Task { await analyzer.cancelAndFinishNow() }
+        }
+        teardownLive()
+    }
+
+    private func teardownLive() {
+        liveAnalyzer = nil
+        liveTap.reset()
+        liveStable = ""
+        liveRevisable = ""
+        isTranscribing = false
+    }
+
+    private func collectLive(
+        from module: AppleSpeechModule,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+    ) async throws {
+        switch module {
+        case .speech(let transcriber):
+            for try await result in transcriber.results {
+                applyLiveResult(String(result.text.characters), isFinal: result.isFinal, onUpdate: onUpdate)
+            }
+        case .dictation(let transcriber):
+            for try await result in transcriber.results {
+                applyLiveResult(String(result.text.characters), isFinal: result.isFinal, onUpdate: onUpdate)
+            }
+        }
+    }
+
+    private func applyLiveResult(
+        _ text: String,
+        isFinal: Bool,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+    ) {
+        if isFinal {
+            liveStable += text
+            liveRevisable = ""
+        } else if !liveStable.isEmpty, text.hasPrefix(liveStable) {
+            liveRevisable = String(text.dropFirst(liveStable.count))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            liveRevisable = text
+        }
+        onUpdate(LiveTranscriptSnapshot(stable: liveStable, revisable: liveRevisable))
+    }
+}
+
+/// Audio-queue tap for Apple Speech live ingest. Kept off `@Observable`
+/// so the capture callback is not MainActor-isolated.
+nonisolated final class AppleLiveAudioTap: @unchecked Sendable {
+    var input: AsyncStream<AnalyzerInput>.Continuation?
+    var converter: AVAudioConverter?
+    var outputFormat: AVAudioFormat?
+
+    func ingest(_ sampleBuffer: CMSampleBuffer) {
+        guard let input,
+            let pcm = Self.pcmBuffer(from: sampleBuffer)
+        else { return }
+        let converted = convertForAnalyzer(pcm) ?? pcm
+        input.yield(AnalyzerInput(buffer: converted))
+    }
+
+    func finish() {
+        input?.finish()
+        input = nil
+    }
+
+    func reset() {
+        input = nil
+        converter = nil
+        outputFormat = nil
+    }
+
+    private func convertForAnalyzer(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let target = outputFormat, buffer.format != target else { return buffer }
+        if converter == nil || converter?.outputFormat != target {
+            converter = AVAudioConverter(from: buffer.format, to: target)
+        }
+        guard let converter else { return nil }
+        let ratio = target.sampleRate / buffer.format.sampleRate
+        let capacity = AVAudioFrameCount((Double(buffer.frameLength) * ratio).rounded(.up) + 32)
+        guard let out = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: capacity) else {
+            return nil
+        }
+        var error: NSError?
+        var consumed = false
+        converter.convert(to: out, error: &error) { _, status in
+            if consumed {
+                status.pointee = .noDataNow
+                return nil
+            }
+            consumed = true
+            status.pointee = .haveData
+            return buffer
+        }
+        return error == nil ? out : nil
+    }
+
+    private static func pcmBuffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
+        guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer),
+            var asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)?.pointee,
+            let format = AVAudioFormat(streamDescription: &asbd)
+        else { return nil }
+        let frames = AVAudioFrameCount(CMSampleBufferGetNumSamples(sampleBuffer))
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else {
+            return nil
+        }
+        buffer.frameLength = frames
+        let status = CMSampleBufferCopyPCMDataIntoAudioBufferList(
+            sampleBuffer,
+            at: 0,
+            frameCount: Int32(frames),
+            into: buffer.mutableAudioBufferList
+        )
+        return status == noErr ? buffer : nil
     }
 }

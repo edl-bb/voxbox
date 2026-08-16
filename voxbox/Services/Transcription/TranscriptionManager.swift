@@ -130,6 +130,66 @@ class TranscriptionManager {
         let formatted = await TranscriptFormatterService.shared.format(withAutoEdit)
         return SmartTrailingPunctuation.apply(to: formatted)
     }
+
+    var supportsLiveStreaming: Bool {
+        engine(for: AIModel.engineKind(for: resolvedVariant)).supportsLiveStreaming
+    }
+
+    func startLive(
+        language: String,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+    ) async throws {
+        let variant = resolvedVariant
+        guard StreamingMode.modelSupportsLive(variant) else {
+            throw LiveStreamingError.modelDoesNotStream
+        }
+        let kind = AIModel.engineKind(for: variant)
+        if currentModelVariant != variant || !isInitialized {
+            try await loadModel(variant: variant)
+        }
+        let engineLanguage = AustralianEnglishSpelling.engineLanguage(for: language)
+        switch kind {
+        case .apple:
+            try await apple.startLive(language: engineLanguage, onUpdate: onUpdate)
+        case .whisper:
+            try await whisper.startLive(language: engineLanguage, onUpdate: onUpdate)
+        case .parakeet:
+            throw LiveStreamingError.modelDoesNotStream
+        }
+    }
+
+    func finishLive() async throws -> String {
+        switch AIModel.engineKind(for: resolvedVariant) {
+        case .apple:
+            return try await apple.finishLive()
+        case .whisper:
+            return try await whisper.finishLive()
+        case .parakeet:
+            throw LiveStreamingError.modelDoesNotStream
+        }
+    }
+
+    func cancelLive() {
+        apple.cancelLive()
+        whisper.cancelLive()
+    }
+
+    private var resolvedVariant: String {
+        if !currentModelVariant.isEmpty { return currentModelVariant }
+        return UserDefaults.standard.string(forKey: ModelSelection.defaultsKey)
+            ?? ModelSelection.none
+    }
+}
+
+enum LiveStreamingError: LocalizedError {
+    case modelDoesNotStream
+
+    var errorDescription: String? {
+        switch self {
+        case .modelDoesNotStream:
+            return "The selected model cannot stream. Turn off streaming or switch to Apple Speech or a Whisper model."
+        }
+    }
 }
 
 // MARK: - WhisperService conformance

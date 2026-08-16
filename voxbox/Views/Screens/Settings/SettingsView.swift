@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: View {
     var onOpenDictionary: (() -> Void)?
+    var onOpenModels: (() -> Void)?
     @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
@@ -33,7 +34,7 @@ struct SettingsView: View {
             // Tab content
             switch selectedTab {
             case .general:
-                GeneralSettingsTab(onOpenDictionary: onOpenDictionary)
+                GeneralSettingsTab(onOpenDictionary: onOpenDictionary, onOpenModels: onOpenModels)
             case .audio:
                 AudioSettingsTab()
             case .permissions:
@@ -87,6 +88,7 @@ struct SettingsTabButton: View {
 
 struct GeneralSettingsTab: View {
     var onOpenDictionary: (() -> Void)?
+    var onOpenModels: (() -> Void)?
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @AppStorage("selectedHotkey") private var selectedHotkey: HotkeyOption = .fn
     @AppStorage("recordingMode") private var recordingMode: Int = 0  // 0: Hold to record, 1: Toggle
@@ -94,6 +96,8 @@ struct GeneralSettingsTab: View {
         true
     @AppStorage(TranscriptClipboardPreference.defaultsKey)
     private var copyTranscriptToClipboard = TranscriptClipboardPreference.defaultEnabled
+    @AppStorage(StreamingMode.defaultsKey) private var streamingMode = false
+    @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @AppStorage("alwaysShowRecorderPill") private var alwaysShowRecorderPill: Bool = false
     @AppStorage(PillPosition.defaultsKey) private var recorderPillPosition: PillPosition = .defaultPosition
@@ -245,6 +249,91 @@ struct GeneralSettingsTab: View {
                             .foregroundStyle(Color.textMuted)
                         }
 
+                    }
+                }
+
+                SettingsSection {
+                    SettingsSectionHeader(
+                        icon: "waveform",
+                        title: "Live streaming",
+                        subtitle: "Words appear while you talk"
+                    )
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(alignment: .center, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(streamingMode ? "On" : "Off")
+                                    .font(Typography.labelLarge)
+                                    .foregroundStyle(Color.textPrimary)
+                                Text(
+                                    streamingMode
+                                        ? "Apple Speech writes into the focused field as you talk when that field can be rewritten. Browsers and other apps show the words in the recorder until you stop, then paste."
+                                        : "VoxBox waits until you stop, then pastes the finished transcript. Turn this on to see words appear as you speak."
+                                )
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+                                .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 12)
+                            Toggle("", isOn: $streamingMode)
+                                .toggleStyle(.switch)
+                                .controlSize(.large)
+                                .labelsHidden()
+                        }
+
+                        if StreamingMode.needsStreamingModel(
+                            variant: selectedModel, streamingEnabled: streamingMode)
+                        {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(StreamingModeCopy.needsStreamingModel)
+                                    .font(Typography.captionSmall)
+                                    .foregroundStyle(Color.textPrimary)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                Button {
+                                    DashboardRoute.pendingDecodeFilter = .streaming
+                                    if let onOpenModels {
+                                        onOpenModels()
+                                    } else {
+                                        DashboardRoute.reveal(.aiModels, decodeFilter: .streaming)
+                                    }
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "square.stack.3d.up")
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(Color.textMuted)
+                                            .frame(width: 22)
+
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text("Go to models")
+                                                .font(Typography.bodyMedium)
+                                                .foregroundStyle(Color.textPrimary)
+                                            Text("Apple Speech works, or pick any Streaming row.")
+                                                .font(Typography.captionSmall)
+                                                .foregroundStyle(Color.textMuted)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+
+                                        Spacer(minLength: 8)
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundStyle(Color.textMuted)
+                                    }
+                                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color.brandAccentSoft)
+                            )
+                        }
                     }
                 }
 
