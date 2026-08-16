@@ -64,6 +64,41 @@ struct AIModel: Identifiable, Equatable {
     // Accuracy: based on Word Error Rate (10 = ~2% WER, 5 = ~15% WER)
     static let availableModels: [AIModel] = [
         AIModel(
+            name: "Apple Speech",
+            variant: AppleSpeechCatalog.variant,
+            details: "Built-in • On-device Apple speech • No Hugging Face download",
+            rating: "Starter",
+            size: "System",
+            speed: 9.4,
+            accuracy: 8.8,
+            expectedSizeBytes: 0,
+            minimumRAMGB: 0,
+            engine: .apple
+        ),
+        AIModel(
+            name: "Whisper Large v3 Compact",
+            variant: "openai_whisper-large-v3-v20240930_626MB",
+            details: "Multilingual • Argmax compressed large-v3",
+            rating: "Excellent",
+            size: "626 MB",
+            speed: 7.4,
+            accuracy: 9.4,
+            expectedSizeBytes: 600_000_000,
+            minimumRAMGB: 8
+        ),
+        AIModel(
+            name: "Distil-Whisper Large v3",
+            variant: "distil-whisper_distil-large-v3_594MB",
+            details: "English-only • Distilled large-v3 • WhisperKit",
+            rating: "Excellent",
+            size: "594 MB",
+            speed: 8.6,
+            accuracy: 9.0,
+            expectedSizeBytes: 560_000_000,
+            minimumRAMGB: 4,
+            englishOnlyOverride: true
+        ),
+        AIModel(
             name: "Whisper Large v3 Turbo",
             variant: "openai_whisper-large-v3_turbo",
             details: "Multilingual • Best Accuracy • Optimized",
@@ -161,10 +196,23 @@ struct AIModel: Identifiable, Equatable {
         ),
     ]
 
-    /// Returns the expected minimum size for a given model variant
-    static func expectedSize(for variant: String) -> Int64 {
-        return availableModels.first(where: { $0.variant == variant })?.expectedSizeBytes
-            ?? 50_000_000
+    /// Returns the expected minimum size for a given model variant.
+    /// `nonisolated` so download callbacks can read sizes off the main actor.
+    nonisolated static func expectedSize(for variant: String) -> Int64 {
+        switch variant {
+        case "openai_whisper-large-v3-v20240930_626MB": return 600_000_000
+        case "distil-whisper_distil-large-v3_594MB": return 560_000_000
+        case "openai_whisper-large-v3_turbo": return 1_400_000_000
+        case "openai_whisper-medium": return 1_300_000_000
+        case "openai_whisper-small.en": return 200_000_000
+        case "openai_whisper-base.en": return 70_000_000
+        case "openai_whisper-tiny": return 30_000_000
+        case "parakeet-tdt-0.6b-v3": return 500_000_000
+        case "parakeet-tdt-0.6b-v2": return 500_000_000
+        case "parakeet-tdt-ctc-110m": return 200_000_000
+        case "apple-speech": return 0
+        default: return 50_000_000
+        }
     }
 
     /// Returns which backend owns a given model variant.
@@ -211,6 +259,9 @@ struct AIModel: Identifiable, Equatable {
         for capability: DeviceCapability = .current,
         useCase: UseCase = .dictation
     ) -> AIModel {
+        if let apple = availableModels.first(where: { $0.engine == .apple }) {
+            return apple
+        }
         let fits = availableModels.filter { capability.ramGB >= $0.minimumRAMGB }
         let pool = fits.isEmpty ? availableModels : fits
         return pool.max {
@@ -254,6 +305,9 @@ struct AIModel: Identifiable, Equatable {
         capability: DeviceCapability = .current,
         useCase: UseCase = .dictation
     ) -> String {
+        if model.engine == .apple {
+            return "Built-in Apple speech — Get started with built in models, or download a model that fits your needs better."
+        }
         let engineNote = model.engine == .parakeet ? "runs in real time" : "loads comfortably"
         switch useCase {
         case .dictation:

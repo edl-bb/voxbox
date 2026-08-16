@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// The menu bar status item icon: the VoxBox V-wave monogram, drawn as a
-/// template image so it adapts to the menu bar's light/dark appearance and
-/// tinting like a native icon.
+/// The menu bar status item icon: the VoxBox V-wave monogram, always white.
+/// App Light/Dark/System must not recolor it — `NSApp.appearance` would
+/// otherwise tint a template image.
 ///
 /// The status-item label stays a single `Image`. A `TimelineView` here
 /// previously killed the process on macOS 26 as soon as recording started
@@ -27,21 +27,24 @@ struct MenuBarIconView: View {
         [0.38, 0.70, 1.00, 0.85, 0.48],
     ]
 
-    /// Pre-rendered template images. Rendered once; recording only swaps
-    /// which image is shown. `idleImage` is also reused by the menu bar
-    /// dashboard header so the mark matches everywhere.
-    static let idleImage = renderFrame(heights: idleHeights)
-    private static let recordingImages = recordingFrames.map { renderFrame(heights: $0) }
+    /// Template idle mark for the dropdown header, which tints with the panel.
+    static let idleImage = renderFrame(heights: idleHeights, template: true)
+    /// Status-item frames stay white regardless of the app theme.
+    private static let statusIdleImage = renderFrame(heights: idleHeights, template: false)
+    private static let recordingImages = recordingFrames.map {
+        renderFrame(heights: $0, template: false)
+    }
 
     private var currentImage: NSImage {
         if isRecording, !Self.recordingImages.isEmpty {
             return Self.recordingImages[frameIndex % Self.recordingImages.count]
         }
-        return Self.idleImage
+        return Self.statusIdleImage
     }
 
     var body: some View {
         Image(nsImage: currentImage)
+            .renderingMode(.original)
             .onReceive(AudioRecordingService.shared.$isRecording) { recording in
                 isRecording = recording
                 if !recording { frameIndex = 0 }
@@ -56,9 +59,11 @@ struct MenuBarIconView: View {
             }
     }
 
-    /// Draw the five V-wave capsules into an 18×18pt template NSImage
+    /// Draw the five V-wave capsules into an 18×18pt NSImage
     /// (the standard menu bar icon size; AppKit rasterizes at the right scale).
-    private static func renderFrame(heights: [CGFloat]) -> NSImage {
+    /// Template frames are black so SwiftUI can tint them; status-item frames
+    /// are white and not templates.
+    private static func renderFrame(heights: [CGFloat], template: Bool) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let barWidth: CGFloat = 2.4
         let spacing: CGFloat = 0.9
@@ -67,7 +72,7 @@ struct MenuBarIconView: View {
         let startX = (size.width - totalWidth) / 2
 
         let image = NSImage(size: size, flipped: false) { _ in
-            NSColor.black.setFill()
+            (template ? NSColor.black : NSColor.white).setFill()
             for (index, fraction) in heights.enumerated() {
                 let barHeight = max(barWidth, maxBarHeight * fraction)
                 let x = startX + CGFloat(index) * (barWidth + spacing)
@@ -79,7 +84,7 @@ struct MenuBarIconView: View {
             }
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = template
         return image
     }
 }

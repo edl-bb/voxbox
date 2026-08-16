@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import KeyboardShortcuts
 
 /// Hotkey options for triggering VoxBox recording
 enum HotkeyOption: String, Codable, CaseIterable, Identifiable {
@@ -82,6 +83,40 @@ enum HotkeyOption: String, Codable, CaseIterable, Identifiable {
     /// Default hotkey option
     static var `default`: HotkeyOption {
         return .fn
+    }
+
+    /// UserDefaults key for the primary recording hotkey.
+    static let defaultsKey = "selectedHotkey"
+}
+
+/// Empty-state copy that names the current recording invocation command.
+enum RecordingHotkeyCopy {
+    static func startRecordingHint(
+        selectedHotkey: HotkeyOption,
+        customShortcutDescription: String? = nil
+    ) -> String {
+        "Press \(invocationLabel(for: selectedHotkey, customShortcutDescription: customShortcutDescription)) to start recording"
+    }
+
+    static func invocationLabel(
+        for selectedHotkey: HotkeyOption,
+        customShortcutDescription: String? = nil
+    ) -> String {
+        switch selectedHotkey {
+        case .custom:
+            let trimmed = customShortcutDescription?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return trimmed.isEmpty ? "your shortcut" : trimmed
+        default:
+            return selectedHotkey.displayName
+        }
+    }
+
+    @MainActor
+    static func startRecordingHint(for selectedHotkey: HotkeyOption) -> String {
+        startRecordingHint(
+            selectedHotkey: selectedHotkey,
+            customShortcutDescription: KeyboardShortcuts.getShortcut(for: .toggleRecord)?.description
+        )
     }
 }
 

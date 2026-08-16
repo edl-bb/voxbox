@@ -4,11 +4,9 @@ import Foundation
 ///
 /// It routes each call to the correct `SpeechToTextEngine` based on the
 /// selected model's `TranscriptionEngineKind`, so views are fully decoupled
-/// from any specific backend (Whisper today, Parakeet next).
+/// from any specific backend (Apple, Parakeet, or Whisper).
 ///
-/// Display-state properties mirror the active engine. In Phase 1 the only
-/// engine is Whisper, so this is a behavior-preserving pass-through; Phase 2
-/// adds the Parakeet engine and switches the state accessors on `activeKind`.
+/// Display-state properties mirror the active engine.
 @Observable
 class TranscriptionManager {
     static let shared = TranscriptionManager()
@@ -17,6 +15,7 @@ class TranscriptionManager {
 
     private let whisper = WhisperService.shared
     private let parakeet = ParakeetEngine.shared
+    private let apple = AppleSpeechEngine.shared
 
     /// Which backend currently owns the loaded model. Drives display state.
     private(set) var activeKind: TranscriptionEngineKind = .whisper
@@ -30,6 +29,8 @@ class TranscriptionManager {
             return whisper
         case .parakeet:
             return parakeet
+        case .apple:
+            return apple
         }
     }
 
@@ -42,40 +43,50 @@ class TranscriptionManager {
         switch activeKind {
         case .whisper: return whisper.isInitialized
         case .parakeet: return parakeet.isInitialized
+        case .apple: return apple.isInitialized
         }
     }
     var isLoading: Bool {
-        switch activeKind {
-        case .whisper: return whisper.isLoading
-        case .parakeet: return parakeet.isLoading
-        }
+        whisper.isLoading || parakeet.isLoading || apple.isLoading
     }
     var isTranscribing: Bool {
         switch activeKind {
         case .whisper: return whisper.isTranscribing
         case .parakeet: return parakeet.isTranscribing
+        case .apple: return apple.isTranscribing
         }
     }
     var loadingStage: String {
+        // Read the engine that is actually loading. `activeKind` only flips
+        // after load finishes, so a first Parakeet load used to show Whisper's
+        // empty stage ("Loading…") on the model card.
+        if apple.isLoading { return apple.loadingStage }
+        if parakeet.isLoading { return parakeet.loadingStage }
+        if whisper.isLoading { return whisper.loadingStage }
         switch activeKind {
         case .whisper: return whisper.loadingStage
         case .parakeet: return parakeet.loadingStage
+        case .apple: return apple.loadingStage
         }
     }
     var currentModelVariant: String {
         switch activeKind {
         case .whisper: return whisper.currentModelVariant
         case .parakeet: return parakeet.currentModelVariant
+        case .apple: return apple.currentModelVariant
         }
     }
 
     // MARK: - Actions
 
-    /// Load the engine's saved/default model (mirrors `WhisperService.initialize`).
-    ///
-    /// Whisper restores its previously selected model; Parakeet is always
-    /// loaded explicitly via `loadModel`, so there is nothing to restore for it.
+    /// Load the user's selected model, or restore Whisper's last model.
     func initialize() async throws {
+        let selected = UserDefaults.standard.string(forKey: ModelSelection.defaultsKey)
+            ?? ModelSelection.none
+        if selected != ModelSelection.none {
+            try await loadModel(variant: selected)
+            return
+        }
         if activeKind == .whisper {
             try await whisper.initialize()
         }
@@ -118,6 +129,66 @@ class TranscriptionManager {
         }
         let formatted = await TranscriptFormatterService.shared.format(withAutoEdit)
         return SmartTrailingPunctuation.apply(to: formatted)
+    }
+
+    var supportsLiveStreaming: Bool {
+        engine(for: AIModel.engineKind(for: resolvedVariant)).supportsLiveStreaming
+    }
+
+    func startLive(
+        language: String,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+    ) async throws {
+        let variant = resolvedVariant
+        guard StreamingMode.modelSupportsLive(variant) else {
+            throw LiveStreamingError.modelDoesNotStream
+        }
+        let kind = AIModel.engineKind(for: variant)
+        if currentModelVariant != variant || !isInitialized {
+            try await loadModel(variant: variant)
+        }
+        let engineLanguage = AustralianEnglishSpelling.engineLanguage(for: language)
+        switch kind {
+        case .apple:
+            try await apple.startLive(language: engineLanguage, onUpdate: onUpdate)
+        case .whisper:
+            try await whisper.startLive(language: engineLanguage, onUpdate: onUpdate)
+        case .parakeet:
+            throw LiveStreamingError.modelDoesNotStream
+        }
+    }
+
+    func finishLive() async throws -> String {
+        switch AIModel.engineKind(for: resolvedVariant) {
+        case .apple:
+            return try await apple.finishLive()
+        case .whisper:
+            return try await whisper.finishLive()
+        case .parakeet:
+            throw LiveStreamingError.modelDoesNotStream
+        }
+    }
+
+    func cancelLive() {
+        apple.cancelLive()
+        whisper.cancelLive()
+    }
+
+    private var resolvedVariant: String {
+        if !currentModelVariant.isEmpty { return currentModelVariant }
+        return UserDefaults.standard.string(forKey: ModelSelection.defaultsKey)
+            ?? ModelSelection.none
+    }
+}
+
+enum LiveStreamingError: LocalizedError {
+    case modelDoesNotStream
+
+    var errorDescription: String? {
+        switch self {
+        case .modelDoesNotStream:
+            return "The selected model cannot stream. Turn off streaming or switch to Apple Speech or a Whisper model."
+        }
     }
 }
 

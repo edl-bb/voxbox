@@ -58,7 +58,11 @@ class AudioRecordingService: NSObject, ObservableObject {
     nonisolated(unsafe) private var smoothedAudioLevel: Float = 0.0
     nonisolated(unsafe) private var smoothedAudioFrequency: Float = 0.0
 
-    nonisolated private let audioQueue = DispatchQueue(label: "com.cubbei.VoxBox.audioQueue")
+    /// Optional tap for live transcription. Called on the audio queue for every
+    /// captured buffer while recording.
+    nonisolated(unsafe) var liveBufferHandler: (@Sendable (CMSampleBuffer) -> Void)?
+
+    nonisolated private let audioQueue = DispatchQueue(label: "dev.edlittle.VoxBox.audioQueue")
 
     nonisolated private func validatedAudioFileURL(
         at url: URL,
@@ -524,6 +528,7 @@ extension AudioRecordingService: AVCaptureAudioDataOutputSampleBufferDelegate {
         guard recordingActive else { return }
 
         processAudioLevel(from: sampleBuffer)
+        liveBufferHandler?(sampleBuffer)
 
         // Don't append if we're stopping - prevents race condition crash
         guard !isStopping else { return }

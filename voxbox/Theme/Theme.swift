@@ -6,6 +6,7 @@
 //  Sharp lines, no rounded corners, professional
 //
 
+import Combine
 import SwiftUI
 
 // MARK: - Theme Environment Key
@@ -72,8 +73,7 @@ enum VoxBoxTheme {
 // MARK: - Theme Provider
 
 struct ThemeProvider<Content: View>: View {
-    @Environment(\.colorScheme) var systemColorScheme
-    @AppStorage("appTheme") private var appTheme: AppTheme = .system
+    @ObservedObject private var appearance = AppearanceController.shared
     
     let content: Content
     
@@ -82,11 +82,7 @@ struct ThemeProvider<Content: View>: View {
     }
     
     private var activeTheme: VoxBoxTheme {
-        switch appTheme {
-        case .light: return .light
-        case .dark: return .dark
-        case .system: return systemColorScheme == .dark ? .dark : .light
-        }
+        appearance.resolvedScheme == .dark ? .dark : .light
     }
     
     var body: some View {

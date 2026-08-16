@@ -205,7 +205,16 @@ extension Color {
                     : NSColor(hex: "3D6AE8").withAlphaComponent(0.10)
             }))
 
-    static let accentSuccess = Color(hex: "2EC8B8")
+    /// Blue-green success in the #00B58F hue family. Saturation follows
+    /// brandAccent; value is lower so green has the same ink weight as the blues.
+    static let accentSuccess = Color(
+        nsColor: NSColor(
+            name: "accentSuccess",
+            dynamicProvider: { appearance in
+                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    ? NSColor(hex: "3EAD96")
+                    : NSColor(hex: "26947D")
+            }))
     static let accentWarning = Color(hex: "F59E0B")
     static let accentError = Color(hex: "EF4444")
     static let accentBlue = Color(hex: "4C7CFF")
@@ -213,7 +222,7 @@ extension Color {
     // Chart colors
     static let chartRed = Color(hex: "A62D35")
     static let chartBlue = Color(hex: "4C7CFF")
-    static let chartGreen = Color(hex: "2EC8B8")
+    static let chartGreen = Color(hex: "26947D")
 
     // Legacy
     static let navyInk = Color(hex: "243056")

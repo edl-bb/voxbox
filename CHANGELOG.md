@@ -1,43 +1,56 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+Changes and release notes for VoxBox.  
 
-The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-VoxBox versions start at 1.0.0. This is a fork of SpeakType; earlier SpeakType releases are not listed here.
+## [1.1.0] - 2026-08-16
+- App defaults to native included MacOS transcription model when starting fresh.
+- Added support for live transcription streaming. Enable transcription streaming in Settings → Live streaming.
+- Added support for streaming models and additional models.
+- Improved software update checks.
+- Added support for "Open at login" - new toggle available in Settings → General.
+- Sidebar permission chips hide when microphone and Accessibility are both on.
+- Stability and performance improvements
+- Improvements for model download handling
+- bugfix: fixed the issue where system theme wasn't respected
 
 ## [1.0.4] - 2026-08-15
 - In-app Install Update verifies the downloaded app against the VoxBox signing team, so updates can complete after download.
 
 ## [1.0.3] - 2026-08-15
-- UI accents follow the VoxBox logo (deep blue, violet, teal) instead of the old orange and purple.
+- Minor UI refresh.
 - Optional daily update check in Settings → Updates, off by default. When on, VoxBox asks GitHub once a day at launch and prompts if a newer version is available. Manual Check for Updates is unchanged.
 
 ## [1.0.2] - 2026-08-15
-- Copy last transcript shortcut (default ⌃⌥C) under Settings → Shortcuts, for when auto-paste misses the field.
-- Filler-word strip now applies to every pasted transcript, including Parakeet.
-- Transcript Cleanup settings copy clarified so filler strip, stray-period, and on-device AI are distinct.
-- Recorder capture setup stays off the main thread so the pill can appear without blocking recording.
+- Added a copy last transcript to clipboard shortcut (default ⌃⌥C) under Settings → Shortcuts.
+- Improvements to the post-transcription cleanup engine.
+- Other system stability and performance improvements.
 
 ## [1.0.1] - 2026-08-15
 - Onboarding is first-run only. Missing Accessibility no longer hides the dashboard.
-- If auto-paste has no target, the transcript is copied and the pill says so.
-- Permission status stays visible in the sidebar, menu bar, and Settings.
-- Menu bar recording animation no longer freezes the app.
-- Models are scanned at launch so the first hotkey does not race an empty download map.
-- Bundle identifier is `com.cubbei.VoxBox`.
+- If transcript output no clear target, the transcript is copied to the clipboard instead.
+- Permission status is visible in the sidebar.
+- Models are scanned at launch so the first transcription does not cause an error.
 
 ## [1.0.0] - 2026-08-15
-- First VoxBox release. Requires macOS 26. Existing SpeakType models migrate on first launch.
-- Licensing and trial code removed.
-- V-wave app icon; menu bar icon animates while recording.
-- Model download progress in the sidebar and menu bar, not only in AI Models.
-- Optional on-device AI cleanup: Formatting, Light cleanup, or Polish. Off by default.
-- English (Australia) spelling conversion, offline.
-- Copy transcript to clipboard after dictation (default on).
-- Configurable audio and transcript retention. Statistics are always kept.
-- Custom key-combination hotkey, in addition to single-modifier options.
-- Quick dictionary corrections from a transcript; new rules also update the latest item.
-- Smart trailing punctuation for emails, URLs, numbers, and single words.
-- Recorder pill can be pinned to any of nine screen positions.
-- No network at launch, no silent model downloads, and transcripts stay out of logs and `/tmp`.
+- First VoxBox release. 
+- Bump minimum OS requirement to macOS 26. 
+- Any existing SpeakType models migrate to VoxBox on first launch.
+- Enhancements from SpeakType:
+    - English (Australia) spelling conversion, offline.
+    - Optional on-device AI cleanup: Formatting, Light cleanup, or Polish. Off by default.
+    - Model download progress in the sidebar and menu bar, not only in AI Models.
+    - Added option to copy transcript to clipboard after dictation (default off).
+    - Add configurable audio and transcript raw file retention. Statistics are always kept.
+    - Added custom key-combinations for invoke hotkey, and some extra single-modifier options.
+    - Apply dictionary updates to the most recent transcript automatically. 
+    - Improve smart cleanup with fixes for trailing punctuation for emails, URLs, numbers, and single words.
+    - Recorder pill can be pinned to any of nine screen positions.
+
+### Security fix
+- Utilise correct MacOS native logging rather than writing to `/tmp` & implement standard log protection
+- Remove transcripts from system logs
+- Remove all automatic outbound network activity by default, so app only reaches out to the internet once a user invokes a model download or a system update check.
+
+
+_**Note:** For SpeakType's change history prior to VoxBox, refer to the [SpeakType Changelog](https://github.com/karansinghgit/speaktype/blob/main/CHANGELOG.md)._

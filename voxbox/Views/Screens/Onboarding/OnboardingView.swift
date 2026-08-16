@@ -31,25 +31,41 @@ struct OnboardingView: View {
                             withAnimation(.easeInOut(duration: 0.5)) { currentPage = 2 }
                         })
                         .transition(.opacity)
-                    } else {
+                    } else if currentPage == 2 {
                         PermissionsPage(
+                            finishAction: { advanceAfterPermissions() },
+                            skipAction: { advanceAfterPermissions() }
+                        )
+                        .transition(.opacity)
+                    } else {
+                        ModelOnboardingPage(
                             finishAction: { completeOnboarding() },
                             skipAction: { completeOnboarding() }
                         )
                         .transition(.opacity)
                     }
                 }
-                .padding(40)
+                .padding(currentPage == 3 ? 16 : 40)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 600, minHeight: 500)
     }
 
+    /// Returning users who only needed permissions skip the model page.
+    func advanceAfterPermissions() {
+        if startAtPermissions {
+            completeOnboarding()
+        } else {
+            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 3 }
+        }
+    }
+
     func completeOnboarding() {
         withAnimation {
             hasCompletedOnboarding = true
         }
+        NotificationCenter.default.post(name: .recorderIdleVisibilityChanged, object: nil)
     }
 }
 
@@ -572,6 +588,73 @@ struct GlobeKeyOptimizationPage: View {
     private func openKeyboardSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.keyboard") {
             NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+/// First-run model picker. Continue unlocks once a model is on disk;
+/// “I’ll choose later” still finishes onboarding.
+struct ModelOnboardingPage: View {
+    let finishAction: () -> Void
+    let skipAction: () -> Void
+
+    @State private var hasDownloadedModel = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Choose a model")
+                    .font(.system(size: 28, weight: .regular, design: .serif))
+                    .foregroundStyle(Color.textPrimary)
+                Text(
+                    "Apple Speech is the built-in starter — you can dictate once its system assets are ready. Download Parakeet or Whisper later if you want; you can change this in AI Models."
+                )
+                .font(.system(size: 14))
+                .foregroundStyle(Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+
+            AIModelsView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            VStack(spacing: 12) {
+                ContinueButton(
+                    isEnabled: hasDownloadedModel,
+                    action: finishAction
+                )
+
+                Button(action: skipAction) {
+                    Text("I’ll choose later")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+        }
+        .onAppear {
+            Task {
+                await ModelDownloadService.shared.refreshDownloadedModels()
+                await MainActor.run {
+                    hasDownloadedModel = ModelDownloadService.shared.hasAnyDownloadedModel
+                    trackHasDownloadedModel()
+                }
+            }
+        }
+    }
+
+    private func trackHasDownloadedModel() {
+        withObservationTracking {
+            _ = ModelDownloadService.shared.hasAnyDownloadedModel
+        } onChange: {
+            Task { @MainActor in
+                hasDownloadedModel = ModelDownloadService.shared.hasAnyDownloadedModel
+                trackHasDownloadedModel()
+            }
         }
     }
 }

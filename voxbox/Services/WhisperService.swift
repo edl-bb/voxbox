@@ -1,3 +1,4 @@
+@preconcurrency import AVFoundation
 import Foundation
 import WhisperKit
 
@@ -7,7 +8,7 @@ class WhisperService {
     static let shared = WhisperService()
     private static let placeholderPatterns = [
         #"\[(?:BLANK_AUDIO|SILENCE)\]"#,
-        #"<\|nospeech\|>"#,
+        #"<\|[^|]*\|>"#,
         #"\[\s*S\s*\]"#,
     ]
     private static let noiseLabelTerms = [
@@ -54,7 +55,13 @@ class WhisperService {
     var loadingStartedAt: Date?
 
     var currentModelVariant: String = ""  // No default - must be explicitly set
+    var supportsLiveStreaming: Bool { true }
     private var lastLoadDuration: TimeInterval?
+    private var liveSink: LiveAudioSampleSink?
+    private var liveStreamer: AudioStreamTranscriber?
+    private var liveStreamTask: Task<Void, Never>?
+    private var liveStable = ""
+    private var liveRevisable = ""
 
     @MainActor private var activeLoadTask: Task<Void, Error>?
     @MainActor private var activeLoadVariant: String = ""
@@ -164,7 +171,7 @@ class WhisperService {
         isInitialized = false
         loadingModelVariant = variant
         loadingStartedAt = Date()
-        loadingStage = "Preparing \(modelDisplayName(for: variant))..."
+        loadingStage = ModelLoadCopy.preparing
 
         // Release existing model to free memory
         if pipe != nil {
@@ -201,7 +208,7 @@ class WhisperService {
                 download: false  // Already downloaded via ModelDownloadService
             )
 
-            loadingStage = "Loading model into memory..."
+            loadingStage = ModelLoadCopy.preparing
 
             // Start a watchdog timer that will flag a timeout
             let loadStart = Date()
@@ -228,10 +235,6 @@ class WhisperService {
                 "❌ Failed to initialize WhisperKit with \(variant): \(error.localizedDescription)")
             throw error
         }
-    }
-
-    private func modelDisplayName(for variant: String) -> String {
-        AIModel.availableModels.first(where: { $0.variant == variant })?.name ?? variant
     }
 
     func transcribe(audioFile: URL, language: String = "auto") async throws -> String {
@@ -291,6 +294,8 @@ class WhisperService {
     private func decodingOptions(for language: String) -> DecodingOptions {
         var options = DecodingOptions()
         options.task = .transcribe
+        options.skipSpecialTokens = true
+        options.withoutTimestamps = true
         // Whisper has no regional variants — collapse codes like "en-AU" to
         // their base language in case a caller bypasses TranscriptionManager.
         let baseLanguage = language.components(separatedBy: "-").first ?? language
@@ -324,5 +329,154 @@ class WhisperService {
         normalized = AutoEdit.apply(to: normalized)
 
         return normalized.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    // MARK: - Live streaming
+
+    func startLive(
+        language: String,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+    ) async throws {
+        cancelLive()
+        guard let pipe, isInitialized, let tokenizer = pipe.tokenizer else {
+            throw TranscriptionError.notInitialized
+        }
+
+        isTranscribing = true
+        liveStable = ""
+        liveRevisable = ""
+
+        let sink = LiveAudioSampleSink()
+        liveSink = sink
+        let streamer = AudioStreamTranscriber(
+            audioEncoder: pipe.audioEncoder,
+            featureExtractor: pipe.featureExtractor,
+            segmentSeeker: pipe.segmentSeeker,
+            textDecoder: pipe.textDecoder,
+            tokenizer: tokenizer,
+            audioProcessor: sink,
+            decodingOptions: decodingOptions(for: language),
+            useVAD: false,
+            stateChangeCallback: { [weak self] _, newState in
+                self?.publishLiveState(newState, onUpdate: onUpdate)
+            }
+        )
+        liveStreamer = streamer
+        liveStreamTask = Task {
+            do {
+                try await streamer.startStreamTranscription()
+            } catch {
+                AppLogger.error(
+                    "Live WhisperKit stream failed",
+                    error: error,
+                    category: AppLogger.transcription)
+            }
+        }
+
+        AudioRecordingService.shared.liveBufferHandler = { [weak sink] sampleBuffer in
+            sink?.ingest(sampleBuffer)
+        }
+    }
+
+    func finishLive() async throws -> String {
+        AudioRecordingService.shared.liveBufferHandler = nil
+        if let streamer = liveStreamer {
+            await streamer.stopStreamTranscription()
+        }
+        _ = await liveStreamTask?.value
+        let text = Self.normalizedTranscription(
+            from: LiveTranscriptSnapshot(stable: liveStable, revisable: liveRevisable).fullText
+        )
+        teardownLive()
+        return text
+    }
+
+    func cancelLive() {
+        AudioRecordingService.shared.liveBufferHandler = nil
+        liveStreamTask?.cancel()
+        if let streamer = liveStreamer {
+            Task { await streamer.stopStreamTranscription() }
+        }
+        teardownLive()
+    }
+
+    private func teardownLive() {
+        liveStreamer = nil
+        liveSink = nil
+        liveStreamTask = nil
+        liveStable = ""
+        liveRevisable = ""
+        isTranscribing = false
+    }
+
+    private func publishLiveState(
+        _ state: AudioStreamTranscriber.State,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+    ) {
+        let snapshot = WhisperLiveHypothesis.snapshot(
+            confirmed: Self.normalizedTranscription(
+                from: state.confirmedSegments.map(\.text).joined(separator: " ")),
+            unconfirmed: Self.normalizedTranscription(
+                from: state.unconfirmedSegments.map(\.text).joined(separator: " ")),
+            current: Self.normalizedTranscription(from: state.currentText),
+            previousRevisable: liveRevisable
+        )
+        liveStable = snapshot.stable
+        liveRevisable = snapshot.revisable
+        onUpdate(snapshot)
+    }
+
+}
+
+/// Maps WhisperKit’s windowed decode onto a stable prefix plus a tail that
+/// does not restart from empty every time the unconfirmed window is re-run.
+enum WhisperLiveHypothesis {
+    static let waitingCopy = "Waiting for speech..."
+
+    static func snapshot(
+        confirmed: String,
+        unconfirmed: String,
+        current: String,
+        previousRevisable: String
+    ) -> LiveTranscriptSnapshot {
+        let stable = confirmed.trimmingCharacters(in: .whitespacesAndNewlines)
+        let window = current == waitingCopy
+            ? ""
+            : current.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pending = unconfirmed.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawHypothesis = window.isEmpty ? pending : window
+        let hypothesis = stripConfirmedPrefix(rawHypothesis, confirmed: stable)
+
+        let revisable: String
+        if isCovered(by: stable, tail: previousRevisable) {
+            revisable = hypothesis
+        } else if hypothesis.isEmpty || shouldHold(previous: previousRevisable, next: hypothesis) {
+            revisable = previousRevisable
+        } else {
+            revisable = hypothesis
+        }
+        return LiveTranscriptSnapshot(stable: stable, revisable: revisable)
+    }
+
+    static func stripConfirmedPrefix(_ text: String, confirmed: String) -> String {
+        guard !confirmed.isEmpty, text.hasPrefix(confirmed) else { return text }
+        return String(text.dropFirst(confirmed.count))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// After a window confirms, the old tail is already in `stable`. Drop it
+    /// so the next window does not reprint those words.
+    static func isCovered(by stable: String, tail: String) -> Bool {
+        guard !tail.isEmpty else { return true }
+        return stable.hasSuffix(tail) || stable.hasSuffix(" " + tail)
+    }
+
+    /// Hold the last tail while a window restarts or shrinks. Take the next
+    /// hypothesis only when it extends the tail or replaces it at similar length.
+    static func shouldHold(previous: String, next: String) -> Bool {
+        guard !previous.isEmpty else { return false }
+        if next.hasPrefix(previous) { return false }
+        if previous.hasPrefix(next) { return true }
+        return next.count < max(8, (previous.count * 2) / 3)
     }
 }

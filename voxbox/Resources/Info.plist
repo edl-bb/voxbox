@@ -14,6 +14,10 @@
 	<string>VoxBox</string>
 	<key>CFBundleDisplayName</key>
 	<string>VoxBox</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,7 +30,7 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.cubbei.VoxBox</string>
+            <string>dev.edlittle.VoxBox</string>
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>voxbox</string>

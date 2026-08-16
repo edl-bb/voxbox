@@ -41,8 +41,9 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
     var instructions: String {
         let base = """
             You clean up text dictated by voice. Reply with only the cleaned text — \
-            no commentary, no quotation marks around it. Never add information, \
-            never summarise, never reorder ideas.
+            no commentary, no labels, no quotation marks around it. Never write \
+            phrases such as “here’s the clean text” or “cleaned text:”. Never add \
+            information, never summarise, never reorder ideas.
             """
         switch self {
         case .formatting:
@@ -64,11 +65,14 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
         case .polish:
             return base + """
 
-                Apply these edits: remove filler words and false starts; fix grammar, \
-                punctuation, capitalisation and spacing; add sentence and paragraph \
-                breaks; where dictated phrasing is choppy or fragmented, smooth it \
-                into fluent sentences. Keep the speaker's meaning, vocabulary and \
-                tone — polish the delivery, never the message.
+                Apply these edits: remove filler words and false starts ("um", "uh", \
+                "ah", "er", "you know", filler "like", repeated words); replace words \
+                that don't make sense in the context of the wider text, the text is \
+                a transcription so it's likely the correct word is phonetically similar. \
+                Next, fix grammar, punctuation, capitalisation and spacing; add sentence \
+                and paragraph breaks; where dictated phrasing is choppy or fragmented, \
+                smooth it into fluent sentences. Keep the speaker's meaning, vocabulary \
+                and tone — polish the delivery, never the message.
                 """
         }
     }
@@ -79,7 +83,7 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
         switch self {
         case .formatting: return 0.10
         case .lightCleanup: return 0.35
-        case .polish: return 0.50
+        case .polish: return 0.70
         }
     }
 }
@@ -156,7 +160,8 @@ final class TranscriptFormatterService {
                 to: trimmed,
                 options: GenerationOptions(temperature: 0.0)
             )
-            let cleaned = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            let cleaned = Self.stripModelPreamble(
+                response.content.trimmingCharacters(in: .whitespacesAndNewlines))
 
             let ratio = Self.changeRatio(from: trimmed, to: cleaned)
             let accepted = !cleaned.isEmpty && ratio <= intensity.maximumChangeRatio
@@ -179,14 +184,99 @@ final class TranscriptFormatterService {
 
     /// Fraction of word-level edits (insert/delete/substitute) between the two
     /// texts, relative to the longer one. Case- and punctuation-insensitive so
-    /// pure formatting edits score 0.
+    /// pure formatting edits score 0. Spoken fillers and immediate false-start
+    /// repeats are stripped first so a legitimate Light/Polish pass is not
+    /// charged for the cleanup those levels are asked to do.
     static func changeRatio(from original: String, to revised: String) -> Double {
-        let a = words(in: original)
-        let b = words(in: revised)
+        let a = contentWords(in: original)
+        let b = contentWords(in: revised)
         guard !a.isEmpty || !b.isEmpty else { return 0 }
 
         let distance = levenshtein(a, b)
         return Double(distance) / Double(max(a.count, b.count))
+    }
+
+    /// Tokens the guardrail treats as cleanup, not meaning. Matches the filler
+    /// list in Light cleanup / Polish instructions and Auto Edit's um/uh family.
+    private static let fillerTokens: Set<String> = [
+        "um", "uh", "umm", "uhm", "erm", "hmm", "ah", "er",
+    ]
+
+    static func contentWords(in text: String) -> [String] {
+        let raw = dropFillerPhrases(words(in: text))
+        let withoutFillers = raw.filter { !fillerTokens.contains($0) }
+        return collapseImmediateRepeats(withoutFillers)
+    }
+
+    /// Drops "you know" as a pair so those words are not treated as content.
+    private static func dropFillerPhrases(_ words: [String]) -> [String] {
+        var out: [String] = []
+        var index = 0
+        while index < words.count {
+            if index + 1 < words.count, words[index] == "you", words[index + 1] == "know" {
+                index += 2
+                continue
+            }
+            out.append(words[index])
+            index += 1
+        }
+        return out
+    }
+
+    /// "I was I was going" → "I was going". Unigram then bigram runs.
+    private static func collapseImmediateRepeats(_ words: [String]) -> [String] {
+        collapseRuns(collapseRuns(words, length: 2), length: 1)
+    }
+
+    private static func collapseRuns(_ words: [String], length: Int) -> [String] {
+        guard length > 0, words.count >= length * 2 else { return words }
+        var out: [String] = []
+        var index = 0
+        while index < words.count {
+            let next = index + 2 * length
+            if next <= words.count,
+                Array(words[index..<(index + length)])
+                    == Array(words[(index + length)..<next])
+            {
+                out.append(contentsOf: words[index..<(index + length)])
+                index = next
+                continue
+            }
+            out.append(words[index])
+            index += 1
+        }
+        return out
+    }
+
+    /// Drops labels the model sometimes prepends despite the instructions.
+    static func stripModelPreamble(_ text: String) -> String {
+        var next = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefixes = [
+            "here's the cleaned-up text:",
+            "here is the cleaned-up text:",
+            "here's the cleaned text:",
+            "here is the cleaned text:",
+            "here's the clean text:",
+            "here is the clean text:",
+            "cleaned-up text:",
+            "cleaned text:",
+            "clean text:",
+        ]
+        let lower = next.lowercased()
+        if let prefix = prefixes.first(where: { lower.hasPrefix($0) }) {
+            next = String(next.dropFirst(prefix.count))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if next.count >= 2 {
+            let wrappedQuotes =
+                (next.hasPrefix("\"") && next.hasSuffix("\""))
+                || (next.hasPrefix("“") && next.hasSuffix("”"))
+            if wrappedQuotes {
+                next = String(next.dropFirst().dropLast())
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        return next
     }
 
     static func words(in text: String) -> [String] {

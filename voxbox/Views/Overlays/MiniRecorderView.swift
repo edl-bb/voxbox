@@ -7,16 +7,20 @@ import SwiftUI
 struct MiniRecorderView: View {
     @ObservedObject private var audioRecorder = AudioRecordingService.shared
     private var transcription: TranscriptionManager { TranscriptionManager.shared }
+    private var liveSession = LiveDictationSession.shared
     @State private var isListening = false
 
     @State private var isProcessing = false
-    @State private var statusMessage = "Transcribing..."
+    @State private var statusMessage = PillStatusCopy.transcribing
     @State private var isWarmingUp = false
     @State private var showAccessibilityWarning = false
     var onCommit: ((String) async -> TranscriptDelivery)?
     var onCancel: (() -> Void)?
 
+    @State private var hasDownloadedModel = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
+    @AppStorage(StreamingMode.defaultsKey) private var streamingMode = false
     @AppStorage("recordingMode") private var recordingMode: Int = 0
     /// Whether we've already shown the one-time accessibility warning (release only).
     @AppStorage("hasShownAccessibilityWarning") private var hasShownAccessibilityWarning = false
@@ -93,17 +97,12 @@ struct MiniRecorderView: View {
     @State private var globalEscapeMonitor: Any?
     @State private var localEscapeMonitor: Any?
 
-    @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("appTheme") private var appTheme: AppTheme = .system
+    @ObservedObject private var appearance = AppearanceController.shared
 
     /// Dark idle pill uses an opaque SwiftUI fill (same as the original SpeakType
     /// treatment). Light idle uses behind-window blur — not Liquid Glass.
     private var pillIsDark: Bool {
-        switch appTheme {
-        case .dark: return true
-        case .light: return false
-        case .system: return colorScheme == .dark
-        }
+        appearance.resolvedScheme == .dark
     }
 
     // MARK: - State for Animation
@@ -262,12 +261,17 @@ struct MiniRecorderView: View {
 
     /// The recorder is always on screen. `idle` is the tiny resting pill; the
     /// other phases are the expanded HUD it morphs into.
-    private enum RecorderPhase { case idle, warming, processing, recording }
+    private enum RecorderPhase { case idle, warming, processing, recording, needsModel }
+
+    private var needsModelDownload: Bool {
+        hasCompletedOnboarding && !hasDownloadedModel
+    }
 
     private var displayPhase: RecorderPhase {
         if isWarmingUp || transcription.isLoading { return .warming }
         if isProcessing { return .processing }
         if isListening { return .recording }
+        if needsModelDownload { return .needsModel }
         return .idle
     }
 
@@ -276,14 +280,22 @@ struct MiniRecorderView: View {
     private var pillWidth: CGFloat {
         switch displayPhase {
         case .idle: return 58
-        case .warming: return 200
-        case .processing: return 248
-        case .recording: return expanded ? 460 : 250
+        case .warming: return 280
+        case .processing: return 360
+        case .needsModel: return 380
+        case .recording:
+            // Live text needs room to scroll; twice the resting recording width.
+            return showsLiveHUD ? 500 : (expanded ? 460 : 250)
         }
     }
 
     private var pillHeight: CGFloat {
         displayPhase == .idle ? 24 : 44
+    }
+
+    /// Live text stays in the pill only when the destination field cannot be rewritten.
+    private var showsLiveHUD: Bool {
+        liveSession.isLive && !liveSession.writingToField && !liveSession.hudText.isEmpty
     }
 
     private var pillCornerRadius: CGFloat { pillHeight / 2 }
@@ -315,7 +327,7 @@ struct MiniRecorderView: View {
             ProgressView()
                 .controlSize(.small)
                 .colorScheme(.dark)
-            Text("Warming up model...")
+            Text(ModelLoadCopy.preparing)
                 .font(Typography.pillLabel)
                 .foregroundColor(.white.opacity(0.9))
         }
@@ -330,59 +342,51 @@ struct MiniRecorderView: View {
             .transition(.opacity)
     }
 
+    private var needsModelContent: some View {
+        Text(PillStatusCopy.noModels)
+            .font(Typography.pillLabel)
+            .foregroundColor(.white)
+            .lineLimit(1)
+            .padding(.horizontal, 14)
+            .transition(.opacity)
+    }
+
     private var recordingContent: some View {
         HStack(spacing: 10) {
             recordingDot
 
-            // Waveform — live render of the actual microphone input.
-            // Calm/flat when silent, peaks on speech.
-            Canvas { context, size in
-                let raw = audioRecorder.liveWaveSamples
-                guard !raw.isEmpty else { return }
-                let step = Self.waveBarWidth + Self.waveBarSpacing
-                let maxBars = max(1, Int(size.width / step))
-                // Samples are raw linear peak amplitude (0...1), which sits LOW on
-                // the scale — so we auto-gain to your own recent peak, meaning your
-                // voice always fills the bars no matter the mic level. Two knobs:
-                //   noiseGate  – trim dead-silence hiss before measuring.
-                //   presence   – fade the whole waveform toward flat when the loudest
-                //                thing in view is only faint ambient sound (a fan).
-                //                It reaches full quickly, so real speech is never
-                //                dimmed — only near-silence collapses. Raise
-                //                `presenceFull` if the fan still shows; lower it if
-                //                quiet speech looks weak.
-                let noiseGate: Float = 0.02
-                let presenceFull: Float = 0.08
-                let gated = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
-                let peak = gated.max() ?? 0
-                let recentPeak = max(peak, 0.05)
-                let presence = CGFloat(min(1, peak / presenceFull))
-                let midY = size.height / 2
-                for (i, sample) in gated.enumerated() {
-                    let norm = CGFloat(min(1, sample / recentPeak)) * presence
-                    let barHeight = max(2.0, norm * size.height)
-                    let x = CGFloat(i) * step
-                    let rect = CGRect(
-                        x: x, y: midY - barHeight / 2,
-                        width: Self.waveBarWidth, height: barHeight)
-                    context.fill(
-                        Path(roundedRect: rect, cornerRadius: Self.waveBarWidth / 2),
-                        with: .color(.white.opacity(0.9)))
+            ZStack(alignment: .leading) {
+                if showsLiveHUD {
+                    Text(liveSession.hudText)
+                        .font(Typography.pillLabel)
+                        .foregroundColor(.white.opacity(0.92))
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.combined(with: .offset(x: 18)),
+                                removal: .opacity
+                            ))
+                } else {
+                    recordingWaveform
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity,
+                                removal: .scale(scale: 0.4, anchor: .leading).combined(with: .opacity)
+                            ))
                 }
             }
-            .frame(height: 22)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Elapsed recording time.
             TimelineView(.periodic(from: .now, by: 0.5)) { context in
                 Text(elapsedString(context.date))
                     .font(Typography.pillTime)
                     .foregroundColor(.white.opacity(0.6))
             }
 
-            // Mic + mode + language: revealed inline on hover only, to keep
-            // the resting state minimal.
-            if expanded {
+            // Chips stay on the waveform pill. Live text uses the extra width.
+            if expanded && !showsLiveHUD {
                 micControl
                 modeControl
                 languageControl
@@ -390,6 +394,46 @@ struct MiniRecorderView: View {
         }
         .padding(.horizontal, 14)
         .transition(.opacity)
+    }
+
+    /// Live render of the microphone input. Calm when silent, peaks on speech.
+    private var recordingWaveform: some View {
+        Canvas { context, size in
+            let raw = audioRecorder.liveWaveSamples
+            guard !raw.isEmpty else { return }
+            let step = Self.waveBarWidth + Self.waveBarSpacing
+            let maxBars = max(1, Int(size.width / step))
+            // Samples are raw linear peak amplitude (0...1), which sits LOW on
+            // the scale — so we auto-gain to your own recent peak, meaning your
+            // voice always fills the bars no matter the mic level. Two knobs:
+            //   noiseGate  – trim dead-silence hiss before measuring.
+            //   presence   – fade the whole waveform toward flat when the loudest
+            //                thing in view is only faint ambient sound (a fan).
+            //                It reaches full quickly, so real speech is never
+            //                dimmed — only near-silence collapses. Raise
+            //                `presenceFull` if the fan still shows; lower it if
+            //                quiet speech looks weak.
+            let noiseGate: Float = 0.02
+            let presenceFull: Float = 0.08
+            let gated = raw.suffix(maxBars).map { max(0, $0 - noiseGate) }
+            let peak = gated.max() ?? 0
+            let recentPeak = max(peak, 0.05)
+            let presence = CGFloat(min(1, peak / presenceFull))
+            let midY = size.height / 2
+            for (i, sample) in gated.enumerated() {
+                let norm = CGFloat(min(1, sample / recentPeak)) * presence
+                let barHeight = max(2.0, norm * size.height)
+                let x = CGFloat(i) * step
+                let rect = CGRect(
+                    x: x, y: midY - barHeight / 2,
+                    width: Self.waveBarWidth, height: barHeight)
+                context.fill(
+                    Path(roundedRect: rect, cornerRadius: Self.waveBarWidth / 2),
+                    with: .color(.white.opacity(0.9)))
+            }
+        }
+        .frame(height: 22)
+        .frame(maxWidth: .infinity)
     }
 
     /// Silhouette for the idle waveform — a soft, symmetric shape.
@@ -405,6 +449,8 @@ struct MiniRecorderView: View {
                 warmingContent
             case .processing:
                 processingContent
+            case .needsModel:
+                needsModelContent
             case .recording:
                 recordingContent
             case .idle:
@@ -420,10 +466,16 @@ struct MiniRecorderView: View {
             y: displayPhase == .idle ? 3 : 5)
         .animation(.spring(response: 0.45, dampingFraction: 0.90), value: displayPhase)
         .animation(.spring(response: 0.40, dampingFraction: 0.92), value: expanded)
+        .animation(.spring(response: 0.55, dampingFraction: 0.86), value: showsLiveHUD)
         .onHover { hovering in
             guard displayPhase == .recording else { return }
             expanded = hovering
         }
+        .onTapGesture {
+            guard displayPhase == .needsModel else { return }
+            DashboardRoute.open(.aiModels)
+        }
+        .help(displayPhase == .needsModel ? "Open AI Models to download a transcription model" : "")
         .contextMenu {
             modelSelectionMenu
         }
@@ -449,7 +501,7 @@ struct MiniRecorderView: View {
             cancelRecording()
         }
         .onReceive(NotificationCenter.default.publisher(for: .transcriptCleanupStarted)) { _ in
-            if isProcessing { statusMessage = "Tidying up..." }
+            statusMessage = PillStatusCopy.tidyingUp
         }
         .onReceive(NotificationCenter.default.publisher(for: .lastTranscriptCopied)) { _ in
             flashClipboardStatus("Copied to clipboard")
@@ -457,9 +509,19 @@ struct MiniRecorderView: View {
         .onReceive(NotificationCenter.default.publisher(for: .lastTranscriptCopyFailed)) { _ in
             flashClipboardStatus("No transcript yet")
         }
+        .onReceive(NotificationCenter.default.publisher(for: .streamingRevertedToBatch)) { _ in
+            flashClipboardStatus(StreamingModeCopy.revertedToBatch)
+        }
+        .onChange(of: selectedModel) { _, variant in
+            if StreamingMode.disableIfIncompatible(with: variant) {
+                streamingMode = false
+            }
+        }
         .onAppear {
             initializedService()
             audioRecorder.fetchAvailableDevices()
+            hasDownloadedModel = ModelDownloadService.shared.hasAnyDownloadedModel
+            trackHasDownloadedModel()
 
             // Set up Escape key monitors
             globalEscapeMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
@@ -620,6 +682,17 @@ struct MiniRecorderView: View {
 
     // MARK: - Logic
 
+    private func trackHasDownloadedModel() {
+        withObservationTracking {
+            _ = ModelDownloadService.shared.hasAnyDownloadedModel
+        } onChange: {
+            Task { @MainActor in
+                hasDownloadedModel = ModelDownloadService.shared.hasAnyDownloadedModel
+                trackHasDownloadedModel()
+            }
+        }
+    }
+
     private func initializedService() {
         // NOTE: the recorder is now always on screen, so we must NOT keep the mic
         // capture session warm here — that would light the system mic indicator at
@@ -659,13 +732,14 @@ struct MiniRecorderView: View {
             try? await Task.sleep(nanoseconds: 1_600_000_000)
             guard statusMessage == message else { return }
             isProcessing = false
-            statusMessage = "Transcribing..."
+            statusMessage = PillStatusCopy.transcribing
             onCancel?()
         }
     }
 
     private func cancelRecording() {
         cancelCommit = true
+        liveSession.cancel()
 
         guard isListening || audioRecorder.isRecording else {
             isProcessing = false
@@ -679,7 +753,7 @@ struct MiniRecorderView: View {
             await MainActor.run {
                 isListening = false
                 isProcessing = false
-                statusMessage = "Transcribing..."
+                statusMessage = PillStatusCopy.transcribing
                 onCancel?()
             }
         }
@@ -736,8 +810,31 @@ struct MiniRecorderView: View {
         }
 
         cancelCommit = false
-
         debugLog("Starting recording...")
+
+        if StreamingMode.isEnabled(), StreamingMode.modelSupportsLive(selectedModel) {
+            Task {
+                do {
+                    try await liveSession.start(language: transcriptionLanguage)
+                    await MainActor.run {
+                        audioRecorder.startRecording()
+                        isListening = true
+                    }
+                } catch {
+                    debugLog("Live session failed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        isProcessing = true
+                        statusMessage = error.localizedDescription
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            self.isProcessing = false
+                            self.onCancel?()
+                        }
+                    }
+                }
+            }
+            return
+        }
+
         audioRecorder.startRecording()
         isListening = true
     }
@@ -755,6 +852,7 @@ struct MiniRecorderView: View {
                     statusMessage = "Switching input..."
                 }
 
+                liveSession.cancel()
                 _ = await audioRecorder.stopRecording(discardOutput: true)
             }
 
@@ -763,6 +861,14 @@ struct MiniRecorderView: View {
             }
 
             guard shouldResumeRecording else { return }
+
+            if StreamingMode.isEnabled(), StreamingMode.modelSupportsLive(selectedModel) {
+                do {
+                    try await liveSession.start(language: transcriptionLanguage)
+                } catch {
+                    debugLog("Live session failed after input switch: \(error.localizedDescription)")
+                }
+            }
 
             audioRecorder.startRecording()
 
@@ -797,27 +903,123 @@ struct MiniRecorderView: View {
         }
 
         Task {
+            let wasLive = liveSession.isLive
             let url = await audioRecorder.stopRecording()
             debugLog("stopRecording returned: \(url?.absoluteString ?? "nil")")
 
-            guard let url = url else {
+            await MainActor.run {
+                isListening = false
+                isProcessing = true
+                statusMessage = PillStatusCopy.transcribing
+            }
+
+            if wasLive {
+                await finishLiveTake(audioURL: url)
+                return
+            }
+
+            guard let url else {
                 debugLog("No recording URL, cancelling")
                 await MainActor.run {
-                    isListening = false
                     onCancel?()
                 }
                 return
             }
 
-            await MainActor.run {
-                isListening = false
-                isProcessing = true
-                statusMessage = "Transcribing..."
-            }
-
             // Always use the final full-recording transcription for committed output.
             // Chunk stitching caused repeated phrases at boundaries across languages.
             await processRecording(url: url)
+        }
+    }
+
+    private func finishLiveTake(audioURL: URL?) async {
+        do {
+            let (text, alreadyInField) = try await liveSession.finish()
+            debugLog("Live take finished (\(text.count) characters, inField: \(alreadyInField))")
+
+            guard !text.isEmpty else {
+                if let audioURL {
+                    await processRecording(url: audioURL)
+                    return
+                }
+                await MainActor.run {
+                    statusMessage = "No speech detected"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        self.isProcessing = false
+                        self.onCancel?()
+                    }
+                }
+                return
+            }
+
+            let duration: TimeInterval
+            if let audioURL {
+                duration = await getAudioDuration(url: audioURL)
+            } else if let start = recordingStart {
+                duration = Date().timeIntervalSince(start)
+            } else {
+                duration = 0
+            }
+            let modelName =
+                AIModel.availableModels.first(where: { $0.variant == selectedModel })?.name
+                ?? selectedModel
+            HistoryService.shared.addItem(
+                transcript: text,
+                duration: duration,
+                audioFileURL: audioURL,
+                modelUsed: modelName,
+                transcriptionTime: nil
+            )
+
+            if cancelCommit {
+                await MainActor.run {
+                    isProcessing = false
+                    onCancel?()
+                }
+                return
+            }
+
+            if alreadyInField {
+                if TranscriptClipboardPreference.isEnabled() {
+                    ClipboardService.shared.copy(text: text)
+                }
+                await MainActor.run {
+                    isProcessing = false
+                    onCancel?()
+                }
+                return
+            }
+
+            let delivery = await onCommit?(text) ?? .copiedToClipboard
+            await MainActor.run {
+                switch delivery {
+                case .copiedToClipboard:
+                    statusMessage = PillStatusCopy.noDestination
+                    isProcessing = true
+                case .pasted, .alreadyInField:
+                    isProcessing = false
+                }
+            }
+            if delivery == .copiedToClipboard {
+                try? await Task.sleep(nanoseconds: 1_600_000_000)
+                await MainActor.run {
+                    isProcessing = false
+                    onCancel?()
+                }
+            }
+        } catch {
+            debugLog("Live finish failed: \(error.localizedDescription)")
+            if let audioURL {
+                await processRecording(url: audioURL)
+                return
+            }
+            await MainActor.run {
+                statusMessage = "Transcription failed"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self.isProcessing = false
+                    self.onCancel?()
+                }
+            }
         }
     }
 
@@ -829,6 +1031,7 @@ struct MiniRecorderView: View {
 
         if isListening {
             Task {
+                liveSession.cancel()
                 let url = await audioRecorder.stopRecording()
 
                 await MainActor.run {
@@ -869,7 +1072,7 @@ struct MiniRecorderView: View {
             if !transcription.isInitialized || transcription.currentModelVariant != selectedModel
             {
                 debugLog("Loading model: \(selectedModel)")
-                await MainActor.run { statusMessage = "Warming up model — first use is slower..." }
+                await MainActor.run { statusMessage = ModelLoadCopy.preparing }
                 do {
                     try await transcription.loadModel(variant: selectedModel)
                     debugLog("Model loaded successfully")
@@ -890,7 +1093,7 @@ struct MiniRecorderView: View {
             // If user has already cancelled (pressed Escape), skip transcription UI updates
             // but still run the transcription in the background to save to history
             if !cancelCommit {
-                await MainActor.run { statusMessage = "Transcribing..." }
+                await MainActor.run { statusMessage = PillStatusCopy.transcribing }
             }
             let text = try await transcription.transcribe(audioFile: url, language: transcriptionLanguage)
             debugLog("Transcription finished (\(text.count) characters)")
@@ -932,9 +1135,9 @@ struct MiniRecorderView: View {
             await MainActor.run {
                 switch delivery {
                 case .copiedToClipboard:
-                    statusMessage = "Copied to clipboard"
+                    statusMessage = PillStatusCopy.noDestination
                     isProcessing = true
-                case .pasted:
+                case .pasted, .alreadyInField:
                     isProcessing = false
                 }
             }

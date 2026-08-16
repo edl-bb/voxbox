@@ -14,6 +14,11 @@ final class PermissionService: ObservableObject {
         isMicGranted && isAccessibilityGranted
     }
 
+    /// Sidebar chips only when a core grant is missing.
+    static func shouldShowSidebarStatus(micGranted: Bool, accessibilityGranted: Bool) -> Bool {
+        !micGranted || !accessibilityGranted
+    }
+
     private var timer: Timer?
     private var didStartMonitoring = false
 
