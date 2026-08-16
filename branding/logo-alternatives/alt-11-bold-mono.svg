@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 11 "Bold Mono" — iteration on 01: same flat electric blue, but
+       heavier 76px bars with tighter gaps for more shelf presence. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14141B"/>
+      <stop offset="1" stop-color="#08080C"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <g fill="#3B82F6">
+    <rect x="250" y="300" width="76" height="180" rx="38"/>
+    <rect x="362" y="300" width="76" height="300" rx="38"/>
+    <rect x="474" y="300" width="76" height="424" rx="38"/>
+    <rect x="586" y="300" width="76" height="300" rx="38"/>
+    <rect x="698" y="300" width="76" height="180" rx="38"/>
+  </g>
+</svg>

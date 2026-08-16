@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 13 "Focal Point" — iteration on 02: one global vertical gradient
+       across the whole glyph (userSpaceOnUse), so brightness peaks only at
+       the centre bar's deep tip — a single point of light at the V's apex. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14141B"/>
+      <stop offset="1" stop-color="#08080C"/>
+    </linearGradient>
+    <linearGradient id="v" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="724">
+      <stop offset="0" stop-color="#1E4FDB"/>
+      <stop offset="0.65" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#8FD4FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <g fill="url(#v)">
+    <rect x="258" y="300" width="60" height="180" rx="30"/>
+    <rect x="370" y="300" width="60" height="300" rx="30"/>
+    <rect x="482" y="300" width="60" height="424" rx="30"/>
+    <rect x="594" y="300" width="60" height="300" rx="30"/>
+    <rect x="706" y="300" width="60" height="180" rx="30"/>
+  </g>
+</svg>
