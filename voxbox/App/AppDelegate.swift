@@ -63,6 +63,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.miniRecorderController?.handleScreenParametersChanged()
         }
 
+        // Pin the process Dock tile to the in-app mark. Launch Services otherwise
+        // keeps the icon from /Applications/VoxBox.app when this debug product
+        // is also named voxbox.app (APFS is case-insensitive).
+        applyDockIcon()
+
         // Only show the Dock icon while the dashboard is actually open; otherwise
         // live quietly in the menu bar.
         observeWindowsForDockIcon()
@@ -166,8 +171,61 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard current != target else { return }
         NSApp.setActivationPolicy(target)
         if target == .regular {
+            applyDockIcon()
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+
+    /// Force this process's Dock / Cmd-Tab tile to this bundle's app icon so
+    /// Launch Services cannot keep showing /Applications/VoxBox.app.
+    ///
+    /// Prefer the compiled AppIcon (full-bleed Liquid Glass). AppLogo is the
+    /// 824-on-1024 branding plate — Dock would nest that squircle and the mark
+    /// would sit ~10% small — so the fallback scales the plate to fill.
+    private func applyDockIcon() {
+        if let icon = NSImage(named: NSImage.applicationIconName), icon.size.width > 0 {
+            NSApp.applicationIconImage = icon
+            return
+        }
+        guard let logo = NSImage(named: "AppLogo") else { return }
+        NSApp.applicationIconImage = Self.dockIconFillingBrandingPlate(logo)
+    }
+
+    /// Scale the 824-on-1024 branding plate so it fills a 1024pt Dock tile.
+    private static func dockIconFillingBrandingPlate(_ logo: NSImage) -> NSImage {
+        let canvas: CGFloat = 1024
+        let scale = canvas / 824
+        let size = NSSize(width: canvas, height: canvas)
+        let image = NSImage(size: size)
+        let pixels = Int(canvas * 2)
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: pixels,
+            pixelsHigh: pixels,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) else { return logo }
+        rep.size = size
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        let drawSide = canvas * scale
+        let origin = (canvas - drawSide) / 2
+        logo.draw(
+            in: NSRect(x: origin, y: origin, width: drawSide, height: drawSide),
+            from: .zero,
+            operation: .copy,
+            fraction: 1,
+            respectFlipped: true,
+            hints: [.interpolation: NSImageInterpolation.high]
+        )
+        NSGraphicsContext.restoreGraphicsState()
+        image.addRepresentation(rep)
+        return image
     }
 
     // MARK: - Emoji Picker Suppression

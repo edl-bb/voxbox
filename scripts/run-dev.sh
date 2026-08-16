@@ -36,6 +36,13 @@ fi
 echo "Installing ${APP_NAME} to $DEST_APP_PATH..."
 mkdir -p "$DEST_APP_PATH"
 rsync -a --delete "$BUILD_APP_PATH/" "$DEST_APP_PATH/"
+# Invalidate Finder/Dock icon cache for this path (LS keeps the previous
+# voxbox.app mark across incremental installs).
+touch "$DEST_APP_PATH" "$DEST_APP_PATH/Contents/Info.plist"
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [ -x "$LSREGISTER" ]; then
+  "$LSREGISTER" -f "$DEST_APP_PATH" >/dev/null
+fi
 
 DEV_PROCESS_PATH="$DEST_APP_PATH/Contents/MacOS/voxbox"
 if pgrep -f "$DEV_PROCESS_PATH" >/dev/null 2>&1; then
