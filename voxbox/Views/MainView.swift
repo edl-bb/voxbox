@@ -1,14 +1,72 @@
+import AppKit
 import SwiftUI
+
+/// Stash a sidebar destination when the dashboard is opened from outside
+/// (⌘, while the window is closed, or the no-model pill).
+enum DashboardRoute {
+    static var pending: SidebarItem?
+    /// Bound from a living SwiftUI scene so we can open the WindowGroup in-process.
+    static var openWindow: ((String) -> Void)?
+
+    static func open(_ item: SidebarItem) {
+        pending = item
+        presentWindow()
+        NotificationCenter.default.post(name: .dashboardRouteRequested, object: nil)
+    }
+
+    /// Switch sidebar page in the existing dashboard window. Does not open a new one.
+    static func reveal(_ item: SidebarItem) {
+        pending = item
+        NotificationCenter.default.post(name: .dashboardRouteRequested, object: nil)
+    }
+
+    /// Show the dashboard in this process. Never uses `voxbox://` — Launch
+    /// Services would hand that URL to `/Applications/VoxBox.app`.
+    static func presentWindow() {
+        if frontExistingDashboardWindow() { return }
+        openWindow?("main-dashboard")
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private static func frontExistingDashboardWindow() -> Bool {
+        let match = NSApp.windows.first { window in
+            if window is NSPanel { return false }
+            if let id = window.identifier?.rawValue, id.contains("main-dashboard") {
+                return true
+            }
+            let cls = String(describing: type(of: window))
+            if cls.contains("StatusBar") || cls.contains("Popup") || cls.contains("MenuBar") {
+                return false
+            }
+            return window.frame.width >= 600 && window.frame.height >= 400
+        }
+        guard let window = match else { return false }
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        window.makeKeyAndOrderFront(nil)
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        return true
+    }
+}
+
+/// Captures `openWindow` from a mounted scene (menu bar or dashboard).
+struct DashboardWindowOpener: ViewModifier {
+    @Environment(\.openWindow) private var openWindow
+
+    func body(content: Content) -> some View {
+        content.onAppear {
+            DashboardRoute.openWindow = { id in
+                openWindow(id: id)
+            }
+        }
+    }
+}
 
 struct MainView: View {
     @State private var selection: SidebarItem? = .dashboard
-    @ObservedObject private var downloadService = ModelDownloadService.shared
     @AppStorage("hasShownModelPrompt") private var hasShownModelPrompt: Bool = false
-    
-    private var hasAnyModelDownloaded: Bool {
-        downloadService.downloadProgress.values.contains { $0 >= 1.0 }
-    }
-    
+
     var body: some View {
         HStack(spacing: 0) {
             // Sidebar - warmer background
@@ -26,12 +84,30 @@ struct MainView: View {
         }
         .background(Color.bgSidebar)
         .onAppear {
+            if applyPendingRoute() { return }
             // If no model downloaded and haven't shown prompt, go to AI Models
-            if !hasAnyModelDownloaded && !hasShownModelPrompt {
+            let hasModel = ModelDownloadService.hasDownloadedModel(
+                in: ModelDownloadService.shared.downloadProgress)
+            if !hasModel && !hasShownModelPrompt {
                 hasShownModelPrompt = true
                 selection = .aiModels
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dashboardRouteRequested)) { _ in
+            _ = applyPendingRoute()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openSettingsRequested)) { _ in
+            _ = applyPendingRoute()
+        }
+    }
+
+    /// Apply a pending sidebar route (Settings from ⌘,). Returns true if one ran.
+    @discardableResult
+    private func applyPendingRoute() -> Bool {
+        guard let pending = DashboardRoute.pending else { return false }
+        DashboardRoute.pending = nil
+        selection = pending
+        return true
     }
     
     @ViewBuilder

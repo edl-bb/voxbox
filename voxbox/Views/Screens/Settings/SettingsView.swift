@@ -92,7 +92,8 @@ struct GeneralSettingsTab: View {
     @AppStorage("recordingMode") private var recordingMode: Int = 0  // 0: Hold to record, 1: Toggle
     @AppStorage("restoreClipboardAfterAutoPaste") private var restoreClipboardAfterAutoPaste =
         true
-    @AppStorage("copyTranscriptToClipboard") private var copyTranscriptToClipboard = true
+    @AppStorage(TranscriptClipboardPreference.defaultsKey)
+    private var copyTranscriptToClipboard = TranscriptClipboardPreference.defaultEnabled
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @AppStorage("alwaysShowRecorderPill") private var alwaysShowRecorderPill: Bool = false
     @AppStorage(PillPosition.defaultsKey) private var recorderPillPosition: PillPosition = .defaultPosition
@@ -124,6 +125,8 @@ struct GeneralSettingsTab: View {
     }
 
     @StateObject private var updateService = UpdateService.shared
+    @State private var openAtLogin = false
+    @State private var openAtLoginError: String?
 
     var body: some View {
         ScrollView {
@@ -139,7 +142,10 @@ struct GeneralSettingsTab: View {
                             RadioButton(
                                 title: theme.rawValue,
                                 isSelected: appTheme == theme,
-                                action: { appTheme = theme }
+                                action: {
+                                    appTheme = theme
+                                    AppearanceController.shared.apply(theme)
+                                }
                             )
                         }
                     }
@@ -256,6 +262,27 @@ struct GeneralSettingsTab: View {
                             Spacer()
                             Toggle("", isOn: $showMenuBarIcon)
                                 .labelsHidden()
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Open at login")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                Toggle("", isOn: openAtLoginBinding)
+                                    .labelsHidden()
+                            }
+
+                            Text("Launch VoxBox when you log in to this Mac.")
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+
+                            if let openAtLoginError {
+                                Text(openAtLoginError)
+                                    .font(Typography.captionSmall)
+                                    .foregroundStyle(Color.accentWarning)
+                            }
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
@@ -527,30 +554,6 @@ struct GeneralSettingsTab: View {
                         .menuStyle(.borderlessButton)
                     }
 
-                    Text("This is a hint for transcription. It does not choose an output language and it does not translate the result.")
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
-                        .padding(.top, 4)
-
-                    Text("If this does not match the language you actually speak, the result can be inaccurate or even come back in the wrong language. Auto-detect is the safest default.")
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
-                        .padding(.top, 4)
-
-                    Text("Use a multilingual model for non-English dictation. Accuracy for languages like Hindi depends heavily on the model you selected.")
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
-                        .padding(.top, 4)
-
-                    Text("English-only models (.en) can only output English.")
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
-                        .padding(.top, 4)
-
-                    Text("English (Australia) transcribes as English and then converts American spellings (color, organize, center) to Australian ones (colour, organise, centre) — fully offline.")
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
-                        .padding(.top, 4)
                 }
 
                 // Privacy & Data Retention
@@ -620,34 +623,79 @@ struct GeneralSettingsTab: View {
                             }
                         }) {
                             HStack(spacing: 6) {
-                                if updateService.isCheckingForUpdates {
+                                switch updateService.manualCheckStatus {
+                                case .idle:
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 12))
+                                    Text("Check for Updates")
+                                        .font(Typography.labelMedium)
+                                case .checking:
                                     ProgressView()
                                         .scaleEffect(0.7)
                                         .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "arrow.clockwise")
+                                    Text("Checking...")
+                                        .font(Typography.labelMedium)
+                                case .upToDate:
+                                    Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 12))
+                                    Text("Up to date")
+                                        .font(Typography.labelMedium)
+                                case .failed:
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 12))
+                                    Text("Couldn’t check")
+                                        .font(Typography.labelMedium)
                                 }
-                                Text(
-                                    updateService.isCheckingForUpdates
-                                        ? "Checking..." : "Check for Updates"
-                                )
-                                .font(Typography.labelMedium)
                             }
-                            .foregroundStyle(Color.textPrimary)
+                            .foregroundStyle(updateButtonForeground)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
                             .background(Color.bgHover)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         .buttonStyle(.plain)
-                        .disabled(updateService.isCheckingForUpdates)
+                        .disabled(
+                            updateService.manualCheckStatus == .checking
+                                || updateService.manualCheckStatus == .upToDate
+                        )
+                        .animation(
+                            .easeInOut(duration: 0.2),
+                            value: updateService.manualCheckStatus
+                        )
                     }
                 }
 
             }
             .padding(24)
         }
+        .onAppear {
+            openAtLogin = LoginItemService.isEnabled
+            openAtLoginError = nil
+        }
+    }
+
+    private var updateButtonForeground: Color {
+        switch updateService.manualCheckStatus {
+        case .upToDate: return Color.accentSuccess
+        case .failed: return Color.accentWarning
+        case .idle, .checking: return Color.textPrimary
+        }
+    }
+
+    private var openAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { openAtLogin },
+            set: { newValue in
+                do {
+                    try LoginItemService.setEnabled(newValue)
+                    openAtLogin = LoginItemService.isEnabled
+                    openAtLoginError = nil
+                } catch {
+                    openAtLogin = LoginItemService.isEnabled
+                    openAtLoginError = "Couldn’t update the login item."
+                }
+            }
+        )
     }
 
     private func retentionRow(
@@ -793,13 +841,6 @@ struct PermissionsSettingsTab: View {
                     SettingsSectionHeader(
                         icon: "shield", title: "App Permissions",
                         subtitle: "Required for recording and auto-paste")
-
-                    HStack {
-                        Spacer()
-                        PermissionStatusBar()
-                        Spacer()
-                    }
-                    .padding(.bottom, 8)
 
                     VStack(spacing: 10) {
                         SettingsPermissionItem(

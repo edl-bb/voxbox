@@ -1,4 +1,5 @@
 import Cocoa
+import Observation
 import SwiftUI
 
 enum TranscriptDelivery {
@@ -11,15 +12,17 @@ class MiniRecorderWindowController: NSObject {
     private var hostingController: NSHostingController<AnyView>?
     private var lastActiveApp: NSRunningApplication?
     private var appActivationObserver: NSObjectProtocol?
+    private var isObservingModels = false
     private var shouldRestoreClipboardAfterAutoPaste: Bool {
         UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
     }
 
-    /// When on (the default), every completed transcript stays on the clipboard
-    /// after dictation — even when it was also auto-pasted — so it can be pasted
-    /// again anywhere. Takes precedence over the clipboard-restore behavior.
+    /// When on, every completed transcript stays on the clipboard after
+    /// dictation — even when it was also auto-pasted — so it can be pasted
+    /// again anywhere. Off by default for new installs. Takes precedence over
+    /// the clipboard-restore behavior.
     private var shouldKeepTranscriptOnClipboard: Bool {
-        UserDefaults.standard.object(forKey: "copyTranscriptToClipboard") as? Bool ?? true
+        TranscriptClipboardPreference.isEnabled()
     }
 
     /// When on, the resting pill stays on screen even when idle. Default off:
@@ -46,16 +49,8 @@ class MiniRecorderWindowController: NSObject {
         if panel == nil {
             setupPanel()
         }
-        guard let panel = panel else { return }
-
-        positionPanel()
-        // Idle pill is a passive indicator — let clicks pass through to whatever is
-        // behind it so the transparent window never blocks the desktop or dock.
-        panel.ignoresMouseEvents = true
-
-        if alwaysShowIdlePill, !panel.isVisible {
-            panel.orderFrontRegardless()
-        }
+        observeModelAvailability()
+        applyIdleVisibilityPreference()
     }
 
     /// React to the "always show recorder pill" preference changing at runtime.
@@ -64,9 +59,19 @@ class MiniRecorderWindowController: NSObject {
             setupPanel()
         }
         guard let panel = panel else { return }
+        guard !AudioRecordingService.shared.isRecording else { return }
+
+        positionPanel()
+
+        if needsModelDownload {
+            panel.ignoresMouseEvents = false
+            if !panel.isVisible {
+                panel.orderFrontRegardless()
+            }
+            return
+        }
 
         if alwaysShowIdlePill {
-            positionPanel()
             panel.ignoresMouseEvents = true
             if !panel.isVisible {
                 panel.orderFrontRegardless()
@@ -74,6 +79,9 @@ class MiniRecorderWindowController: NSObject {
         } else if panel.ignoresMouseEvents {
             // Only hide when idle — during an active session the panel is
             // interactive (ignoresMouseEvents == false), so leave it alone.
+            panel.orderOut(nil)
+        } else {
+            panel.ignoresMouseEvents = true
             panel.orderOut(nil)
         }
     }
@@ -150,13 +158,29 @@ class MiniRecorderWindowController: NSObject {
     /// Return the pill to its passive resting state. When "always show" is off
     /// (the default) this hides the recorder so it only appears while dictating.
     private func returnToIdle() {
-        guard let panel = panel else { return }
-        panel.ignoresMouseEvents = true
-        if !alwaysShowIdlePill {
-            panel.orderOut(nil)
-        } else {
-            // Pick up any position change that was deferred mid-recording.
-            positionPanel()
+        applyIdleVisibilityPreference()
+    }
+
+    private var needsModelDownload: Bool {
+        UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+            && !ModelDownloadService.shared.hasAnyDownloadedModel
+    }
+
+    private func observeModelAvailability() {
+        guard !isObservingModels else { return }
+        isObservingModels = true
+        trackModelAvailability()
+    }
+
+    private func trackModelAvailability() {
+        withObservationTracking {
+            _ = ModelDownloadService.shared.hasAnyDownloadedModel
+        } onChange: { [weak self] in
+            let controller = self
+            Task { @MainActor in
+                controller?.applyIdleVisibilityPreference()
+                controller?.trackModelAvailability()
+            }
         }
     }
 

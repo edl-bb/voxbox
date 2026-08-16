@@ -7,13 +7,14 @@ import UniformTypeIdentifiers
 struct DashboardView: View {
     @Binding var selection: SidebarItem?
     @StateObject private var historyService = HistoryService.shared
-    @ObservedObject private var audioRecorder = AudioRecordingService.shared
+    private let audioRecorder = AudioRecordingService.shared
     private var transcription: TranscriptionManager { TranscriptionManager.shared }
     @State private var leftColumnHeight: CGFloat = 0
 
     // Trial & License
 
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
+    @AppStorage(HotkeyOption.defaultsKey) private var selectedHotkey: HotkeyOption = .fn
     @AppStorage("transcriptionLanguage") private var transcriptionLanguage: String = "auto"
     @State private var showFileImporter = false
     @State private var isTranscribing = false
@@ -129,7 +130,7 @@ struct DashboardView: View {
                                     .font(Typography.bodyMedium)
                                     .foregroundStyle(Color.textPrimary)
 
-                                Text("Press ⌘+Shift+Space to start recording")
+                                Text(RecordingHotkeyCopy.startRecordingHint(for: selectedHotkey))
                                     .font(Typography.bodySmall)
                                     .foregroundStyle(Color.textSecondary)
                             }

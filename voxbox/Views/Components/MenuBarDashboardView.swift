@@ -50,8 +50,8 @@ struct MenuBarDashboardView: View {
                 .fill(Color.bgHover)
                 .frame(width: 40, height: 40)
                 .overlay {
-                    // Same V-wave template the status item uses, so the mark
-                    // is consistent between the menu bar and this panel.
+                    // Same V-wave mark as the status item; this copy is a
+                    // template so it tints with the panel, not forced white.
                     Image(nsImage: MenuBarIconView.idleImage)
                         .resizable()
                         .scaledToFit()

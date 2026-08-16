@@ -2,9 +2,10 @@ import SwiftUI
 
 /// Screen for choosing the on-device transcription model.
 struct AIModelsView: View {
-    @StateObject private var downloadService = ModelDownloadService.shared
+    private let downloadService = ModelDownloadService.shared
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("modelUseCase") private var useCaseRaw: String = AIModel.UseCase.dictation.rawValue
+    @State private var isPreparingHero = false
 
     /// Keeps the content from stretching edge-to-edge on a wide window, so the
     /// name and its action never sit at opposite ends of a huge empty band.
@@ -27,6 +28,8 @@ struct AIModelsView: View {
     /// out here because it already headlines the hero (no more duplication).
     private var engineGroups: [(title: String, subtitle: String, models: [AIModel])] {
         [
+            (title: "Apple", subtitle: "Built-in · system speech assets, no Hugging Face download",
+             models: AIModel.models(for: .apple)),
             (title: "Parakeet", subtitle: "NVIDIA · fastest, near-Whisper accuracy",
              models: AIModel.models(for: .parakeet)),
             (title: "Whisper", subtitle: "OpenAI · most accurate, a touch slower",
@@ -107,6 +110,11 @@ struct AIModelsView: View {
         let rec = recommendedModel
         let downloaded = isDownloaded(rec.variant)
         let active = selectedModel == rec.variant
+        let justCompleted = ModelDownloadCompletion.isHighlighted(
+            downloaded: downloaded,
+            active: active,
+            recentlyCompleted: downloadService.recentlyCompleted.contains(rec.variant)
+        )
 
         return HStack(alignment: .top, spacing: 32) {
             // LEFT — the pitch.
@@ -154,7 +162,8 @@ struct AIModelsView: View {
                 MetricBarsStacked(model: rec)
                 HStack(spacing: 7) {
                     Image(systemName: "internaldrive").font(.system(size: 11))
-                    Text("\(rec.size) download").font(Typography.uiMedium(12))
+                    Text(rec.engine == .apple ? rec.size : "\(rec.size) download")
+                        .font(Typography.uiMedium(12))
                 }
                 .foregroundStyle(Color.textSecondary)
             }
@@ -177,15 +186,24 @@ struct AIModelsView: View {
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(
                             LinearGradient(
-                                colors: [Color.brandAccent.opacity(0.07), Color.brandAccent.opacity(0.0)],
+                                colors: justCompleted
+                                    ? [Color.accentSuccess.opacity(0.14), Color.accentSuccess.opacity(0.0)]
+                                    : [Color.brandAccent.opacity(0.07), Color.brandAccent.opacity(0.0)],
                                 startPoint: .topLeading, endPoint: .bottomTrailing))
                 )
         )
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.brandAccent.opacity(0.22), lineWidth: 1)
+                .stroke(
+                    justCompleted ? Color.accentSuccess.opacity(0.45) : Color.brandAccent.opacity(0.22),
+                    lineWidth: justCompleted ? 1.5 : 1
+                )
         )
-        .shadow(color: Color.brandAccent.opacity(0.10), radius: 20, x: 0, y: 8)
+        .shadow(
+            color: (justCompleted ? Color.accentSuccess : Color.brandAccent).opacity(0.10),
+            radius: 20, x: 0, y: 8
+        )
+        .animation(.easeInOut(duration: 0.45), value: justCompleted)
     }
 
     @ViewBuilder
@@ -197,13 +215,45 @@ struct AIModelsView: View {
             }
             .foregroundStyle(Color.brandAccent)
         } else if downloaded {
-            Button {
-                selectedModel = rec.variant
-            } label: {
-                ActionButton.label(title: "Use this model", icon: "arrow.right",
-                                   style: .primary, large: true)
+            if ModelDownloadCompletion.isHighlighted(
+                downloaded: true,
+                active: false,
+                recentlyCompleted: downloadService.recentlyCompleted.contains(rec.variant)
+            ) {
+                DownloadCompleteBanner(
+                    isLoading: isPreparingHero,
+                    loadingStage: TranscriptionManager.shared.loadingStage,
+                    onStartUsing: { prepareHeroModel(rec.variant) }
+                )
+                .frame(maxWidth: 360)
+            } else if isPreparingHero {
+                HStack(spacing: 10) {
+                    Spinner(size: 14, lineWidth: 2, tint: Color.textSecondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(ModelLoadCopy.preparing)
+                            .font(Typography.uiBold(13))
+                        Text(ModelLoadCopy.firstLoadHint)
+                            .font(Typography.ui(11))
+                            .foregroundStyle(Color.textMuted)
+                    }
+                }
+                .foregroundStyle(Color.textSecondary)
+            } else {
+                Button {
+                    prepareHeroModel(rec.variant)
+                } label: {
+                    ActionButton.label(title: "Use this model", icon: "arrow.right",
+                                       style: .primary, large: true)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+        } else if downloadService.snapshot(for: rec.variant).isDownloading {
+            let heroSnapshot = downloadService.snapshot(for: rec.variant)
+            AnimatedDownloadMeter(
+                targetFraction: heroSnapshot.progress,
+                status: heroSnapshot.status
+            )
+            .frame(maxWidth: 320)
         } else {
             Button {
                 downloadService.downloadModel(variant: rec.variant)
@@ -212,6 +262,22 @@ struct AIModelsView: View {
                                    style: .primary, large: true)
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    private func prepareHeroModel(_ variant: String) {
+        isPreparingHero = true
+        Task {
+            do {
+                try await TranscriptionManager.shared.loadModel(variant: variant)
+                await MainActor.run {
+                    selectedModel = variant
+                    isPreparingHero = false
+                    downloadService.acknowledgeCompletedDownload(for: variant)
+                }
+            } catch {
+                await MainActor.run { isPreparingHero = false }
+            }
         }
     }
 
@@ -234,8 +300,10 @@ struct AIModelsView: View {
                         ModelRow(
                             model: model,
                             selectedModel: $selectedModel,
-                            isRecommended: false
+                            isRecommended: false,
+                            snapshot: downloadService.snapshot(for: model.variant)
                         )
+                        .equatable()
                     }
                 }
             }

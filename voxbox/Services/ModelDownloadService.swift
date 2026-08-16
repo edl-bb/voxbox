@@ -1,6 +1,7 @@
 import Foundation
-import Combine
+import Observation
 import FluidAudio
+import Speech
 import WhisperKit
 
 struct ModelCacheCleanupReport {
@@ -109,14 +110,63 @@ enum ModelCachePathResolver {
     }
 }
 
-class ModelDownloadService: ObservableObject {
+@Observable
+class ModelDownloadService {
     static let shared = ModelDownloadService()
     
-    @Published var downloadProgress: [String: Double] = [:] // Map Model Variant (String) to progress
-    @Published var downloadError: [String: String] = [:] // Debugging: track errors
-    @Published var isDownloading: [String: Bool] = [:]
+    var downloadProgress: [String: Double] = [:] // Map Model Variant (String) to progress
+    var downloadStatus: [String: ModelDownloadStatus] = [:]
+
+    static func hasDownloadedModel(in progress: [String: Double]) -> Bool {
+        progress.values.contains { $0 >= 1.0 }
+    }
+    var downloadError: [String: String] = [:] // Debugging: track errors
+    var isDownloading: [String: Bool] = [:]
+    /// Variants that finished downloading this session and have not been used yet.
+    private(set) var recentlyCompleted: Set<String> = []
+    /// Flips only when the completed-model set changes — pill/onboarding observe this.
+    private(set) var hasAnyDownloadedModel = false
     
+    @ObservationIgnored
     private var activeTasks: [String: Task<Void, Never>] = [:] // Track running download tasks
+    @ObservationIgnored
+    private var progressReducers: [String: ModelDownloadProgressReducer] = [:]
+    @ObservationIgnored
+    private var manifests: [String: ModelDownloadManifest] = [:]
+    @ObservationIgnored
+    nonisolated private let pendingLock = NSLock()
+    @ObservationIgnored
+    nonisolated(unsafe) private var pendingProgress: [String: PendingDownloadSample] = [:]
+    @ObservationIgnored
+    private var didAttemptAppleStarterInstall = false
+    private var heartbeat: Timer?
+    /// Paint in-flight bytes often; speed/ETA still use a 2.5s window.
+    private let uiRefreshInterval: TimeInterval = 0.4
+
+    private struct PendingDownloadSample: Sendable {
+        var receivedBytes: Int64
+        var totalBytes: Int64
+        var fraction: Double
+        var phase: ModelDownloadPhase
+        var whisper: Bool
+    }
+
+    func snapshot(for variant: String) -> ModelDownloadSnapshot {
+        ModelDownloadSnapshot.make(
+            progress: downloadProgress[variant] ?? 0,
+            isDownloading: isDownloading[variant] ?? false,
+            status: downloadStatus[variant],
+            recentlyCompleted: recentlyCompleted.contains(variant),
+            error: downloadError[variant]
+        )
+    }
+
+    private func syncHasAnyDownloadedModel() {
+        let next = Self.hasDownloadedModel(in: downloadProgress)
+        if hasAnyDownloadedModel != next {
+            hasAnyDownloadedModel = next
+        }
+    }
     
     private init() {
         // Move any models left in the legacy ~/Documents/huggingface location into
@@ -139,8 +189,6 @@ class ModelDownloadService: ObservableObject {
         
         // NOTE: WhisperKit.fetchAvailableModels() returns ALL remote models, not local ones
         // We ONLY rely on disk-based verification to check what's actually downloaded
-        
-        let fileManager = FileManager.default
 
         // Verify models actually exist on disk with proper size validation.
         // Scan the current Application Support location plus the legacy Documents
@@ -151,19 +199,32 @@ class ModelDownloadService: ObservableObject {
             scanWhisperKitModels(in: dir, into: &foundModels)
         }
         
-        // Check Parakeet (FluidAudio) models, which live in their own cache dir.
+        // Parakeet: require FluidAudio's full file set, not a leftover folder.
         for variant in ParakeetCatalog.variants {
-            let version = ParakeetCatalog.version(for: variant)
-            let cacheDir = AsrModels.defaultCacheDirectory(for: version)
-            if fileManager.fileExists(atPath: cacheDir.path),
-               let contents = try? fileManager.contentsOfDirectory(atPath: cacheDir.path),
-               !contents.isEmpty {
+            if ParakeetCatalog.isDownloaded(variant) {
                 foundModels.insert(variant)
                 print("✅ Parakeet model \(variant) found in cache")
+            } else {
+                print("ℹ️ Parakeet model \(variant) is not fully downloaded")
             }
         }
 
+        let appleInstalled = await AppleSpeechCatalog.isInstalled()
+        if appleInstalled {
+            foundModels.insert(AppleSpeechCatalog.variant)
+            print("✅ Apple speech assets are installed")
+        } else {
+            print("ℹ️ Apple speech assets are not installed")
+        }
+
         await MainActor.run {
+            let inFlight = Set(self.isDownloading.compactMap { $0.value ? $0.key : nil })
+            let inFlightProgress = Dictionary(
+                uniqueKeysWithValues: inFlight.compactMap { key in
+                    self.downloadProgress[key].map { (key, $0) }
+                }
+            )
+
             // Clear all previous progress
             self.downloadProgress.removeAll()
 
@@ -172,13 +233,31 @@ class ModelDownloadService: ObservableObject {
                 self.downloadProgress[variant] = 1.0
                 print("✅ Marked as downloaded: \(variant)")
             }
+
+            for (variant, progress) in inFlightProgress where self.downloadProgress[variant] == nil {
+                self.downloadProgress[variant] = progress
+            }
             
             if foundModels.isEmpty {
                 print("❌ No models found - all will show as 'Download' buttons")
             } else {
                 print("✅ Found \(foundModels.count) usable model(s)")
             }
+            self.syncHasAnyDownloadedModel()
+            self.adoptAppleStarterIfNeeded(appleInstalled: appleInstalled)
         }
+    }
+
+    /// New / unchosen installs get Apple. Existing Parakeet/Whisper picks stay.
+    private func adoptAppleStarterIfNeeded(appleInstalled: Bool) {
+        if ModelSelection.hasExplicitSelection() { return }
+        if appleInstalled {
+            ModelSelection.applyStarterIfNeeded(appleReady: true)
+            return
+        }
+        guard !didAttemptAppleStarterInstall else { return }
+        didAttemptAppleStarterInstall = true
+        downloadModel(variant: AppleSpeechCatalog.variant)
     }
     
     // Scan a WhisperKit CoreML models directory and insert any complete variants
@@ -240,15 +319,18 @@ class ModelDownloadService: ObservableObject {
     func downloadModel(variant: String) {
         guard isDownloading[variant] != true else { return }
 
+        let kind = AIModel.engineKind(for: variant)
+        if kind == .apple {
+            downloadAppleModel(variant: variant)
+            return
+        }
         // Route Parakeet variants to FluidAudio.
-        if AIModel.engineKind(for: variant) == .parakeet {
+        if kind == .parakeet {
             downloadParakeetModel(variant: variant)
             return
         }
 
-        isDownloading[variant] = true
-        downloadProgress[variant] = 0.0
-        downloadError[variant] = nil
+        beginDownload(variant)
         // Create the storage directory now, on first download — never eagerly on launch.
         ModelStorage.ensureWhisperKitModelsDir()
         print("Starting WhisperKit download for: \(variant)")
@@ -272,9 +354,7 @@ class ModelDownloadService: ObservableObject {
                 
                 // likely: download(variant:progressCallback:) - 'from' usually has a default
                 let _ = try await WhisperKit.download(variant: variant, downloadBase: ModelStorage.whisperKitBase, progressCallback: { progress in
-                    DispatchQueue.main.async {
-                        self.downloadProgress[variant] = progress.fractionCompleted
-                    }
+                    self.enqueueWhisperProgress(variant: variant, progress: progress)
                 })
                 
                 // Check if task was cancelled before declaring success
@@ -283,9 +363,7 @@ class ModelDownloadService: ObservableObject {
                 print("Model downloaded successfully")
                 
                 DispatchQueue.main.async {
-                    self.isDownloading[variant] = false
-                    self.downloadProgress[variant] = 1.0
-                    self.activeTasks[variant] = nil // Cleanup task
+                    self.finishDownload(variant, succeeded: true)
                 }
             } catch {
                 if Task.isCancelled {
@@ -317,9 +395,7 @@ class ModelDownloadService: ObservableObject {
                      // Retry download once
                      do {
                          let _ = try await WhisperKit.download(variant: variant, downloadBase: ModelStorage.whisperKitBase, progressCallback: { progress in
-                             DispatchQueue.main.async {
-                                 self.downloadProgress[variant] = progress.fractionCompleted
-                             }
+                             self.enqueueWhisperProgress(variant: variant, progress: progress)
                          })
                          
                          if Task.isCancelled { return }
@@ -327,29 +403,23 @@ class ModelDownloadService: ObservableObject {
                          print("✅ Model downloaded successfully after cleanup")
                          
                          DispatchQueue.main.async {
-                             self.isDownloading[variant] = false
-                             self.downloadProgress[variant] = 1.0
                              self.downloadError[variant] = nil
-                             self.activeTasks[variant] = nil
+                             self.finishDownload(variant, succeeded: true)
                          }
                      } catch {
                          if Task.isCancelled { return }
                          print("❌ Retry failed: \(error)")
                          DispatchQueue.main.async {
-                             self.isDownloading[variant] = false
-                             self.downloadProgress[variant] = 0.0
                              self.downloadError[variant] = "Error: \(error.localizedDescription)\n\nTry clicking the trash icon to manually clean cache."
-                             self.activeTasks[variant] = nil
+                             self.finishDownload(variant, succeeded: false)
                          }
                      }
                      return
                 }
 
                 DispatchQueue.main.async {
-                    self.isDownloading[variant] = false
-                    self.downloadProgress[variant] = 0.0
                     self.downloadError[variant] = error.localizedDescription + "\n\n(Try Trash icon to clean cache)"
-                    self.activeTasks[variant] = nil
+                    self.finishDownload(variant, succeeded: false)
                 }
             }
         }
@@ -357,44 +427,128 @@ class ModelDownloadService: ObservableObject {
         activeTasks[variant] = task
     }
     
-    // Download a Parakeet model via FluidAudio (CoreML weights from Hugging Face).
-    private func downloadParakeetModel(variant: String) {
-        isDownloading[variant] = true
-        downloadProgress[variant] = 0.0
-        downloadError[variant] = nil
-        print("Starting FluidAudio (Parakeet) download for: \(variant)")
-
-        let version = ParakeetCatalog.version(for: variant)
+    /// Install Apple SpeechAnalyzer locale assets through AssetInventory.
+    private func downloadAppleModel(variant: String) {
+        beginDownload(variant)
+        print("Starting Apple speech asset install for: \(variant)")
 
         let task = Task {
             do {
+                let module = try await AppleSpeechCatalog.makeModule(language: "auto")
+                if let request = try await AssetInventory.assetInstallationRequest(
+                    supporting: [module.speechModule]
+                ) {
+                    let progress = request.progress
+                    let poll = Task {
+                        while !Task.isCancelled {
+                            self.enqueueWhisperProgress(variant: variant, progress: progress)
+                            try? await Task.sleep(nanoseconds: 250_000_000)
+                        }
+                    }
+                    defer { poll.cancel() }
+                    try await request.downloadAndInstall()
+                }
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    self.finishDownload(variant, succeeded: true)
+                    ModelSelection.applyStarterIfNeeded(appleReady: true)
+                }
+            } catch {
+                if Task.isCancelled { return }
+                print("Apple speech asset install error: \(error)")
+                await MainActor.run {
+                    self.downloadError[variant] = error.localizedDescription
+                    self.finishDownload(variant, succeeded: false)
+                }
+            }
+        }
+        activeTasks[variant] = task
+    }
+
+    // Download a Parakeet model: VoxBox pulls the Hugging Face files so the
+    // bar can move while a large chunk is in flight. FluidAudio then verifies
+    // the cache (and compiles if needed).
+    private func downloadParakeetModel(variant: String) {
+        beginDownload(variant)
+        print("Starting Parakeet download for: \(variant)")
+
+        let version = ParakeetCatalog.version(for: variant)
+        let cacheDir = AsrModels.defaultCacheDirectory(for: version)
+
+        let task = Task {
+            do {
+                let manifest: ModelDownloadManifest
+                do {
+                    manifest = try await HuggingFaceModelManifest.fetch(for: variant)
+                } catch {
+                    print("Manifest fetch failed, falling back to FluidAudio: \(error)")
+                    try await self.downloadParakeetViaFluidAudio(variant: variant, version: version)
+                    return
+                }
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    guard self.isDownloading[variant] == true else { return }
+                    self.manifests[variant] = manifest
+                    var reducer = self.progressReducers[variant] ?? ModelDownloadProgressReducer()
+                    reducer.applyManifest(manifest)
+                    self.progressReducers[variant] = reducer
+                    self.tickDownloads()
+                }
+
+                try await ModelFileDownloader.downloadParakeetFiles(
+                    files: manifest.files,
+                    variant: variant,
+                    cacheRoot: cacheDir
+                ) { received, finishedFiles, totalFiles in
+                    self.enqueueProgress(
+                        variant: variant,
+                        fraction: 0,
+                        receivedBytes: received,
+                        totalBytes: manifest.totalBytes,
+                        phase: .downloading(completedFiles: finishedFiles, totalFiles: totalFiles),
+                        whisper: false
+                    )
+                }
+
+                if Task.isCancelled { return }
+
+                self.enqueueProgress(
+                    variant: variant,
+                    fraction: 1,
+                    receivedBytes: manifest.totalBytes,
+                    totalBytes: manifest.totalBytes,
+                    phase: .preparing(fileName: ""),
+                    whisper: false
+                )
                 _ = try await AsrModels.download(
                     version: version,
                     progressHandler: { progress in
-                        DispatchQueue.main.async {
-                            self.downloadProgress[variant] = progress.fractionCompleted
+                        if case .compiling(let name) = progress.phase {
+                            self.enqueueProgress(
+                                variant: variant,
+                                fraction: progress.fractionCompleted,
+                                receivedBytes: manifest.totalBytes,
+                                totalBytes: manifest.totalBytes,
+                                phase: .preparing(fileName: name),
+                                whisper: false
+                            )
                         }
                     })
 
                 if Task.isCancelled { return }
                 print("Parakeet model downloaded successfully")
-
                 DispatchQueue.main.async {
-                    self.isDownloading[variant] = false
-                    self.downloadProgress[variant] = 1.0
-                    self.activeTasks[variant] = nil
+                    self.finishDownload(variant, succeeded: true)
                 }
             } catch {
-                if Task.isCancelled {
+                if Task.isCancelled || (error as? URLError)?.code == .cancelled {
                     print("Parakeet download cancelled for \(variant)")
                     return
                 }
-                print("FluidAudio download error: \(error)")
+                print("Parakeet download error: \(error)")
                 DispatchQueue.main.async {
-                    self.isDownloading[variant] = false
-                    self.downloadProgress[variant] = 0.0
                     self.downloadError[variant] = error.localizedDescription
-                    self.activeTasks[variant] = nil
+                    self.finishDownload(variant, succeeded: false)
                 }
             }
         }
@@ -402,8 +556,231 @@ class ModelDownloadService: ObservableObject {
         activeTasks[variant] = task
     }
 
+    private func downloadParakeetViaFluidAudio(variant: String, version: AsrModelVersion) async throws {
+        _ = try await AsrModels.download(
+            version: version,
+            progressHandler: { progress in
+                let phase: ModelDownloadPhase
+                switch progress.phase {
+                case .listing:
+                    phase = .listing
+                case .downloading(let completed, let total):
+                    phase = .downloading(completedFiles: completed, totalFiles: total)
+                case .compiling(let name):
+                    phase = .preparing(fileName: name)
+                }
+                let total = AIModel.expectedSize(for: variant)
+                let received: Int64
+                if progress.fractionCompleted < 0.49, total > 0 {
+                    received = Int64((progress.fractionCompleted / 0.5) * Double(total))
+                } else {
+                    received = 0
+                }
+                self.enqueueProgress(
+                    variant: variant,
+                    fraction: progress.fractionCompleted,
+                    receivedBytes: received,
+                    totalBytes: total,
+                    phase: phase,
+                    whisper: false
+                )
+            })
+        if Task.isCancelled { return }
+        await MainActor.run {
+            self.finishDownload(variant, succeeded: true)
+        }
+    }
+
+    private func beginDownload(_ variant: String) {
+        isDownloading[variant] = true
+        downloadProgress[variant] = 0
+        downloadError[variant] = nil
+        progressReducers[variant] = ModelDownloadProgressReducer()
+        downloadStatus[variant] = ModelDownloadStatus()
+        manifests[variant] = nil
+        ensureHeartbeat()
+        tickDownloads()
+    }
+
+    nonisolated private func enqueueWhisperProgress(variant: String, progress: Progress) {
+        let fraction = progress.fractionCompleted
+        let completed = progress.completedUnitCount
+        let total = progress.totalUnitCount
+        enqueueProgress(
+            variant: variant,
+            fraction: fraction.isFinite ? fraction : 0,
+            receivedBytes: completed,
+            totalBytes: total,
+            phase: .downloading(
+                completedFiles: Int(max(completed, 0)),
+                totalFiles: Int(max(total, 0))
+            ),
+            whisper: true
+        )
+    }
+
+    /// Keep the latest byte sample. The UI ticks every 0.4s so a large
+    /// in-flight file still moves the bar; URLSession callbacks are coalesced.
+    nonisolated private func enqueueProgress(
+        variant: String,
+        fraction: Double,
+        receivedBytes: Int64,
+        totalBytes: Int64,
+        phase: ModelDownloadPhase,
+        whisper: Bool
+    ) {
+        pendingLock.lock()
+        pendingProgress[variant] = PendingDownloadSample(
+            receivedBytes: receivedBytes,
+            totalBytes: totalBytes,
+            fraction: fraction,
+            phase: phase,
+            whisper: whisper
+        )
+        pendingLock.unlock()
+    }
+
+    private func ensureHeartbeat() {
+        guard heartbeat == nil else { return }
+        heartbeat = Timer.scheduledTimer(withTimeInterval: uiRefreshInterval, repeats: true) { [weak self] _ in
+            self?.tickDownloads()
+        }
+    }
+
+    private func tickDownloads() {
+        pendingLock.lock()
+        let snapshot = pendingProgress
+        pendingLock.unlock()
+
+        let now = ProcessInfo.processInfo.systemUptime
+        var anyActive = false
+        for (variant, downloading) in isDownloading where downloading {
+            anyActive = true
+            var reducer = progressReducers[variant] ?? ModelDownloadProgressReducer()
+            if let manifest = manifests[variant] {
+                reducer.applyManifest(manifest)
+            }
+
+            let pending = snapshot[variant]
+            let whisper = pending?.whisper == true
+            let expectedBytes = resolvedTotalBytes(for: variant, whisper: whisper)
+            if let pending {
+                let received = receivedBytes(
+                    variant: variant,
+                    pending: pending,
+                    totalBytes: expectedBytes,
+                    alreadyReceived: reducer.status.receivedBytes
+                )
+                reducer.applyDownloadSample(
+                    whisper: pending.whisper,
+                    fraction: pending.fraction,
+                    phase: pending.phase,
+                    receivedBytes: pending.whisper ? pending.receivedBytes : received,
+                    totalBytes: pending.whisper ? pending.totalBytes : expectedBytes,
+                    expectedBytes: expectedBytes,
+                    now: now
+                )
+            } else {
+                reducer.applyTick(
+                    phase: reducer.status.phase,
+                    receivedBytes: reducer.status.receivedBytes,
+                    totalBytes: expectedBytes,
+                    now: now
+                )
+            }
+            _ = reducer.tick(now: now)
+            progressReducers[variant] = reducer
+            if downloadStatus[variant] != reducer.status {
+                downloadStatus[variant] = reducer.status
+            }
+            if downloadProgress[variant] != reducer.status.fraction {
+                downloadProgress[variant] = reducer.status.fraction
+            }
+        }
+        syncHasAnyDownloadedModel()
+        if !anyActive {
+            heartbeat?.invalidate()
+            heartbeat = nil
+        }
+    }
+
+    private func resolvedTotalBytes(for variant: String, whisper: Bool) -> Int64 {
+        if let total = manifests[variant]?.totalBytes, total > 0 {
+            return total
+        }
+        if whisper {
+            return AIModel.expectedSize(for: variant)
+        }
+        return progressReducers[variant]?.status.totalBytes ?? 0
+    }
+
+    /// Prefer the live byte count from the current file. Do not walk the
+    /// cache here — that used to run on the main thread every poll.
+    private func receivedBytes(
+        variant: String,
+        pending: PendingDownloadSample?,
+        totalBytes: Int64,
+        alreadyReceived: Int64
+    ) -> Int64 {
+        // Do not walk the cache on the main thread during a transfer — that
+        // hitch is felt as the whole window dropping to the poll rate.
+        guard let pending else { return alreadyReceived }
+
+        if pending.whisper {
+            let expected = max(totalBytes, AIModel.expectedSize(for: variant))
+            let inferred = Int64(min(max(pending.fraction, 0), 1) * Double(expected))
+            return max(inferred, alreadyReceived)
+        }
+
+        return max(pending.receivedBytes, alreadyReceived)
+    }
+
+    func recordDownloadOutcome(variant: String, succeeded: Bool) {
+        if succeeded {
+            recentlyCompleted.insert(variant)
+        } else {
+            recentlyCompleted.remove(variant)
+        }
+    }
+
+    func acknowledgeCompletedDownload(for variant: String) {
+        recentlyCompleted.remove(variant)
+    }
+
+    private func finishDownload(_ variant: String, succeeded: Bool) {
+        pendingLock.lock()
+        pendingProgress[variant] = nil
+        pendingLock.unlock()
+        if succeeded {
+            var reducer = progressReducers[variant] ?? ModelDownloadProgressReducer()
+            reducer.finish()
+            downloadProgress[variant] = 1
+            recordDownloadOutcome(variant: variant, succeeded: true)
+        } else if downloadProgress[variant] != 1 {
+            downloadProgress[variant] = 0
+            recordDownloadOutcome(variant: variant, succeeded: false)
+        }
+        isDownloading[variant] = false
+        downloadStatus[variant] = nil
+        progressReducers[variant] = nil
+        manifests[variant] = nil
+        activeTasks[variant] = nil
+        if !(isDownloading.values.contains(true)) {
+            heartbeat?.invalidate()
+            heartbeat = nil
+        }
+        syncHasAnyDownloadedModel()
+        if succeeded, AIModel.engineKind(for: variant) == .apple {
+            ModelSelection.applyStarterIfNeeded(appleReady: true)
+        }
+    }
+
     // Aggressively deletes any potential cache for this variant
     func deleteModel(variant: String) async -> String {
+        if AIModel.engineKind(for: variant) == .apple {
+            return "Apple speech assets are managed by macOS and are not deleted from VoxBox."
+        }
+
         // Parakeet models are managed by FluidAudio in its own cache directory.
         if AIModel.engineKind(for: variant) == .parakeet {
             let version = ParakeetCatalog.version(for: variant)
@@ -412,6 +789,8 @@ class ModelDownloadService: ObservableObject {
             await MainActor.run {
                 self.downloadProgress[variant] = 0.0
                 self.isDownloading[variant] = false
+                self.acknowledgeCompletedDownload(for: variant)
+                self.syncHasAnyDownloadedModel()
             }
             return "Deleted Parakeet model cache for \(variant)"
         }
@@ -439,12 +818,16 @@ class ModelDownloadService: ObservableObject {
             await MainActor.run {
                 self.downloadProgress[variant] = 0.0
                 self.isDownloading[variant] = false
+                self.acknowledgeCompletedDownload(for: variant)
+                self.syncHasAnyDownloadedModel()
             }
             return "Deleted \(deletedCount) items"
         } else {
             await MainActor.run {
                 self.downloadProgress[variant] = 0.0
                 self.isDownloading[variant] = false
+                self.acknowledgeCompletedDownload(for: variant)
+                self.syncHasAnyDownloadedModel()
             }
             let homePath = fileManager.homeDirectoryForCurrentUser.path
             return "No repo-owned cache found for '\(variant)'. Checked: \(checkedPaths.map { $0.replacingOccurrences(of: homePath, with: "~") }.joined(separator: ", "))"
@@ -452,6 +835,9 @@ class ModelDownloadService: ObservableObject {
     }
 
     func cancelDownload(for variant: String) {
+        pendingLock.lock()
+        pendingProgress[variant] = nil
+        pendingLock.unlock()
         if let task = activeTasks[variant] {
             task.cancel()
             activeTasks[variant] = nil
@@ -461,7 +847,14 @@ class ModelDownloadService: ObservableObject {
         isDownloading[variant] = false
         downloadProgress[variant] = 0.0
         downloadError[variant] = nil
-        
+        downloadStatus[variant] = nil
+        progressReducers[variant] = nil
+        manifests[variant] = nil
+        recordDownloadOutcome(variant: variant, succeeded: false)
+        syncHasAnyDownloadedModel()
+
+        if AIModel.engineKind(for: variant) == .apple { return }
+
         // Delete any partial download
         Task {
             let result = await deleteModel(variant: variant)

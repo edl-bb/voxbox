@@ -26,7 +26,7 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.cubbei.VoxBox</string>
+            <string>dev.edlittle.VoxBox</string>
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>voxbox</string>

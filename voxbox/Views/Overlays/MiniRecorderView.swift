@@ -10,12 +10,14 @@ struct MiniRecorderView: View {
     @State private var isListening = false
 
     @State private var isProcessing = false
-    @State private var statusMessage = "Transcribing..."
+    @State private var statusMessage = PillStatusCopy.transcribing
     @State private var isWarmingUp = false
     @State private var showAccessibilityWarning = false
     var onCommit: ((String) async -> TranscriptDelivery)?
     var onCancel: (() -> Void)?
 
+    @State private var hasDownloadedModel = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("recordingMode") private var recordingMode: Int = 0
     /// Whether we've already shown the one-time accessibility warning (release only).
@@ -93,17 +95,12 @@ struct MiniRecorderView: View {
     @State private var globalEscapeMonitor: Any?
     @State private var localEscapeMonitor: Any?
 
-    @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("appTheme") private var appTheme: AppTheme = .system
+    @ObservedObject private var appearance = AppearanceController.shared
 
     /// Dark idle pill uses an opaque SwiftUI fill (same as the original SpeakType
     /// treatment). Light idle uses behind-window blur — not Liquid Glass.
     private var pillIsDark: Bool {
-        switch appTheme {
-        case .dark: return true
-        case .light: return false
-        case .system: return colorScheme == .dark
-        }
+        appearance.resolvedScheme == .dark
     }
 
     // MARK: - State for Animation
@@ -262,12 +259,17 @@ struct MiniRecorderView: View {
 
     /// The recorder is always on screen. `idle` is the tiny resting pill; the
     /// other phases are the expanded HUD it morphs into.
-    private enum RecorderPhase { case idle, warming, processing, recording }
+    private enum RecorderPhase { case idle, warming, processing, recording, needsModel }
+
+    private var needsModelDownload: Bool {
+        hasCompletedOnboarding && !hasDownloadedModel
+    }
 
     private var displayPhase: RecorderPhase {
         if isWarmingUp || transcription.isLoading { return .warming }
         if isProcessing { return .processing }
         if isListening { return .recording }
+        if needsModelDownload { return .needsModel }
         return .idle
     }
 
@@ -276,8 +278,9 @@ struct MiniRecorderView: View {
     private var pillWidth: CGFloat {
         switch displayPhase {
         case .idle: return 58
-        case .warming: return 200
-        case .processing: return 248
+        case .warming: return 280
+        case .processing: return 360
+        case .needsModel: return 380
         case .recording: return expanded ? 460 : 250
         }
     }
@@ -315,7 +318,7 @@ struct MiniRecorderView: View {
             ProgressView()
                 .controlSize(.small)
                 .colorScheme(.dark)
-            Text("Warming up model...")
+            Text(ModelLoadCopy.preparing)
                 .font(Typography.pillLabel)
                 .foregroundColor(.white.opacity(0.9))
         }
@@ -327,6 +330,15 @@ struct MiniRecorderView: View {
             .font(Typography.pillLabel)
             .foregroundColor(.white)
             .lineLimit(1)
+            .transition(.opacity)
+    }
+
+    private var needsModelContent: some View {
+        Text(PillStatusCopy.noModels)
+            .font(Typography.pillLabel)
+            .foregroundColor(.white)
+            .lineLimit(1)
+            .padding(.horizontal, 14)
             .transition(.opacity)
     }
 
@@ -405,6 +417,8 @@ struct MiniRecorderView: View {
                 warmingContent
             case .processing:
                 processingContent
+            case .needsModel:
+                needsModelContent
             case .recording:
                 recordingContent
             case .idle:
@@ -424,6 +438,11 @@ struct MiniRecorderView: View {
             guard displayPhase == .recording else { return }
             expanded = hovering
         }
+        .onTapGesture {
+            guard displayPhase == .needsModel else { return }
+            DashboardRoute.open(.aiModels)
+        }
+        .help(displayPhase == .needsModel ? "Open AI Models to download a transcription model" : "")
         .contextMenu {
             modelSelectionMenu
         }
@@ -449,7 +468,7 @@ struct MiniRecorderView: View {
             cancelRecording()
         }
         .onReceive(NotificationCenter.default.publisher(for: .transcriptCleanupStarted)) { _ in
-            if isProcessing { statusMessage = "Tidying up..." }
+            statusMessage = PillStatusCopy.tidyingUp
         }
         .onReceive(NotificationCenter.default.publisher(for: .lastTranscriptCopied)) { _ in
             flashClipboardStatus("Copied to clipboard")
@@ -460,6 +479,8 @@ struct MiniRecorderView: View {
         .onAppear {
             initializedService()
             audioRecorder.fetchAvailableDevices()
+            hasDownloadedModel = ModelDownloadService.shared.hasAnyDownloadedModel
+            trackHasDownloadedModel()
 
             // Set up Escape key monitors
             globalEscapeMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
@@ -620,6 +641,17 @@ struct MiniRecorderView: View {
 
     // MARK: - Logic
 
+    private func trackHasDownloadedModel() {
+        withObservationTracking {
+            _ = ModelDownloadService.shared.hasAnyDownloadedModel
+        } onChange: {
+            Task { @MainActor in
+                hasDownloadedModel = ModelDownloadService.shared.hasAnyDownloadedModel
+                trackHasDownloadedModel()
+            }
+        }
+    }
+
     private func initializedService() {
         // NOTE: the recorder is now always on screen, so we must NOT keep the mic
         // capture session warm here — that would light the system mic indicator at
@@ -659,7 +691,7 @@ struct MiniRecorderView: View {
             try? await Task.sleep(nanoseconds: 1_600_000_000)
             guard statusMessage == message else { return }
             isProcessing = false
-            statusMessage = "Transcribing..."
+            statusMessage = PillStatusCopy.transcribing
             onCancel?()
         }
     }
@@ -679,7 +711,7 @@ struct MiniRecorderView: View {
             await MainActor.run {
                 isListening = false
                 isProcessing = false
-                statusMessage = "Transcribing..."
+                statusMessage = PillStatusCopy.transcribing
                 onCancel?()
             }
         }
@@ -812,7 +844,7 @@ struct MiniRecorderView: View {
             await MainActor.run {
                 isListening = false
                 isProcessing = true
-                statusMessage = "Transcribing..."
+                statusMessage = PillStatusCopy.transcribing
             }
 
             // Always use the final full-recording transcription for committed output.
@@ -869,7 +901,7 @@ struct MiniRecorderView: View {
             if !transcription.isInitialized || transcription.currentModelVariant != selectedModel
             {
                 debugLog("Loading model: \(selectedModel)")
-                await MainActor.run { statusMessage = "Warming up model — first use is slower..." }
+                await MainActor.run { statusMessage = ModelLoadCopy.preparing }
                 do {
                     try await transcription.loadModel(variant: selectedModel)
                     debugLog("Model loaded successfully")
@@ -890,7 +922,7 @@ struct MiniRecorderView: View {
             // If user has already cancelled (pressed Escape), skip transcription UI updates
             // but still run the transcription in the background to save to history
             if !cancelCommit {
-                await MainActor.run { statusMessage = "Transcribing..." }
+                await MainActor.run { statusMessage = PillStatusCopy.transcribing }
             }
             let text = try await transcription.transcribe(audioFile: url, language: transcriptionLanguage)
             debugLog("Transcription finished (\(text.count) characters)")
@@ -932,7 +964,7 @@ struct MiniRecorderView: View {
             await MainActor.run {
                 switch delivery {
                 case .copiedToClipboard:
-                    statusMessage = "Copied to clipboard"
+                    statusMessage = PillStatusCopy.noDestination
                     isProcessing = true
                 case .pasted:
                     isProcessing = false

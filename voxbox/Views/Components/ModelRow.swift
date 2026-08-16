@@ -2,14 +2,22 @@ import SwiftUI
 
 /// A single AI-model card. Clean two-font layout (Clash Display for the name,
 /// Satoshi for everything else) with a single logo-blue accent.
-struct ModelRow: View {
+struct ModelRow: View, Equatable {
     let model: AIModel
     @Binding var selectedModel: String
     /// Highlights this card as the engine's recommendation for this Mac.
     var isRecommended: Bool = false
+    let snapshot: ModelDownloadSnapshot
 
-    @ObservedObject var downloadService = ModelDownloadService.shared
     private var transcription: TranscriptionManager { TranscriptionManager.shared }
+    private var downloadService: ModelDownloadService { ModelDownloadService.shared }
+
+    static func == (lhs: ModelRow, rhs: ModelRow) -> Bool {
+        lhs.model == rhs.model
+            && lhs.selectedModel == rhs.selectedModel
+            && lhs.isRecommended == rhs.isRecommended
+            && lhs.snapshot == rhs.snapshot
+    }
 
     @State private var isLoadingModel = false
     @State private var loadError: String?
@@ -21,10 +29,29 @@ struct ModelRow: View {
 
     // MARK: - Derived state
 
-    var progress: Double { downloadService.downloadProgress[model.variant] ?? 0.0 }
-    var isDownloading: Bool { downloadService.isDownloading[model.variant] ?? false }
+    var progress: Double { snapshot.progress }
+    var isDownloading: Bool { snapshot.isDownloading }
     var isDownloaded: Bool { progress >= 1.0 }
     var isActive: Bool { selectedModel == model.variant }
+    var justCompleted: Bool {
+        ModelDownloadCompletion.isHighlighted(
+            downloaded: isDownloaded,
+            active: isActive,
+            recentlyCompleted: snapshot.recentlyCompleted
+        )
+    }
+
+    private var cardFill: Color {
+        if justCompleted { return Color.accentSuccess.opacity(0.10) }
+        if isActive { return Color.brandAccentSoft }
+        return Color.bgCard
+    }
+
+    private var cardStroke: Color {
+        if justCompleted { return Color.accentSuccess.opacity(0.55) }
+        if isActive { return Color.brandAccent.opacity(0.4) }
+        return Color.border.opacity(isHovered ? 1.0 : 0.5)
+    }
 
     // MARK: - Body
 
@@ -53,22 +80,31 @@ struct ModelRow: View {
             }
             .padding(20)
 
-            if isDownloading { downloadProgressSection }
+            if isDownloading {
+                downloadProgressSection
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else if justCompleted {
+                DownloadCompleteBanner(
+                    isLoading: isLoadingModel,
+                    loadingStage: transcription.loadingStage,
+                    onStartUsing: loadAndSelectModel
+                )
+                .padding(.horizontal, 20).padding(.bottom, 20)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(isActive ? Color.brandAccentSoft : Color.bgCard)
+                .fill(cardFill)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(
-                    isActive ? Color.brandAccent.opacity(0.4)
-                        : Color.border.opacity(isHovered ? 1.0 : 0.5),
-                    lineWidth: isActive ? 1.5 : 1
-                )
+                .stroke(cardStroke, lineWidth: justCompleted || isActive ? 1.5 : 1)
         )
         .shadow(color: .black.opacity(isHovered ? 0.09 : 0.03),
                 radius: isHovered ? 14 : 6, x: 0, y: isHovered ? 6 : 2)
+        .animation(.easeInOut(duration: 0.45), value: isDownloading)
+        .animation(.easeInOut(duration: 0.45), value: justCompleted)
         .animation(.easeOut(duration: 0.16), value: isHovered)
         .animation(.easeOut(duration: 0.16), value: isActive)
         .onHover { isHovered = $0 }
@@ -87,6 +123,8 @@ struct ModelRow: View {
 
             if isActive && isDownloaded {
                 statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandAccent)
+            } else if justCompleted {
+                statusBadge(text: "Ready", icon: "checkmark.circle.fill", tint: Color.accentSuccess)
             } else if isDownloaded {
                 statusBadge(text: "Installed", icon: "arrow.down.circle.fill",
                             tint: Color.textMuted)
@@ -134,8 +172,8 @@ struct ModelRow: View {
     private var actionColumn: some View {
         HStack(spacing: 8) {
             if isDownloaded {
-                if isActive {
-                    // Already the default — no redundant button, the badge says it.
+                if isActive || justCompleted {
+                    // Selected badge, or the completion banner holds the Use prompt.
                     EmptyView()
                 } else if isLoadingModel {
                     loadingIndicator
@@ -145,12 +183,14 @@ struct ModelRow: View {
                     }
                     .buttonStyle(.plain).help("Set as default model")
                 }
-                Button(action: deleteModel) {
-                    Image(systemName: "trash").font(.system(size: 13))
-                        .foregroundStyle(Color.textMuted).padding(8)
-                        .background(Circle().fill(Color.textPrimary.opacity(isHovered ? 0.06 : 0)))
+                if model.engine != .apple {
+                    Button(action: deleteModel) {
+                        Image(systemName: "trash").font(.system(size: 13))
+                            .foregroundStyle(Color.textMuted).padding(8)
+                            .background(Circle().fill(Color.textPrimary.opacity(isHovered ? 0.06 : 0)))
+                    }
+                    .buttonStyle(.plain).help("Delete model")
                 }
-                .buttonStyle(.plain).help("Delete model")
             } else if isDownloading {
                 Button(action: { downloadService.cancelDownload(for: model.variant) }) {
                     ActionButton.label(title: "Cancel", icon: "xmark", style: .secondary)
@@ -169,7 +209,10 @@ struct ModelRow: View {
         VStack(alignment: .trailing, spacing: 4) {
             HStack(spacing: 9) {
                 Spinner(size: 13, lineWidth: 2, tint: Color.textSecondary)
-                Text(transcription.loadingStage.isEmpty ? "Loading…" : transcription.loadingStage)
+                Text(
+                    transcription.loadingStage.isEmpty
+                        ? ModelLoadCopy.preparing : transcription.loadingStage
+                )
                     .font(Typography.uiMedium(12))
                     .fixedSize(horizontal: true, vertical: false)
             }
@@ -177,32 +220,18 @@ struct ModelRow: View {
             .background(Capsule().fill(Color.textPrimary.opacity(0.08)))
             .foregroundStyle(Color.textSecondary)
 
-            if loadingElapsed > 15 {
-                Text(loadingElapsed > 30 ? "Taking longer than expected…" : "\(Int(loadingElapsed))s")
-                    .font(Typography.ui(10))
-                    .foregroundStyle(loadingElapsed > 30 ? Color.accentWarning : Color.textMuted)
-            }
+            Text(loadingElapsed > 45 ? ModelLoadCopy.takingLonger : ModelLoadCopy.firstLoadHint)
+                .font(Typography.ui(10))
+                .foregroundStyle(loadingElapsed > 45 ? Color.accentWarning : Color.textMuted)
         }
-        .help("First load may take 10-30 seconds")
+        .help(ModelLoadCopy.firstLoadHint)
     }
 
     private var downloadProgressSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Downloading…").font(Typography.uiMedium(12)).foregroundStyle(Color.textSecondary)
-                Spacer()
-                Text("\(Int(progress * 100))%")
-                    .font(Typography.uiBold(11))
-                    .foregroundStyle(Color.brandAccent)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.textPrimary.opacity(0.08)).frame(height: 6)
-                    Capsule().fill(Color.brandAccent).frame(width: max(6, geo.size.width * progress), height: 6)
-                }
-            }
-            .frame(height: 6)
-        }
+        AnimatedDownloadMeter(
+            targetFraction: progress,
+            status: snapshot.status
+        )
         .padding(.horizontal, 20).padding(.bottom, 20)
     }
 
@@ -227,15 +256,38 @@ struct ModelRow: View {
             do {
                 try await transcription.loadModel(variant: model.variant)
                 await MainActor.run {
-                    stopLoadingTimer(); isLoadingModel = false; selectedModel = model.variant
+                    stopLoadingTimer()
+                    isLoadingModel = false
+                    selectedModel = model.variant
+                    downloadService.acknowledgeCompletedDownload(for: model.variant)
                 }
             } catch {
                 await MainActor.run {
-                    stopLoadingTimer(); isLoadingModel = false
-                    loadError = error.localizedDescription
+                    stopLoadingTimer()
+                    isLoadingModel = false
+                    if isMissingDownload(error) {
+                        downloadService.downloadProgress[model.variant] = 0
+                        loadError = nil
+                    } else {
+                        loadError = error.localizedDescription
+                    }
                 }
             }
         }
+    }
+
+    private func isMissingDownload(_ error: Error) -> Bool {
+        if let engineError = error as? ParakeetEngineError,
+            case .modelNotDownloaded = engineError
+        {
+            return true
+        }
+        if let appleError = error as? AppleSpeechEngineError,
+            case .assetsNotInstalled = appleError
+        {
+            return true
+        }
+        return false
     }
 
     private func stopLoadingTimer() {
@@ -329,7 +381,7 @@ struct MetricBarsStacked: View {
 /// One consistent button treatment used by both the hero and the cards, so the
 /// same action never looks like three different buttons.
 enum ActionButton {
-    enum Style { case primary, secondary }
+    enum Style { case primary, secondary, success }
 
     static func label(title: String, icon: String?, style: Style, large: Bool = false) -> some View {
         HStack(spacing: 7) {
@@ -338,17 +390,34 @@ enum ActionButton {
         }
         .padding(.horizontal, large ? 22 : 16)
         .padding(.vertical, large ? 12 : 9)
-        .background(
-            Capsule().fill(style == .primary ? Color.accentPrimary : Color.textPrimary.opacity(0.06))
-        )
-        .foregroundStyle(style == .primary ? Color.bgApp : Color.textPrimary)
+        .background(Capsule().fill(fill(for: style)))
+        .foregroundStyle(style == .secondary ? Color.textPrimary : Color.bgApp)
+    }
+
+    private static func fill(for style: Style) -> Color {
+        switch style {
+        case .primary: return Color.accentPrimary
+        case .secondary: return Color.textPrimary.opacity(0.06)
+        case .success: return Color.accentSuccess
+        }
     }
 }
 
 #Preview {
     VStack(spacing: 16) {
-        ModelRow(model: AIModel.availableModels[6], selectedModel: .constant("x"), isRecommended: true)
-        ModelRow(model: AIModel.availableModels[0], selectedModel: .constant("x"))
+        ModelRow(
+            model: AIModel.availableModels.first { $0.engine == .parakeet }!,
+            selectedModel: .constant("x"),
+            isRecommended: true,
+            snapshot: ModelDownloadSnapshot.make(
+                progress: 0, isDownloading: false, status: nil, recentlyCompleted: false, error: nil)
+        )
+        ModelRow(
+            model: AIModel.availableModels[0],
+            selectedModel: .constant("x"),
+            snapshot: ModelDownloadSnapshot.make(
+                progress: 0, isDownloading: false, status: nil, recentlyCompleted: false, error: nil)
+        )
     }
     .padding()
     .frame(width: 640)

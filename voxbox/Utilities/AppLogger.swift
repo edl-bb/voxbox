@@ -34,7 +34,7 @@ nonisolated enum AppLogger {
     /// Permissions and system access
     static let permissions = Logger(subsystem: subsystem, category: "Permissions")
     
-    private static let subsystem = "com.cubbei.VoxBox"
+    private static let subsystem = "dev.edlittle.VoxBox"
 }
 
 // MARK: - Convenience Methods

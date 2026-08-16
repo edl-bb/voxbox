@@ -12,11 +12,15 @@ enum TranscriptionEngineKind: String, Codable, CaseIterable {
     /// NVIDIA Parakeet models, run on-device via FluidAudio / CoreML.
     case parakeet
 
+    /// Apple SpeechAnalyzer starter, using system speech assets.
+    case apple
+
     /// Human-readable label for UI badges.
     var displayName: String {
         switch self {
         case .whisper: return "Whisper"
         case .parakeet: return "Parakeet"
+        case .apple: return "Apple"
         }
     }
 }

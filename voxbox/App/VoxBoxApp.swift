@@ -5,6 +5,7 @@
 //  Created by Karan Singh on 7/1/26 (as SpeakType).
 //
 
+import Combine
 import KeyboardShortcuts
 import SwiftData
 import SwiftUI
@@ -14,6 +15,7 @@ struct VoxBoxApp: App {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
+    @ObservedObject private var appearance = AppearanceController.shared
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -50,14 +52,23 @@ struct VoxBoxApp: App {
                     }
                 }
             }
-            .preferredColorScheme(appTheme.colorScheme)
+            .preferredColorScheme(appearance.resolvedScheme)
             .tint(Color.navyInk)
+            .onAppear { appearance.apply(appTheme) }
+            .onChange(of: appTheme) { _, theme in
+                appearance.apply(theme)
+            }
+            .modifier(DashboardWindowOpener())
         }
         .defaultSize(width: 1200, height: 800)
         .windowStyle(.hiddenTitleBar)
         .handlesExternalEvents(matching: ["main-dashboard", "open"])  // Only open for matching IDs
         .commands {
             SidebarCommands()
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") { openSettings() }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
         }
 
         // Note: Mini Recorder is now managed manually by AppDelegate -> MiniRecorderWindowController
@@ -72,7 +83,12 @@ struct VoxBoxApp: App {
                     quit: { NSApplication.shared.terminate(nil) }
                 )
             }
-            .preferredColorScheme(appTheme.colorScheme)
+            .preferredColorScheme(appearance.resolvedScheme)
+            .onAppear { appearance.apply(appTheme) }
+            .onChange(of: appTheme) { _, theme in
+                appearance.apply(theme)
+            }
+            .modifier(DashboardWindowOpener())
         } label: {
             MenuBarIconView()
         }
@@ -80,9 +96,11 @@ struct VoxBoxApp: App {
     }
 
     private func openDashboard() {
-        // Using URL forces the specific window group to handle the request consistently.
-        if let url = URL(string: "voxbox://open") {
-            NSWorkspace.shared.open(url)
-        }
+        DashboardRoute.presentWindow()
+    }
+
+    private func openSettings() {
+        guard showsMainApp else { return }
+        DashboardRoute.open(.settings)
     }
 }

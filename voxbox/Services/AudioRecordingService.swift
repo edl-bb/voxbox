@@ -58,7 +58,7 @@ class AudioRecordingService: NSObject, ObservableObject {
     nonisolated(unsafe) private var smoothedAudioLevel: Float = 0.0
     nonisolated(unsafe) private var smoothedAudioFrequency: Float = 0.0
 
-    nonisolated private let audioQueue = DispatchQueue(label: "com.cubbei.VoxBox.audioQueue")
+    nonisolated private let audioQueue = DispatchQueue(label: "dev.edlittle.VoxBox.audioQueue")
 
     nonisolated private func validatedAudioFileURL(
         at url: URL,

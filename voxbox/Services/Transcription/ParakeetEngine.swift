@@ -7,9 +7,9 @@ import FluidAudio
 /// store (download / delete / existence checks) agree on which FluidAudio
 /// model a given catalog variant refers to.
 enum ParakeetCatalog {
-    static let v3Variant = "parakeet-tdt-0.6b-v3"
-    static let v2Variant = "parakeet-tdt-0.6b-v2"
-    static let ctc110mVariant = "parakeet-tdt-ctc-110m"
+    nonisolated static let v3Variant = "parakeet-tdt-0.6b-v3"
+    nonisolated static let v2Variant = "parakeet-tdt-0.6b-v2"
+    nonisolated static let ctc110mVariant = "parakeet-tdt-ctc-110m"
 
     /// All Parakeet variants VoxBox ships.
     static let variants = [v3Variant, v2Variant, ctc110mVariant]
@@ -21,6 +21,18 @@ enum ParakeetCatalog {
         case ctc110mVariant: return .tdtCtc110m
         default: return .v3
         }
+    }
+
+    /// True only when FluidAudio's required model files are on disk.
+    /// A leftover cache folder (e.g. one Decoder.mlmodelc) is not enough —
+    /// that used to show Installed and then silently download on Use.
+    static func isDownloaded(_ variant: String) -> Bool {
+        isPresent(at: AsrModels.defaultCacheDirectory(for: version(for: variant)), variant: variant)
+    }
+
+    static func isPresent(at cacheDir: URL, variant: String) -> Bool {
+        let version = version(for: variant)
+        return AsrModels.modelsExist(at: cacheDir, version: version)
     }
 }
 
@@ -88,7 +100,7 @@ class ParakeetEngine: SpeechToTextEngine {
     private func performModelLoad(variant: String) async throws {
         isLoading = true
         isInitialized = false
-        loadingStage = "Preparing Parakeet model…"
+        loadingStage = ModelLoadCopy.preparing
         defer { isLoading = false }
 
         // Release any previously loaded model before loading a new one.
@@ -98,21 +110,18 @@ class ParakeetEngine: SpeechToTextEngine {
         manager = nil
 
         let version = ParakeetCatalog.version(for: variant)
-        loadingStage = "Loading Parakeet model…"
 
         // Never download implicitly: selecting/loading a model must not touch
-        // the network. Models are fetched only through the explicit download
-        // button (ModelDownloadService). If the cache is empty, fail with a
-        // clear error instead of silently pulling hundreds of megabytes.
-        let cacheDir = AsrModels.defaultCacheDirectory(for: version)
-        let cacheContents = (try? FileManager.default.contentsOfDirectory(atPath: cacheDir.path)) ?? []
-        guard !cacheContents.isEmpty else {
+        // the network. Models are fetched only through the explicit Download
+        // button. A non-empty cache folder is not enough — FluidAudio must
+        // see every required file, or we fail and the UI shows Download.
+        guard ParakeetCatalog.isDownloaded(variant) else {
             loadingStage = ""
             throw ParakeetEngineError.modelNotDownloaded(variant)
         }
 
-        // Cache is populated, so this loads from disk without downloading.
-        let models = try await AsrModels.downloadAndLoad(version: version)
+        let cacheDir = AsrModels.defaultCacheDirectory(for: version)
+        let models = try await AsrModels.load(from: cacheDir, version: version)
         let manager = AsrManager(config: .default)
         try await manager.loadModels(models)
 

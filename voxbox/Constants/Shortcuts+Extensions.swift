@@ -28,4 +28,8 @@ extension Notification.Name {
     static let lastTranscriptCopied = Notification.Name("lastTranscriptCopied")
     /// Posted when the shortcut fired but history has no transcript yet.
     static let lastTranscriptCopyFailed = Notification.Name("lastTranscriptCopyFailed")
+    /// Posted by ⌘, / Settings… so the dashboard can select the Settings page.
+    static let openSettingsRequested = Notification.Name("openSettingsRequested")
+    /// Posted when any dashboard sidebar route is requested (Settings, AI Models).
+    static let dashboardRouteRequested = Notification.Name("dashboardRouteRequested")
 }

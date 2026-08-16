@@ -21,6 +21,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // new name so nothing has to re-download.
         migrateLegacyStorageIfNeeded()
 
+        AppearanceController.shared.apply(AppTheme.stored)
+
         // Scan local models at launch so the pill does not race an empty
         // downloadProgress map when the dashboard has never appeared.
         _ = ModelDownloadService.shared

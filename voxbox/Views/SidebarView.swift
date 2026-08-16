@@ -2,6 +2,14 @@ import SwiftUI
 
 struct SidebarView: View {
     @Binding var selection: SidebarItem?
+    @ObservedObject private var permissions = PermissionService.shared
+
+    private var needsPermissionAttention: Bool {
+        PermissionService.shouldShowSidebarStatus(
+            micGranted: permissions.isMicGranted,
+            accessibilityGranted: permissions.isAccessibilityGranted
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,9 +36,11 @@ struct SidebarView: View {
 
             Spacer()
 
-            PermissionStatusBar()
-                .padding(.horizontal, SidebarConstants.itemHorizontalPadding)
-                .padding(.bottom, 12)
+            if needsPermissionAttention {
+                PermissionStatusBar()
+                    .padding(.horizontal, SidebarConstants.itemHorizontalPadding)
+                    .padding(.bottom, 12)
+            }
 
             // In-flight model downloads — visible from anywhere in the app,
             // not just Settings → AI Models. Hidden when nothing is active.
@@ -38,11 +48,11 @@ struct SidebarView: View {
                 .padding(.horizontal, SidebarConstants.itemHorizontalPadding)
                 .padding(.bottom, 10)
 
-            // Cubbei Studios branding link
+            // Ed's branding link
             Button(action: {
-                NSWorkspace.shared.open(URL(string: "https://cubbei.com")!)
+                NSWorkspace.shared.open(URL(string: "https://edlittle.dev")!)
             }) {
-                Text("CUBBEI STUDIOS")
+                Text("Made by Ed")
                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                     .tracking(3)
                     .foregroundStyle(Color.textMuted.opacity(0.25))
@@ -68,6 +78,7 @@ struct SidebarView: View {
             #endif
         }
         .frame(width: SidebarConstants.width)
+        .onAppear { permissions.refresh() }
     }
 
     private var buildVersionString: String {

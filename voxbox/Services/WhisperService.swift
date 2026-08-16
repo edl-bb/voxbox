@@ -164,7 +164,7 @@ class WhisperService {
         isInitialized = false
         loadingModelVariant = variant
         loadingStartedAt = Date()
-        loadingStage = "Preparing \(modelDisplayName(for: variant))..."
+        loadingStage = ModelLoadCopy.preparing
 
         // Release existing model to free memory
         if pipe != nil {
@@ -201,7 +201,7 @@ class WhisperService {
                 download: false  // Already downloaded via ModelDownloadService
             )
 
-            loadingStage = "Loading model into memory..."
+            loadingStage = ModelLoadCopy.preparing
 
             // Start a watchdog timer that will flag a timeout
             let loadStart = Date()
@@ -228,10 +228,6 @@ class WhisperService {
                 "❌ Failed to initialize WhisperKit with \(variant): \(error.localizedDescription)")
             throw error
         }
-    }
-
-    private func modelDisplayName(for variant: String) -> String {
-        AIModel.availableModels.first(where: { $0.variant == variant })?.name ?? variant
     }
 
     func transcribe(audioFile: URL, language: String = "auto") async throws -> String {

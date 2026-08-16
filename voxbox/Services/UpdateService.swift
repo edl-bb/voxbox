@@ -3,10 +3,17 @@ import Combine
 import Foundation
 import Security
 
+enum ManualUpdateCheckStatus: Equatable {
+    case idle
+    case checking
+    case upToDate
+    case failed
+}
+
 /// Service to check for app updates and manage update preferences
 class UpdateService: NSObject, ObservableObject {
     static let shared = UpdateService()
-    static let trustedUpdateBundleIdentifier = "com.cubbei.VoxBox"
+    static let trustedUpdateBundleIdentifier = "dev.edlittle.VoxBox"
     /// Apple Developer Team ID that release builds must be signed with.
     /// Installs fail closed if this does not match the downloaded app's signature.
     static let trustedUpdateTeamIdentifier = "K8S7G9UFR8"
@@ -14,6 +21,8 @@ class UpdateService: NSObject, ObservableObject {
     @Published var availableUpdate: AppVersion?
     @Published var isCheckingForUpdates = false
     @Published var lastCheckDate: Date?
+    /// Drives the Settings button morph. Silent/daily checks leave this idle.
+    @Published var manualCheckStatus: ManualUpdateCheckStatus = .idle
 
     // Install progress state
     @Published var isInstalling = false
@@ -35,6 +44,9 @@ class UpdateService: NSObject, ObservableObject {
     private var activeDownloadContinuation: CheckedContinuation<URL, Error>?
     private var activeDownloadDestinationURL: URL?
     private var activeDownloadStartedAt: Date?
+    private var manualStatusResetTask: Task<Void, Never>?
+    private static let minimumManualCheckDuration: TimeInterval = 0.5
+    private static let manualStatusHoldDuration: TimeInterval = 2.5
 
     private override init() {
         super.init()
@@ -43,11 +55,19 @@ class UpdateService: NSObject, ObservableObject {
 
     // MARK: - Update Checking
 
-    /// Check for updates from server
+    /// Check for updates from GitHub. Always uses an ephemeral session so a
+    /// manual press is not served from URLSession's shared cache.
     func checkForUpdates(silent: Bool = false) async {
         guard !isCheckingForUpdates else { return }
 
-        await MainActor.run { isCheckingForUpdates = true }
+        let started = Date()
+        await MainActor.run {
+            self.isCheckingForUpdates = true
+            if !silent {
+                self.manualStatusResetTask?.cancel()
+                self.manualCheckStatus = .checking
+            }
+        }
 
         do {
             let url = URL(
@@ -59,19 +79,35 @@ class UpdateService: NSObject, ObservableObject {
             request.cachePolicy = .reloadIgnoringLocalCacheData
             request.timeoutInterval = 15
 
-            let (data, _) = try await URLSession.shared.data(for: request)
+            let session = URLSession(configuration: {
+                let config = URLSessionConfiguration.ephemeral
+                config.requestCachePolicy = .reloadIgnoringLocalCacheData
+                config.timeoutIntervalForRequest = 15
+                return config
+            }())
+            let (data, _) = try await session.data(for: request)
             let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
             let releaseVersion = AppVersion(from: release)
             let currentVersion = AppVersion.currentVersion
+            let foundUpdate = AppVersion.isNewerVersion(releaseVersion.version, than: currentVersion)
+
+            if !silent {
+                await Self.waitOutMinimumCheckDuration(since: started)
+            }
 
             await MainActor.run {
-                if AppVersion.isNewerVersion(releaseVersion.version, than: currentVersion) {
+                if foundUpdate {
                     if !silent || !self.isVersionSkipped(releaseVersion.version) {
                         self.availableUpdate = releaseVersion
                         self.showUpdateWindowPublisher.send(releaseVersion)
                     }
+                    if !silent { self.manualCheckStatus = .idle }
                 } else {
                     self.availableUpdate = nil
+                    if !silent {
+                        self.manualCheckStatus = .upToDate
+                        self.scheduleManualStatusReset()
+                    }
                 }
                 self.isCheckingForUpdates = false
                 self.lastCheckDate = Date()
@@ -79,7 +115,34 @@ class UpdateService: NSObject, ObservableObject {
             }
         } catch {
             print("Failed to check for updates: \(error)")
-            await MainActor.run { self.isCheckingForUpdates = false }
+            if !silent {
+                await Self.waitOutMinimumCheckDuration(since: started)
+            }
+            await MainActor.run {
+                self.isCheckingForUpdates = false
+                if !silent {
+                    self.manualCheckStatus = .failed
+                    self.scheduleManualStatusReset()
+                }
+            }
+        }
+    }
+
+    private static func waitOutMinimumCheckDuration(since started: Date) async {
+        let elapsed = Date().timeIntervalSince(started)
+        let remaining = minimumManualCheckDuration - elapsed
+        guard remaining > 0 else { return }
+        try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+    }
+
+    private func scheduleManualStatusReset() {
+        manualStatusResetTask?.cancel()
+        manualStatusResetTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(Self.manualStatusHoldDuration * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            if self.manualCheckStatus == .upToDate || self.manualCheckStatus == .failed {
+                self.manualCheckStatus = .idle
+            }
         }
     }
 

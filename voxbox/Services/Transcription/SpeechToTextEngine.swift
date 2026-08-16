@@ -2,7 +2,7 @@ import Foundation
 
 /// A speech-to-text backend that can load a model and transcribe audio.
 ///
-/// Both the Whisper (`WhisperService`) and Parakeet engines conform to this so
+/// Whisper, Parakeet, and Apple SpeechAnalyzer engines conform to this so
 /// that `TranscriptionManager` can treat them interchangeably. Conformers are
 /// expected to be `@Observable` reference types so the UI can react to changes
 /// in their loading / transcription state.

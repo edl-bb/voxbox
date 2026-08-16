@@ -11,7 +11,8 @@ import SwiftUI
 
 struct StatisticsView: View {
     @StateObject private var historyService = HistoryService.shared
-    @ObservedObject private var audioRecorder = AudioRecordingService.shared
+    private let audioRecorder = AudioRecordingService.shared
+    @State private var isRecording = false
     @State private var selectedPeriod: StatisticsPeriod = .week
     @State private var timer: Timer? = nil
     @State private var timeTrigger = Date()
@@ -30,17 +31,18 @@ struct StatisticsView: View {
         }
         .background(Color.clear)
         .onAppear {
+            isRecording = audioRecorder.isRecording
             startTimer()
         }
         .onDisappear {
             stopTimer()
         }
-        .onChange(of: audioRecorder.isRecording) {
-            if audioRecorder.isRecording {
+        .onReceive(audioRecorder.$isRecording) { recording in
+            isRecording = recording
+            if recording {
                 startTimer()
             } else {
                 stopTimer()
-                // Force one last update
                 timeTrigger = Date()
             }
         }
@@ -366,7 +368,7 @@ struct StatisticsView: View {
         var totalSeconds = historyService.totalDuration(since: startDate)
 
         // Add current recording duration if active
-        if audioRecorder.isRecording, let recordingStart = audioRecorder.recordingStartTime {
+        if isRecording, let recordingStart = audioRecorder.recordingStartTime {
             let currentDuration = timeTrigger.timeIntervalSince(recordingStart)
             // Only add if start date falls within period (usually true for 'now')
             if recordingStart >= startDate {

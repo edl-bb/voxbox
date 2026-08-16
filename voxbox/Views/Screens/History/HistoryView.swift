@@ -2,7 +2,8 @@ import SwiftUI
 
 struct HistoryView: View {
     @StateObject private var historyService = HistoryService.shared
-    @StateObject private var audioPlayer = AudioPlayerService.shared
+    @AppStorage(HotkeyOption.defaultsKey) private var selectedHotkey: HotkeyOption = .fn
+    private let audioPlayer = AudioPlayerService.shared
     @State private var showDeleteAlert = false
     @State private var itemPendingDeletion: HistoryItem? = nil
     @State private var expandedItemId: UUID? = nil
@@ -62,7 +63,7 @@ struct HistoryView: View {
                                 .font(Typography.displaySmall)
                                 .foregroundStyle(Color.textPrimary)
                             
-                            Text("Press ⌘+Shift+Space to start recording")
+                            Text(RecordingHotkeyCopy.startRecordingHint(for: selectedHotkey))
                                 .font(Typography.bodyMedium)
                                 .foregroundStyle(Color.textSecondary)
                         }
@@ -94,7 +95,7 @@ struct HistoryView: View {
                                 },
                                 onCopy: { copyToClipboard(text: item.transcript) },
                                 onDelete: { itemPendingDeletion = item },
-                                audioPlayer: audioPlayer
+                                audioPlayer: expandedItemId == item.id ? audioPlayer : nil
                             )
                         }
                     }
@@ -203,16 +204,32 @@ struct HistoryCard: View {
     let onToggle: () -> Void
     let onCopy: () -> Void
     let onDelete: () -> Void
-    @ObservedObject var audioPlayer: AudioPlayerService
+    let audioFileExists: Bool
+    let wordCount: Int
+    var audioPlayer: AudioPlayerService?
     @State private var isHovered = false
-    
-    private var audioFileExists: Bool {
-        guard let audioURL = item.audioFileURL else { return false }
-        return FileManager.default.fileExists(atPath: audioURL.path)
-    }
-    
-    var wordCount: Int {
-        item.transcript.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
+
+    init(
+        item: HistoryItem,
+        isExpanded: Bool,
+        onToggle: @escaping () -> Void,
+        onCopy: @escaping () -> Void,
+        onDelete: @escaping () -> Void,
+        audioPlayer: AudioPlayerService?
+    ) {
+        self.item = item
+        self.isExpanded = isExpanded
+        self.onToggle = onToggle
+        self.onCopy = onCopy
+        self.onDelete = onDelete
+        self.audioPlayer = audioPlayer
+        if let audioURL = item.audioFileURL {
+            self.audioFileExists = FileManager.default.fileExists(atPath: audioURL.path)
+        } else {
+            self.audioFileExists = false
+        }
+        self.wordCount = item.transcript.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }.count
     }
     
     var body: some View {
@@ -335,44 +352,8 @@ struct HistoryCard: View {
                             }
                             .buttonStyle(.plain)
                             
-                            if let audioURL = item.audioFileURL, audioFileExists {
-                                Button(action: {
-                                    if audioPlayer.isPlaying {
-                                        audioPlayer.pause()
-                                    } else {
-                                        audioPlayer.play()
-                                    }
-                                }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                                            .font(.system(size: 12))
-                                        Text(audioPlayer.isPlaying ? "Pause" : "Play Audio")
-                                            .font(Typography.labelMedium)
-                                    }
-                                    .foregroundStyle(Color.textSecondary)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(Color.bgHover)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                                .buttonStyle(.plain)
-                                
-                                Button(action: {
-                                    NSWorkspace.shared.activateFileViewerSelecting([audioURL])
-                                }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "folder")
-                                            .font(.system(size: 12))
-                                        Text("Show in Finder")
-                                            .font(Typography.labelMedium)
-                                    }
-                                    .foregroundStyle(Color.textSecondary)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(Color.bgHover)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                                .buttonStyle(.plain)
+                            if let audioURL = item.audioFileURL, audioFileExists, let audioPlayer {
+                                HistoryCardPlaybackControls(audioPlayer: audioPlayer, audioURL: audioURL)
                             } else if item.audioFileURL != nil {
                                 HStack(spacing: 6) {
                                     Image(systemName: "exclamationmark.triangle")
@@ -389,17 +370,8 @@ struct HistoryCard: View {
                         }
                         
                         // Audio waveform (if available)
-                        if let audioURL = item.audioFileURL, audioFileExists {
-                            VStack(spacing: 12) {
-                                Divider()
-                                
-                                WaveformView(
-                                    audioURL: audioURL,
-                                    currentTime: $audioPlayer.currentTime,
-                                    duration: $audioPlayer.duration
-                                )
-                                .frame(height: 60)
-                            }
+                        if let audioURL = item.audioFileURL, audioFileExists, let audioPlayer {
+                            HistoryCardScrubber(audioPlayer: audioPlayer, audioURL: audioURL)
                         }
                         
                         // Metadata
@@ -443,6 +415,72 @@ struct HistoryCard: View {
         } else {
             let mins = seconds / 60
             return "\(mins)m"
+        }
+    }
+}
+
+/// Playback controls and the 10 Hz scrubber live only on the expanded card.
+private struct HistoryCardPlaybackControls: View {
+    @ObservedObject var audioPlayer: AudioPlayerService
+    let audioURL: URL
+
+    var body: some View {
+        Group {
+            Button(action: {
+                if audioPlayer.isPlaying {
+                    audioPlayer.pause()
+                } else {
+                    audioPlayer.play()
+                }
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 12))
+                    Text(audioPlayer.isPlaying ? "Pause" : "Play Audio")
+                        .font(Typography.labelMedium)
+                }
+                .foregroundStyle(Color.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.bgHover)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+
+            Button(action: {
+                NSWorkspace.shared.activateFileViewerSelecting([audioURL])
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 12))
+                    Text("Show in Finder")
+                        .font(Typography.labelMedium)
+                }
+                .foregroundStyle(Color.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.bgHover)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+private struct HistoryCardScrubber: View {
+    @ObservedObject var audioPlayer: AudioPlayerService
+    let audioURL: URL
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Divider()
+
+            WaveformView(
+                audioURL: audioURL,
+                currentTime: $audioPlayer.currentTime,
+                duration: $audioPlayer.duration
+            )
+            .frame(height: 60)
         }
     }
 }

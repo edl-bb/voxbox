@@ -8,8 +8,8 @@
 # one place — instead of editing each script.
 
 # ── Identity & signing ────────────────────────────────────────────────────────
-APP_BUNDLE_ID="com.cubbei.VoxBox"
-DEV_BUNDLE_ID="com.cubbei.VoxBox.dev"
+APP_BUNDLE_ID="dev.edlittle.VoxBox"
+DEV_BUNDLE_ID="dev.edlittle.VoxBox.dev"
 LEGACY_BUNDLE_ID="dev.cubbei.voxbox"
 APPLE_ID="${APPLE_ID:-email@example.com}" # set to the Apple ID of the signing developer account
 APPLE_TEAM_ID="${APPLE_TEAM_ID:-team-id-here}"
