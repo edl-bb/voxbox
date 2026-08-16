@@ -3,7 +3,7 @@
 Changes and release notes for VoxBox.  
 
 
-## [Unreleased]
+## [1.1.0] - 2026-08-16
 - App defaults to native included MacOS transcription model when starting fresh.
 - Added support for live transcription streaming. Enable transcription streaming in Settings → Live streaming.
 - Added support for streaming models and additional models.
