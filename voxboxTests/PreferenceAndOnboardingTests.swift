@@ -217,6 +217,62 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertEqual(FieldSpan.region("Hello world", start: 6, length: 5) == "world", true)
     }
 
+    func testElectronShapedComposerSkipsAccessibilityRewrite() {
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(hasWebMarkers: true, axValue: "\n"),
+            .keystrokesOnly)
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(hasWebMarkers: true, axValue: ""),
+            .keystrokesOnly)
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(hasWebMarkers: false, axValue: ""),
+            .accessibilityRewrite)
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(hasWebMarkers: true, axValue: "Hello"),
+            .accessibilityRewrite)
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(
+                hasWebMarkers: false, axValue: "Hello", bundleIdentifier: "notion.id"),
+            .keystrokesOnly)
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(
+                hasWebMarkers: false,
+                axValue: "Hello",
+                bundleIdentifier: "com.tinyspeck.slackmacgap"),
+            .keystrokesOnly)
+        XCTAssertFalse(LiveWriteStrategy.isElectronBundle("com.apple.Notes"))
+        XCTAssertTrue(LiveWriteStrategy.isElectronBundle("com.todesktop.230313mzl4w4u92"))
+    }
+
+    func testKeystrokeCaretJumpMatchesNotionGlitch() {
+        var field = KeystrokeField()
+        field.apply(.type("This is"))
+        field.caret = 0
+        field.apply(.type(" a test right into notion. Yeah, OK, let’s just a bit silly"))
+        XCTAssertEqual(
+            field.text,
+            " a test right into notion. Yeah, OK, let’s just a bit sillyThis is")
+    }
+
+    func testKeystrokeCaretRestoreKeepsNotionTranscriptInOrder() {
+        XCTAssertFalse(CaretRestore.shouldMoveToEndOfLine(alreadyTyped: false))
+        XCTAssertTrue(CaretRestore.shouldMoveToEndOfLine(alreadyTyped: true))
+        XCTAssertEqual(CaretRestore.rightArrows(caret: 0, expected: 7), 7)
+        XCTAssertEqual(CaretRestore.rightArrows(caret: 7, expected: 7), 0)
+
+        var field = KeystrokeField()
+        field.apply(.type("This is"))
+        field.caret = 0
+        if CaretRestore.shouldMoveToEndOfLine(alreadyTyped: true) {
+            field.moveToEndOfLine()
+        }
+        field.apply(
+            .type(" a test right into notion. Yeah, okay, that's just a bit silly."))
+        XCTAssertEqual(
+            field.text,
+            "This is a test right into notion. Yeah, okay, that's just a bit silly.")
+    }
+
     func testKeystrokeLivePlanOnlyAppends() {
         XCTAssertEqual(KeystrokeDelta.livePlan(previous: "", next: "Hello"), .type("Hello"))
         XCTAssertEqual(
@@ -225,6 +281,9 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello there", next: "Hello"), .none)
         XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello there", next: "Hi"), .none)
         XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello", next: "Hello"), .none)
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(previous: "This is a test right into notion", next: "This"),
+            .none)
         XCTAssertEqual(KeystrokeDelta.revertPlan(previous: "Hello there"), .delete(11))
         XCTAssertEqual(KeystrokeDelta.revertPlan(previous: ""), .none)
     }
@@ -426,5 +485,44 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertTrue(AppVersion.isNewerVersion("1.0.4", than: "1.0.3"))
         XCTAssertFalse(AppVersion.isNewerVersion("1.0.3", than: "1.0.3"))
         XCTAssertFalse(AppVersion.isNewerVersion("1.0.2", than: "1.0.3"))
+    }
+}
+
+/// Single-line composer used to replay keystroke plans. Caret is UTF-16.
+private struct KeystrokeField {
+    var text = ""
+    var caret = 0
+
+    mutating func apply(_ delta: KeystrokeDelta) {
+        switch delta {
+        case .none:
+            return
+        case .type(let suffix):
+            insert(suffix)
+        case .delete(let count):
+            delete(count)
+        case .revise(let count, let suffix):
+            delete(count)
+            insert(suffix)
+        }
+    }
+
+    mutating func insert(_ suffix: String) {
+        let ns = text as NSString
+        let at = min(max(0, caret), ns.length)
+        text = ns.substring(to: at) + suffix + ns.substring(from: at)
+        caret = at + (suffix as NSString).length
+    }
+
+    mutating func delete(_ count: Int) {
+        let ns = text as NSString
+        let end = min(max(0, caret), ns.length)
+        let start = max(0, end - count)
+        text = ns.substring(to: start) + ns.substring(from: end)
+        caret = start
+    }
+
+    mutating func moveToEndOfLine() {
+        caret = (text as NSString).length
     }
 }

@@ -152,6 +152,65 @@ enum FieldSpan {
     }
 }
 
+/// Electron composers report the web marker suite and a trivial `AXValue`
+/// (`U+000A` or empty). AX set returns success and does not change the DOM;
+/// queued `AXSelectedTextRange` writes then jump the caret to the start.
+/// Skip AX entirely and type. AppKit (including empty Messages) and browser
+/// fields with a real value still try the rewrite.
+enum LiveWriteStrategy: Equatable {
+    case accessibilityRewrite
+    case keystrokesOnly
+
+    static func choose(
+        hasWebMarkers: Bool,
+        axValue: String,
+        bundleIdentifier: String? = nil
+    ) -> LiveWriteStrategy {
+        if let bundleIdentifier, isElectronBundle(bundleIdentifier) {
+            return .keystrokesOnly
+        }
+        if hasWebMarkers, isTrivialAXValue(axValue) { return .keystrokesOnly }
+        return .accessibilityRewrite
+    }
+
+    static func isTrivialAXValue(_ value: String) -> Bool {
+        value.isEmpty || value == "\n" || value == "\r" || value == "\r\n"
+    }
+
+    static func isElectronBundle(_ bundleIdentifier: String) -> Bool {
+        if electronBundleIdentifiers.contains(bundleIdentifier) { return true }
+        return bundleIdentifier.hasPrefix("com.todesktop.")
+            || bundleIdentifier.hasPrefix("notion.")
+    }
+
+    static let electronBundleIdentifiers: Set<String> = [
+        "notion.id",
+        "com.notion.Notion",
+        "com.tinyspeck.slackmacgap",
+        "com.superhuman.electron",
+        "com.microsoft.VSCode",
+        "com.microsoft.VSCodeInsiders",
+        "com.hnc.Discord",
+        "md.obsidian",
+    ]
+}
+
+/// After the first keystroke burst, Notion / Slack often reset the caret to
+/// the start of the block. Later suffixes then insert in front of the first
+/// words (`This is` ends up at the end). Move to the end of the line before
+/// typing the next delta — only once we have already typed.
+enum CaretRestore: Equatable {
+    static func shouldMoveToEndOfLine(alreadyTyped: Bool) -> Bool {
+        alreadyTyped
+    }
+
+    /// Right-arrows from `caret` to `expected`. Zero when the caret is already
+    /// at or past the end of what we typed.
+    static func rightArrows(caret: Int, expected: Int) -> Int {
+        max(0, expected - caret)
+    }
+}
+
 /// HID plan for composers where AX set is a no-op.
 /// Apple Speech and Whisper both replace a volatile phrase, then continue.
 /// If the new snapshot is just a prefix of what we typed, hold. If it
@@ -174,6 +233,9 @@ enum KeystrokeDelta: Equatable {
                 : .none
         }
         if shared == nextNS.length || shared == 0 { return .none }
+        // "Hello there" → "Hi" shares "H" but is a new hypothesis, not a
+        // tail edit. Hold so we do not delete the take at a drifted caret.
+        if nextNS.length * 2 < previousNS.length { return .none }
         return .revise(
             delete: previousNS.length - shared,
             type: nextNS.substring(from: shared))

@@ -51,6 +51,7 @@ final class TargetFieldInserter: @unchecked Sendable {
     private var delivered = ""
     private var usedKeystrokes = false
     private var axRefused = false
+    private var keystrokesOnly = false
 
     var isActive: Bool { element != nil && spanStart != nil }
 
@@ -88,6 +89,17 @@ final class TargetFieldInserter: @unchecked Sendable {
         element = writable
         spanStart = caret.location
         spanLength = 0
+        if LiveWriteStrategy.choose(
+            hasWebMarkers: hasWebMarkers(writable),
+            axValue: value,
+            bundleIdentifier: destinationBundleIdentifier()
+        ) == .keystrokesOnly {
+            keystrokesOnly = true
+            axRefused = true
+            AppLogger.info(
+                "Live field bind will type; AX rewrite is a no-op on this composer",
+                category: AppLogger.transcription)
+        }
         return true
     }
 
@@ -102,7 +114,10 @@ final class TargetFieldInserter: @unchecked Sendable {
         }
         if !usedKeystrokes, !axRefused {
             axRefused = true
-            collapseSelectionToEnd()
+            // Do not re-select. Queued AXSelectedTextRange writes jump the
+            // caret to the start; the next suffix then inserts in front of
+            // the first words.
+            settleEditor()
         }
         return writeViaKeystrokes(text)
     }
@@ -130,6 +145,7 @@ final class TargetFieldInserter: @unchecked Sendable {
         delivered = ""
         usedKeystrokes = false
         axRefused = false
+        keystrokesOnly = false
     }
 
     // MARK: - Resolve
@@ -207,8 +223,11 @@ final class TargetFieldInserter: @unchecked Sendable {
     /// Chromium reports AX sets as success and leaves the composer unchanged.
     /// Unicode key events insert. Do not activate or re-select — that jumps
     /// the caret to the start and the next suffix replaces the whole take.
+    /// Notion / Slack also reset the caret after the first burst; move to
+    /// the end of the line before typing the next delta.
     private func writeViaKeystrokes(_ text: String) -> Bool {
         guard !text.isEmpty else { return false }
+        restoreKeystrokeCaretIfNeeded()
         switch KeystrokeDelta.livePlan(previous: delivered, next: text) {
         case .none:
             return !delivered.isEmpty
@@ -222,6 +241,13 @@ final class TargetFieldInserter: @unchecked Sendable {
         }
     }
 
+    private func restoreKeystrokeCaretIfNeeded() {
+        guard keystrokesOnly, CaretRestore.shouldMoveToEndOfLine(alreadyTyped: usedKeystrokes)
+        else { return }
+        moveToEndOfLine()
+        settleEditor()
+    }
+
     private func applyKeystrokes(type suffix: String, delivered next: String) -> Bool {
         if !usedKeystrokes {
             AppLogger.info(
@@ -232,13 +258,8 @@ final class TargetFieldInserter: @unchecked Sendable {
         delivered = next
         usedKeystrokes = true
         spanLength = (next as NSString).length
+        settleEditor()
         return true
-    }
-
-    private func collapseSelectionToEnd() {
-        guard let element else { return }
-        let end = ((stringValue(of: element) ?? "") as NSString).length
-        _ = setSelectedRange(CFRange(location: end, length: 0), on: element)
     }
 
     private func perform(_ delta: KeystrokeDelta) {
@@ -280,6 +301,41 @@ final class TargetFieldInserter: @unchecked Sendable {
             down.post(tap: .cghidEventTap)
             up.post(tap: .cghidEventTap)
         }
+    }
+
+    /// Notion / Slack treat this as end of the current block. Safer than
+    /// `AXSelectedTextRange`, which jumps the caret to the start.
+    private func moveToEndOfLine() {
+        let source = CGEventSource(stateID: .hidSystemState)
+        guard let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: true),
+            let rightDown = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: true),
+            let rightUp = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: false),
+            let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: false)
+        else { return }
+        cmdDown.flags = .maskCommand
+        rightDown.flags = .maskCommand
+        rightUp.flags = .maskCommand
+        cmdDown.post(tap: .cghidEventTap)
+        rightDown.post(tap: .cghidEventTap)
+        rightUp.post(tap: .cghidEventTap)
+        cmdUp.post(tap: .cghidEventTap)
+    }
+
+    private func settleEditor() {
+        _ = CFRunLoopRunInMode(.defaultMode, 0.02, false)
+    }
+
+    private func hasWebMarkers(_ element: AXUIElement) -> Bool {
+        var names: CFArray?
+        guard AXUIElementCopyAttributeNames(element, &names) == .success,
+            let names = names as? [String]
+        else { return false }
+        return names.contains("AXStartTextMarker") || names.contains("AXDOMIdentifier")
+    }
+
+    private func destinationBundleIdentifier() -> String? {
+        guard let pid = DictationTarget.processIdentifier else { return nil }
+        return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
     }
 
     private func replaceViaSelectedText(_ text: String, on element: AXUIElement, start: Int) -> Bool {
