@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 39 — gentle 21 x 29 blend: per-bar fades like 29, but the start
+       tones deepen slightly toward the centre (a soft echo of 21's global
+       falloff), keeping every tip bright. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111119"/>
+      <stop offset="1" stop-color="#06060A"/>
+    </linearGradient>
+    <linearGradient id="outer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#24509F"/>
+      <stop offset="1" stop-color="#7DB9FF"/>
+    </linearGradient>
+    <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1B3B9E"/>
+      <stop offset="1" stop-color="#85C3FF"/>
+    </linearGradient>
+    <linearGradient id="centre" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12255C"/>
+      <stop offset="1" stop-color="#8FD4FF"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <g fill="#2E6BFF" filter="url(#glow)" opacity="0.35">
+    <rect x="258" y="300" width="60" height="180" rx="30"/>
+    <rect x="370" y="300" width="60" height="300" rx="30"/>
+    <rect x="482" y="300" width="60" height="424" rx="30"/>
+    <rect x="594" y="300" width="60" height="300" rx="30"/>
+    <rect x="706" y="300" width="60" height="180" rx="30"/>
+  </g>
+  <rect x="258" y="300" width="60" height="180" rx="30" fill="url(#outer)"/>
+  <rect x="370" y="300" width="60" height="300" rx="30" fill="url(#mid)"/>
+  <rect x="482" y="300" width="60" height="424" rx="30" fill="url(#centre)"/>
+  <rect x="594" y="300" width="60" height="300" rx="30" fill="url(#mid)"/>
+  <rect x="706" y="300" width="60" height="180" rx="30" fill="url(#outer)"/>
+</svg>
