@@ -239,7 +239,7 @@ struct GeneralSettingsTab: View {
                             }
 
                             Text(
-                                "Puts the most recent transcript on the clipboard so you can paste it if auto-paste missed the field. Default is ⌃⌥C."
+                                "Puts the most recent transcript on the clipboard so you can paste it if auto-paste missed the field."
                             )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
