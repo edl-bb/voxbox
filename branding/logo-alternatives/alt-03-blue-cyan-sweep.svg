@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Alt 03 "Blue–Cyan Sweep" — closest relative of the current mark:
+       same horizontal gradient direction, but re-anchored in blue
+       (royal blue -> ice cyan) instead of purple -> teal. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14141B"/>
+      <stop offset="1" stop-color="#08080C"/>
+    </linearGradient>
+    <linearGradient id="v" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#67E8F9"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="4"/>
+  <g fill="url(#v)">
+    <rect x="258" y="300" width="60" height="180" rx="30"/>
+    <rect x="370" y="300" width="60" height="300" rx="30"/>
+    <rect x="482" y="300" width="60" height="424" rx="30"/>
+    <rect x="594" y="300" width="60" height="300" rx="30"/>
+    <rect x="706" y="300" width="60" height="180" rx="30"/>
+  </g>
+</svg>
