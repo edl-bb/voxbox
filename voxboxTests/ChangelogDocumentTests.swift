@@ -107,7 +107,7 @@ final class ChangelogDocumentTests: XCTestCase {
         let text = try String(contentsOf: url, encoding: .utf8)
         let first = try XCTUnwrap(ChangelogDocument.parse(text).first { $0.version == "1.0.0" })
         let blocks = ChangelogMarkdown.blocks(in: first.markdown)
-        XCTAssertTrue(blocks.contains { $0 == .heading(level: 3, text: "Security fix") })
+        XCTAssertTrue(blocks.contains { $0 == .heading(level: 4, text: "Security fix") })
         XCTAssertTrue(
             blocks.contains {
                 if case .listItem(let depth, let text) = $0 {
