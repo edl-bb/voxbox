@@ -39,22 +39,11 @@ struct UpdateSheet: View {
                     .foregroundStyle(.primary)
 
                 // Bounded + scrollable so a long changelog can never push the
-                // action buttons off the bottom of the screen.
+                // action buttons off the bottom of the screen. Render the GitHub
+                // release body as markdown so nested lists from CHANGELOG.md keep
+                // their structure.
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(update.releaseNotes, id: \.self) { note in
-                            HStack(alignment: .top, spacing: 8) {
-                                Text("•")
-                                    .font(Typography.bodyMedium)
-                                    .foregroundStyle(.primary)
-                                Text(note)
-                                    .font(Typography.bodyMedium)
-                                    .foregroundStyle(.primary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    ChangelogMarkdownView(markdown: update.releaseNotes)
                 }
                 .frame(maxHeight: 240)
             }

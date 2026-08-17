@@ -1,7 +1,10 @@
 # Changelog
 
-Changes and release notes for VoxBox.  
+Changes and release notes for VoxBox.
 
+## [1.1.1] - 2026-08-17
+- Added in-app release notes
+- Minor UI tweaks
 
 ## [1.1.0] - 2026-08-16
 - App defaults to native included MacOS transcription model when starting fresh.
@@ -47,7 +50,7 @@ Changes and release notes for VoxBox.
     - Improve smart cleanup with fixes for trailing punctuation for emails, URLs, numbers, and single words.
     - Recorder pill can be pinned to any of nine screen positions.
 
-### Security fix
+#### Security fix
 - Utilise correct MacOS native logging rather than writing to `/tmp` & implement standard log protection
 - Remove transcripts from system logs
 - Remove all automatic outbound network activity by default, so app only reaches out to the internet once a user invokes a model download or a system update check.

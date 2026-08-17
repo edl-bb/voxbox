@@ -683,8 +683,26 @@ struct GeneralSettingsTab: View {
                 // Updates
                 SettingsSection {
                     SettingsSectionHeader(
-                        icon: "arrow.down.circle", title: "Updates",
-                        subtitle: "VoxBox \(AppVersion.currentVersion)")
+                        icon: "arrow.down.circle",
+                        title: "Updates",
+                        subtitle: "VoxBox \(AppVersion.currentVersion)"
+                    ) {
+                        Button(action: ReleaseNotesRoute.present) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("Release Notes")
+                                    .font(Typography.labelSmall)
+                            }
+                            .foregroundStyle(Color.textPrimary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.bgHover)
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Included with this build. Does not contact the internet.")
+                    }
 
                     VStack(spacing: 16) {
                         VStack(alignment: .leading, spacing: 6) {
@@ -700,57 +718,67 @@ struct GeneralSettingsTab: View {
                             Text(
                                 checkForUpdatesDaily
                                     ? "Once a day at launch, VoxBox asks GitHub if a newer version is available and prompts you if there is."
-                                    : "Off by default. The app only checks GitHub when you tap the button below."
+                                    : "Off by default. The app only checks GitHub when you tap Check Now."
                             )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
                         }
 
-                        Button(action: {
-                            Task {
-                                await updateService.checkForUpdates()
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Check for updates now")
+                                    .font(Typography.bodyMedium)
+                                    .foregroundStyle(Color.textPrimary)
+                                Text("Asks GitHub if a newer version is available.")
+                                    .font(Typography.captionSmall)
+                                    .foregroundStyle(Color.textMuted)
                             }
-                        }) {
-                            HStack(spacing: 6) {
-                                switch updateService.manualCheckStatus {
-                                case .idle:
-                                    Image(systemName: "arrow.clockwise")
-                                        .font(.system(size: 12))
-                                    Text("Check for Updates")
-                                        .font(Typography.labelMedium)
-                                case .checking:
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                        .frame(width: 14, height: 14)
-                                    Text("Checking...")
-                                        .font(Typography.labelMedium)
-                                case .upToDate:
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 12))
-                                    Text("Up to date")
-                                        .font(Typography.labelMedium)
-                                case .failed:
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.system(size: 12))
-                                    Text("Couldn’t check")
-                                        .font(Typography.labelMedium)
+                            Spacer(minLength: 12)
+                            Button(action: {
+                                Task {
+                                    await updateService.checkForUpdates()
                                 }
+                            }) {
+                                HStack(spacing: 6) {
+                                    switch updateService.manualCheckStatus {
+                                    case .idle:
+                                        Image(systemName: "arrow.clockwise")
+                                            .font(.system(size: 11, weight: .semibold))
+                                        Text("Check Now")
+                                            .font(Typography.labelSmall)
+                                    case .checking:
+                                        Spinner(size: 8, lineWidth: 1.5, tint: Color.textPrimary)
+                                        Text("Checking…")
+                                            .font(Typography.labelSmall)
+                                    case .upToDate:
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 11, weight: .semibold))
+                                        Text("Up to date")
+                                            .font(Typography.labelSmall)
+                                    case .failed:
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .font(.system(size: 11, weight: .semibold))
+                                        Text("Couldn’t check")
+                                            .font(Typography.labelSmall)
+                                    }
+                                }
+                                .foregroundStyle(updateButtonForeground)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.bgHover)
+                                .clipShape(RoundedRectangle(cornerRadius: 7))
                             }
-                            .foregroundStyle(updateButtonForeground)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .background(Color.bgHover)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .buttonStyle(.plain)
+                            .fixedSize()
+                            .disabled(
+                                updateService.manualCheckStatus == .checking
+                                    || updateService.manualCheckStatus == .upToDate
+                            )
+                            .animation(
+                                .easeInOut(duration: 0.2),
+                                value: updateService.manualCheckStatus
+                            )
                         }
-                        .buttonStyle(.plain)
-                        .disabled(
-                            updateService.manualCheckStatus == .checking
-                                || updateService.manualCheckStatus == .upToDate
-                        )
-                        .animation(
-                            .easeInOut(duration: 0.2),
-                            value: updateService.manualCheckStatus
-                        )
                     }
                 }
 
@@ -976,13 +1004,33 @@ struct PermissionsSettingsTab: View {
 
 // MARK: - Supporting Components
 
-struct SettingsSectionHeader: View {
+struct SettingsSectionHeader<Trailing: View>: View {
     let icon: String
     let title: String
     let subtitle: String
+    let trailing: Trailing
+
+    init(icon: String, title: String, subtitle: String) where Trailing == EmptyView {
+        self.icon = icon
+        self.title = title
+        self.subtitle = subtitle
+        self.trailing = EmptyView()
+    }
+
+    init(
+        icon: String,
+        title: String,
+        subtitle: String,
+        @ViewBuilder trailing: () -> Trailing
+    ) {
+        self.icon = icon
+        self.title = title
+        self.subtitle = subtitle
+        self.trailing = trailing()
+    }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 14))
                 .foregroundStyle(Color.textMuted)
@@ -996,7 +1044,9 @@ struct SettingsSectionHeader: View {
                     .foregroundStyle(Color.textMuted)
             }
 
-            Spacer()
+            Spacer(minLength: 12)
+
+            trailing
         }
         .padding(.bottom, 16)
     }

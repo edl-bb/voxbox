@@ -2,11 +2,14 @@
 # create-release.sh — Build, sign, notarize, and produce a DMG in dist/
 # Usage: ./scripts/create-release.sh [version]
 #        If no version is given, patch version is auto-bumped.
+#        Requires CHANGELOG.md notes for that version (or items under
+#        ## [Unreleased], which are moved into the version section).
 #        Bumps MARKETING_VERSION + build, commits all open files
 #        ("v<version> Released. Refer to changelog for details"), tags, then builds.
 #        ./scripts/create-release.sh --current
 #        Uses MARKETING_VERSION already in the Xcode project (no bump, no
-#        changelog edit, no release commit). Tags HEAD if v<version> is missing.
+#        changelog edit, no release commit). CHANGELOG.md must already have
+#        notes for that version. Tags HEAD if v<version> is missing.
 #
 # After this script succeeds, run ./scripts/deploy-release.sh to push to GitHub.
 
@@ -55,6 +58,11 @@ else
 fi
 echo ""
 
+# Fail before bumping / tagging / notarizing if this version has no notes.
+# A bump will promote ## [Unreleased] items; --current never edits the file.
+changelog_prepare_for_release "$VERSION" "$KEEP_VERSION"
+echo ""
+
 CURRENT_BUILD=$(perl -ne 'print $1 and exit if /CURRENT_PROJECT_VERSION = (\d+);/' "$PROJECT_FILE")
 
 if [ "$KEEP_VERSION" = 1 ]; then
@@ -81,17 +89,7 @@ else
   echo "  Version : v${VERSION}"
   echo "  Build   : ${NEXT_BUILD}"
 
-  # ── Step 3: Update CHANGELOG ──────────────────────────────────────────────────
-  # Only insert a dated heading when the file still has the Unreleased stub and
-  # this version is not already listed (so a hand-written entry is left alone).
-  if [ -f "$CHANGELOG" ] && ! grep -q "^## \[${VERSION}\]" "$CHANGELOG"; then
-    echo ""
-    echo "📝 Updating CHANGELOG..."
-    RELEASE_DATE=$(date +%Y-%m-%d)
-    perl -0pi -e "s/## \[Unreleased\]\n- \n/## [Unreleased]\n- \n\n## [${VERSION}] - ${RELEASE_DATE}\n- \n/" "$CHANGELOG"
-  fi
-
-  # ── Step 4: Commit everything (including the bump) + tag ─────────────────────
+  # ── Step 3: Commit everything (including the bump) + tag ─────────────────────
   # Version/build edits are uncommitted until this point. Commit them together
   # with any other open work so the later build runs against a clean tree.
   echo ""

@@ -4,7 +4,7 @@ import Foundation
 struct AppVersion: Codable, Equatable {
     let version: String
     let buildNumber: String
-    let releaseNotes: [String]
+    let releaseNotes: String
     let downloadURL: String
     let isRequired: Bool
     let releaseDate: Date
@@ -33,9 +33,7 @@ extension AppVersion {
         self.version = cleanVersion
         self.buildNumber = "0"
         self.releaseNotes = release.body
-            .components(separatedBy: "\n")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         // Prefer direct DMG asset download URL over the HTML release page
         let dmg = release.assets.first { $0.name.hasSuffix(".dmg") }
         self.downloadURL = dmg?.browserDownloadUrl ?? release.htmlUrl
@@ -79,14 +77,14 @@ extension AppVersion {
     static let mockUpdate = AppVersion(
         version: "1.67",
         buildNumber: "67",
-        releaseNotes: [
-            "Keyboard shortcuts to toggle specific Power Modes directly",
-            "Dedicated transcript history window with global keyboard shortcut access",
-            "GPT-5.2 model support",
-            "Configurable audio resume delay for Bluetooth headphones",
-            "Redesigned Power Mode & Enhancement UI",
-            "Minor bug fixes and improvements",
-        ],
+        releaseNotes: """
+            - Keyboard shortcuts to toggle specific Power Modes directly
+            - Dedicated transcript history window with global keyboard shortcut access
+            - GPT-5.2 model support
+            - Configurable audio resume delay for Bluetooth headphones
+            - Redesigned Power Mode & Enhancement UI
+            - Minor bug fixes and improvements
+            """,
         downloadURL: "https://github.com/edl-bb/VoxBox/releases/latest",
         isRequired: false,
         releaseDate: Date()

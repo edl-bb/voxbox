@@ -62,3 +62,41 @@ _Avoid_: Native Mac app (when meaning this class); AppKit (unqualified)
 **Native Mac app**:
 A first-party or AppKit-hosted application. Not enough for live write until the focused element is proven AppKit editable text.
 _Avoid_: AppKit editable text
+
+## Transcript cleanup
+
+**Transcript cleanup**:
+The post-decode chain that turns engine text into what gets pasted.
+_Avoid_: Post-processing; LLM chain; formatting (when meaning the whole chain)
+
+**Auto Edit**:
+The optional deterministic strip of spoken um/uh-family fillers.
+_Avoid_: Light cleanup; Polish; filler removal (unqualified)
+
+**Formatting**:
+The on-device intensity that only changes capitals, punctuation, spacing, and breaks — never words.
+_Avoid_: Light cleanup; Polish; transcript cleanup (the whole chain)
+
+**Light cleanup**:
+The wording-faithful on-device intensity: drop fillers, false starts, and repeats; fix obvious grammar; keep the speaker's words otherwise.
+_Avoid_: Polish; Formatting; Auto Edit
+
+**Polish**:
+The meaning-faithful on-device intensity: may fix phonetic substitutions and smooth choppy dictation while keeping the speaker's message. Still drops fillers.
+_Avoid_: Light cleanup; Formatting
+
+**Wording-faithful**:
+Keeping the speaker's words, except fillers, false starts, repeats, and obvious grammar. The Light cleanup contract.
+_Avoid_: Fidelity (unqualified); meaning-faithful
+
+**Meaning-faithful**:
+Keeping the speaker's message when wording may change. The Polish contract.
+_Avoid_: Fidelity (unqualified); wording-faithful
+
+**Guardrail**:
+The change-ratio budget that discards on-device cleanup if the edit is too heavy, leaving the pre-model transcript.
+_Avoid_: Guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
+
+**DEBUG tuner**:
+A development-only in-app editor for cleanup instructions and guardrail budgets. Release builds use the compiled values.
+_Avoid_: Transcript Cleanup (the production Settings section)

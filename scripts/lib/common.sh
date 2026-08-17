@@ -94,3 +94,7 @@ ensure_notary_credentials() {
   echo "✅ Credentials stored. Continuing..."
   echo ""
 }
+
+# Changelog helpers used by create-release.sh and deploy-release.sh.
+# shellcheck source=changelog.sh
+source "$(dirname "${BASH_SOURCE[0]}")/changelog.sh"

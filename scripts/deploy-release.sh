@@ -4,6 +4,8 @@
 #
 # Run AFTER create-release.sh has succeeded.
 # If no version is given, reads from dist/.release-version written by create-release.sh.
+# GitHub release notes come from the matching CHANGELOG.md section (what the
+# in-app update sheet shows). Git log is only used if that section is missing.
 
 set -e
 
@@ -70,26 +72,40 @@ if ! command -v gh &>/dev/null; then
   exit 1
 fi
 
-# Build release notes from git log between previous tag and this one
-PREV_TAG=$(git tag --sort=-version:refname | grep -v "v${VERSION}" | head -1)
-if [ -n "$PREV_TAG" ]; then
-  # Cap the auto-generated list — a huge changelog pushes the Install button
-  # off the update dialog. Keep the most recent entries and link to the rest.
-  MAX_NOTE_LINES=20
-  ALL_NOTES=$(git log "${PREV_TAG}..v${VERSION}" \
-    --pretty=format:"- %s" \
-    | grep -v "^- release:" \
-    | grep -v "^- update build" \
-    | grep -v "^- docs:" \
-    | grep -v "^- chore:" \
-    | grep -v "^- Merge ")
-  NOTES=$(printf '%s\n' "$ALL_NOTES" | head -n "$MAX_NOTE_LINES")
-  if [ "$(printf '%s\n' "$ALL_NOTES" | wc -l)" -gt "$MAX_NOTE_LINES" ]; then
-    NOTES="${NOTES}
-- …and more — see the full changelog: https://github.com/edl-bb/VoxBox/compare/${PREV_TAG}...v${VERSION}"
-  fi
+# Prefer CHANGELOG.md for this version (that is what the in-app update sheet shows).
+CHANGELOG_TMP=$(mktemp)
+NOTES=""
+if changelog_file_for_tag "$VERSION" "$CHANGELOG_TMP"; then
+  NOTES="$(changelog_github_notes "$VERSION" "$CHANGELOG_TMP")"
+fi
+rm -f "$CHANGELOG_TMP"
+
+if [ -n "$NOTES" ]; then
+  echo "📝 Release notes (from CHANGELOG.md):"
+  echo "$NOTES"
+  echo ""
 else
-  NOTES="Initial release"
+  echo "⚠️  No CHANGELOG notes for v${VERSION}; falling back to git log."
+  PREV_TAG=$(git tag --sort=-version:refname | grep -v "v${VERSION}" | head -1)
+  if [ -n "$PREV_TAG" ]; then
+    # Cap the auto-generated git-log list only. Changelog notes are the full
+    # markdown section, including nested lists.
+    MAX_NOTE_LINES="${CHANGELOG_MAX_NOTE_LINES}"
+    ALL_NOTES=$(git log "${PREV_TAG}..v${VERSION}" \
+      --pretty=format:"- %s" \
+      | grep -v "^- release:" \
+      | grep -v "^- update build" \
+      | grep -v "^- docs:" \
+      | grep -v "^- chore:" \
+      | grep -v "^- Merge ")
+    NOTES=$(printf '%s\n' "$ALL_NOTES" | head -n "$MAX_NOTE_LINES")
+    if [ "$(printf '%s\n' "$ALL_NOTES" | wc -l)" -gt "$MAX_NOTE_LINES" ]; then
+      NOTES="${NOTES}
+- …and more — see the full changelog: https://github.com/${GITHUB_REPO}/compare/${PREV_TAG}...v${VERSION}"
+    fi
+  else
+    NOTES="Initial release"
+  fi
 fi
 
 # Fall back to --generate-notes if we end up with nothing

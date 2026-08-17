@@ -69,7 +69,23 @@ struct VoxBoxApp: App {
                 Button("Settings…") { openSettings() }
                     .keyboardShortcut(",", modifiers: .command)
             }
+            CommandGroup(after: .help) {
+                Button("Release Notes") {
+                    ReleaseNotesRoute.present()
+                }
+            }
         }
+
+        Window("Release Notes", id: "release-notes") {
+            ThemeProvider {
+                ReleaseNotesView()
+            }
+            .preferredColorScheme(appearance.resolvedScheme)
+            .onAppear { appearance.apply(appTheme) }
+        }
+        .defaultSize(width: 520, height: 620)
+        .windowResizability(.contentMinSize)
+        .defaultLaunchBehavior(.suppressed)
 
         // Note: Mini Recorder is now managed manually by AppDelegate -> MiniRecorderWindowController
         // to prevent SwiftUI from auto-opening the main dashboard on activation.
