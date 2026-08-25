@@ -7,7 +7,7 @@ enum StreamingMode {
     static let defaultsKey = "streamingMode"
 
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
-        defaults.bool(forKey: defaultsKey)
+        TranscriptDeliveryMode.current(in: defaults) == .streaming
     }
 
     /// Apple Speech and catalog WhisperKit models can stream. Parakeet stays batch until FluidAudio streaming ships.
@@ -45,7 +45,7 @@ enum StreamingMode {
         guard shouldRevertToBatch(for: variant, streamingEnabled: isEnabled(in: defaults)) else {
             return false
         }
-        defaults.set(false, forKey: defaultsKey)
+        TranscriptDeliveryMode.set(.autoPaste, in: defaults)
         NotificationCenter.default.post(name: .streamingRevertedToBatch, object: variant)
         return true
     }

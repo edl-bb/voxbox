@@ -33,6 +33,7 @@ struct VoxBoxApp: App {
         // Register bundled fonts (Satoshi, Source Sans 3) so Font.custom resolves
         // them regardless of what's installed on the machine.
         AppFonts.registerBundledFonts()
+        _ = TranscriptDeliveryMode.current()
 
         // For UI testing: bypass onboarding automatically
         if ProcessInfo.processInfo.arguments.contains("--uitesting") {

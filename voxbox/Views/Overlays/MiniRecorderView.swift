@@ -20,7 +20,8 @@ struct MiniRecorderView: View {
     @State private var hasDownloadedModel = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
-    @AppStorage(StreamingMode.defaultsKey) private var streamingMode = false
+    @AppStorage(TranscriptDeliveryMode.defaultsKey)
+    private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
     @AppStorage("recordingMode") private var recordingMode: Int = 0
     /// Whether we've already shown the one-time accessibility warning (release only).
     @AppStorage("hasShownAccessibilityWarning") private var hasShownAccessibilityWarning = false
@@ -514,7 +515,7 @@ struct MiniRecorderView: View {
         }
         .onChange(of: selectedModel) { _, variant in
             if StreamingMode.disableIfIncompatible(with: variant) {
-                streamingMode = false
+                transcriptDeliveryMode = .autoPaste
             }
         }
         .onAppear {
@@ -522,6 +523,7 @@ struct MiniRecorderView: View {
             audioRecorder.fetchAvailableDevices()
             hasDownloadedModel = ModelDownloadService.shared.hasAnyDownloadedModel
             trackHasDownloadedModel()
+            transcriptDeliveryMode = TranscriptDeliveryMode.current()
 
             // Set up Escape key monitors
             globalEscapeMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
@@ -980,9 +982,6 @@ struct MiniRecorderView: View {
             }
 
             if alreadyInField {
-                if TranscriptClipboardPreference.isEnabled() {
-                    ClipboardService.shared.copy(text: text)
-                }
                 await MainActor.run {
                     isProcessing = false
                     onCancel?()
@@ -990,23 +989,7 @@ struct MiniRecorderView: View {
                 return
             }
 
-            let delivery = await onCommit?(text) ?? .copiedToClipboard
-            await MainActor.run {
-                switch delivery {
-                case .copiedToClipboard:
-                    statusMessage = PillStatusCopy.noDestination
-                    isProcessing = true
-                case .pasted, .alreadyInField:
-                    isProcessing = false
-                }
-            }
-            if delivery == .copiedToClipboard {
-                try? await Task.sleep(nanoseconds: 1_600_000_000)
-                await MainActor.run {
-                    isProcessing = false
-                    onCancel?()
-                }
-            }
+            await presentDelivery(await onCommit?(text) ?? fallbackDelivery)
         } catch {
             debugLog("Live finish failed: \(error.localizedDescription)")
             if let audioURL {
@@ -1053,6 +1036,32 @@ struct MiniRecorderView: View {
             // Already processing, just show stopping and quickly dismiss
             statusMessage = "Stopping transcription..."
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                onCancel?()
+            }
+        }
+    }
+
+    /// Clipboard delivery is an intentional copy — never the no-destination pill.
+    private var fallbackDelivery: TranscriptDelivery {
+        TranscriptDeliveryMode.current() == .clipboard ? .copiedOnPurpose : .copiedToClipboard
+    }
+
+    /// Quiet dismiss for paste, live write, and intentional clipboard copy.
+    /// Keep “No destination…” only when Auto-paste / Streaming wanted a target.
+    private func presentDelivery(_ delivery: TranscriptDelivery) async {
+        let showNoDestination = delivery == .copiedToClipboard
+        await MainActor.run {
+            if showNoDestination {
+                statusMessage = PillStatusCopy.noDestination
+                isProcessing = true
+            } else {
+                isProcessing = false
+            }
+        }
+        if showNoDestination {
+            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            await MainActor.run {
+                isProcessing = false
                 onCancel?()
             }
         }
@@ -1131,23 +1140,7 @@ struct MiniRecorderView: View {
                 return
             }
 
-            let delivery = await onCommit?(text) ?? .copiedToClipboard
-            await MainActor.run {
-                switch delivery {
-                case .copiedToClipboard:
-                    statusMessage = PillStatusCopy.noDestination
-                    isProcessing = true
-                case .pasted, .alreadyInField:
-                    isProcessing = false
-                }
-            }
-            if delivery == .copiedToClipboard {
-                try? await Task.sleep(nanoseconds: 1_600_000_000)
-                await MainActor.run {
-                    isProcessing = false
-                    onCancel?()
-                }
-            }
+            await presentDelivery(await onCommit?(text) ?? fallbackDelivery)
             debugLog("onCommit called successfully")
         } catch {
             debugLog("Error: \(error.localizedDescription)")

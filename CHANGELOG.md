@@ -2,6 +2,18 @@
 
 Changes and release notes for VoxBox.
 
+## [1.1.2] - 2026-08-25
+- New feature: Send transcript to clipboard
+    - You can now copy a transcript directly to the clipboard rather than automatically pasting it to the screen.
+    - Changed the way VoxBox treats transcription delivery. Moved to a 3-step toggle in the new "Delivery" section in settings
+    - Renamed original default behaviour to "auto-paste"
+    - Moved "restore clipboard after paste" to new Delivery section.
+- New feature: Generate markdown formatting using LLM post processor
+    - Allow LLM post processor to format the output using markdown 
+    - New toggle available in settings 
+- Improved the reliability of the "polish" LLM setting
+- Renamed lowest LLM post processing level from "Formatting" to "Basic" to improve clarity
+
 ## [1.1.1] - 2026-08-17
 - Added in-app release notes
 - Minor UI tweaks

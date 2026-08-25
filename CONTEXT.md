@@ -51,6 +51,10 @@ _Avoid_: Final; stable token
 An explicit user setting that asks for live delivery. If the current model can stream, it stays selected. Picking a Batch model turns streaming off and toasts that VoxBox reverted to batch. Turning the setting on while a Batch model is selected leaves it on and asks for a Streaming model on Settings.
 _Avoid_: Streaming model (when meaning the setting)
 
+**Copy transcription to clipboard**:
+Copies only (no live write, no Cmd+V). Stream transcription is live delivery into the destination text area as tokens appear.
+_Avoid_: Auto paste (when meaning clipboard-only copy)
+
 **Coverage stage**:
 A slice of target apps live delivery is validated against, in order: AppKit text, then browsers, then Electron. Browsers are confirmed. Electron composers (Cursor, Slack, Superhuman) need Chromium `AXManualAccessibility` and a frontmost app to find the focused `AXTextArea`; AX set is a no-op there, so live write types Unicode key events.
 _Avoid_: App coverage (unqualified); future map (when meaning browsers or Electron)
@@ -73,17 +77,17 @@ _Avoid_: Post-processing; LLM chain; formatting (when meaning the whole chain)
 The optional deterministic strip of spoken um/uh-family fillers.
 _Avoid_: Light cleanup; Polish; filler removal (unqualified)
 
-**Formatting**:
+**Basic**:
 The on-device intensity that only changes capitals, punctuation, spacing, and breaks — never words.
-_Avoid_: Light cleanup; Polish; transcript cleanup (the whole chain)
+_Avoid_: Formatting; Light cleanup; Polish; transcript cleanup (the whole chain)
 
 **Light cleanup**:
 The wording-faithful on-device intensity: drop fillers, false starts, and repeats; fix obvious grammar; keep the speaker's words otherwise.
-_Avoid_: Polish; Formatting; Auto Edit
+_Avoid_: Polish; Basic; Auto Edit
 
 **Polish**:
 The meaning-faithful on-device intensity: may fix phonetic substitutions and smooth choppy dictation while keeping the speaker's message. Still drops fillers.
-_Avoid_: Light cleanup; Formatting
+_Avoid_: Light cleanup; Basic
 
 **Wording-faithful**:
 Keeping the speaker's words, except fillers, false starts, repeats, and obvious grammar. The Light cleanup contract.

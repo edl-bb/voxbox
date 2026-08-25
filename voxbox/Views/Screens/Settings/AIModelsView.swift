@@ -5,7 +5,8 @@ struct AIModelsView: View {
     private let downloadService = ModelDownloadService.shared
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("modelUseCase") private var useCaseRaw: String = AIModel.UseCase.dictation.rawValue
-    @AppStorage(StreamingMode.defaultsKey) private var streamingMode = false
+    @AppStorage(TranscriptDeliveryMode.defaultsKey)
+    private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
     @State private var isPreparingHero = false
     @State private var decodeFilter: CatalogDecodeFilter = .all
 
@@ -70,19 +71,21 @@ struct AIModelsView: View {
                 DashboardRoute.pendingDecodeFilter = nil
                 decodeFilter = forced
             } else {
+                transcriptDeliveryMode = TranscriptDeliveryMode.current()
                 decodeFilter = .defaultFilter(
-                    streamingEnabled: streamingMode, selectedVariant: selectedModel)
+                    streamingEnabled: transcriptDeliveryMode == .streaming,
+                    selectedVariant: selectedModel)
             }
             // Refresh download status; never overwrite the persisted selection here (#79).
             Task { await downloadService.refreshDownloadedModels() }
         }
-        .onChange(of: streamingMode) { _, enabled in
+        .onChange(of: transcriptDeliveryMode) { _, mode in
             decodeFilter = .defaultFilter(
-                streamingEnabled: enabled, selectedVariant: selectedModel)
+                streamingEnabled: mode == .streaming, selectedVariant: selectedModel)
         }
         .onChange(of: selectedModel) { _, variant in
             if StreamingMode.disableIfIncompatible(with: variant) {
-                streamingMode = false
+                transcriptDeliveryMode = .autoPaste
                 decodeFilter = .batch
             }
         }

@@ -94,9 +94,8 @@ struct GeneralSettingsTab: View {
     @AppStorage("recordingMode") private var recordingMode: Int = 0  // 0: Hold to record, 1: Toggle
     @AppStorage("restoreClipboardAfterAutoPaste") private var restoreClipboardAfterAutoPaste =
         true
-    @AppStorage(TranscriptClipboardPreference.defaultsKey)
-    private var copyTranscriptToClipboard = TranscriptClipboardPreference.defaultEnabled
-    @AppStorage(StreamingMode.defaultsKey) private var streamingMode = false
+    @AppStorage(TranscriptDeliveryMode.defaultsKey)
+    private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @AppStorage("alwaysShowRecorderPill") private var alwaysShowRecorderPill: Bool = false
@@ -110,6 +109,8 @@ struct GeneralSettingsTab: View {
     private var formatWithOnDeviceAI: Bool = false
     @AppStorage(TranscriptFormatterService.intensityKey)
     private var formattingIntensityRaw: Int = FormattingIntensity.lightCleanup.rawValue
+    @AppStorage(TranscriptFormatterService.markdownFormattingKey)
+    private var markdownFormatting: Bool = true
     @AppStorage(RetentionService.audioRetentionKey)
     private var audioRetentionSeconds: Double = RetentionService.defaultAudioRetention
     @AppStorage(RetentionService.transcriptRetentionKey)
@@ -243,7 +244,7 @@ struct GeneralSettingsTab: View {
                             }
 
                             Text(
-                                "Puts the most recent transcript on the clipboard so you can paste it if auto-paste missed the field."
+                                "Copies the most recent transcript to the clipboard so you can paste it yourself."
                             )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
@@ -254,35 +255,46 @@ struct GeneralSettingsTab: View {
 
                 SettingsSection {
                     SettingsSectionHeader(
-                        icon: "waveform",
-                        title: "Live streaming",
-                        subtitle: "Words appear while you talk"
-                    )
+                        icon: "text.append",
+                        title: "Delivery",
+                        subtitle: "How the transcript reaches the app you were in"
+                    ) {
+                        Picker("", selection: $transcriptDeliveryMode) {
+                            ForEach(TranscriptDeliveryMode.allCases) { mode in
+                                Text(mode.segmentLabel).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(minWidth: 300)
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
 
                     VStack(alignment: .leading, spacing: 14) {
-                        HStack(alignment: .center, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(streamingMode ? "On" : "Off")
-                                    .font(Typography.labelLarge)
+                        Text(transcriptDeliveryMode.summary)
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Restore clipboard after auto-paste")
+                                    .font(Typography.bodyMedium)
                                     .foregroundStyle(Color.textPrimary)
-                                Text(
-                                    streamingMode
-                                        ? "Apple Speech writes into the focused field as you talk when that field can be rewritten. Browsers and other apps show the words in the recorder until you stop, then paste."
-                                        : "VoxBox waits until you stop, then pastes the finished transcript. Turn this on to see words appear as you speak."
-                                )
+                                Spacer()
+                                Toggle("", isOn: $restoreClipboardAfterAutoPaste)
+                                    .labelsHidden()
+                                    .disabled(transcriptDeliveryMode != .autoPaste)
+                            }
+
+                            Text(restoreClipboardHelpText)
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
-                                .fixedSize(horizontal: false, vertical: true)
-                            }
-                            Spacer(minLength: 12)
-                            Toggle("", isOn: $streamingMode)
-                                .toggleStyle(.switch)
-                                .controlSize(.large)
-                                .labelsHidden()
                         }
 
                         if StreamingMode.needsStreamingModel(
-                            variant: selectedModel, streamingEnabled: streamingMode)
+                            variant: selectedModel,
+                            streamingEnabled: transcriptDeliveryMode == .streaming)
                         {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(StreamingModeCopy.needsStreamingModel)
@@ -372,45 +384,6 @@ struct GeneralSettingsTab: View {
                                     .font(Typography.captionSmall)
                                     .foregroundStyle(Color.accentWarning)
                             }
-                        }
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("Copy transcript to clipboard")
-                                    .font(Typography.bodyMedium)
-                                    .foregroundStyle(Color.textPrimary)
-                                Spacer()
-                                Toggle("", isOn: $copyTranscriptToClipboard)
-                                    .labelsHidden()
-                            }
-
-                            Text(
-                                "Every completed transcript stays on your clipboard after dictation, ready to paste again anywhere."
-                            )
-                            .font(Typography.captionSmall)
-                            .foregroundStyle(Color.textMuted)
-                        }
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("Restore clipboard after auto-paste")
-                                    .font(Typography.bodyMedium)
-                                    .foregroundStyle(Color.textPrimary)
-                                Spacer()
-                                Toggle("", isOn: $restoreClipboardAfterAutoPaste)
-                                    .labelsHidden()
-                                    .disabled(copyTranscriptToClipboard)
-                            }
-
-                            Text(
-                                copyTranscriptToClipboard
-                                    ? "Unavailable while “Copy transcript to clipboard” is on — the transcript is kept on the clipboard instead."
-                                    : restoreClipboardAfterAutoPaste
-                                        ? "After pasting into the active app, whatever was already on your clipboard is restored."
-                                        : "After pasting into the active app, the transcript stays on your clipboard for manual pasting."
-                            )
-                            .font(Typography.captionSmall)
-                            .foregroundStyle(Color.textMuted)
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
@@ -517,14 +490,24 @@ struct GeneralSettingsTab: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
-                                Text("On-device AI")
-                                    .font(Typography.bodyMedium)
-                                    .foregroundStyle(Color.textPrimary)
+                                HStack(spacing: 6) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.textMuted)
+                                    Text("On-device AI")
+                                        .font(Typography.bodyMedium)
+                                        .foregroundStyle(Color.textPrimary)
+                                }
                                 Spacer()
                                 Toggle("", isOn: $formatWithOnDeviceAI)
                                     .labelsHidden()
                                     .disabled(!TranscriptFormatterService.isModelAvailable)
                             }
+                            Text(
+                                "Uses a local MacOS LLM to process the transcript. Can also improve structure and add formatting. Takes longer to process than the default settings."
+                            )
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
 
                             if !TranscriptFormatterService.isModelAvailable {
                                 Text(
@@ -533,13 +516,21 @@ struct GeneralSettingsTab: View {
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
                             } else if formatWithOnDeviceAI {
-                                Picker("", selection: $formattingIntensityRaw) {
-                                    ForEach(FormattingIntensity.allCases) { level in
-                                        Text(level.displayName).tag(level.rawValue)
+                                HStack {
+                                    Text("Effort")
+                                        .font(Typography.bodyMedium)
+                                        .foregroundStyle(Color.textPrimary)
+                                    Spacer()
+                                    Picker("", selection: $formattingIntensityRaw) {
+                                        ForEach(FormattingIntensity.allCases) { level in
+                                            Text(level.displayName).tag(level.rawValue)
+                                        }
                                     }
+                                    .pickerStyle(.segmented)
+                                    .labelsHidden()
+                                    .frame(minWidth: 300)
+                                    .fixedSize(horizontal: true, vertical: false)
                                 }
-                                .pickerStyle(.segmented)
-                                .labelsHidden()
 
                                 Text(
                                     (FormattingIntensity(rawValue: formattingIntensityRaw)
@@ -547,13 +538,24 @@ struct GeneralSettingsTab: View {
                                 )
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
+
+                                HStack {
+                                    Text("Markdown formatting")
+                                        .font(Typography.bodyMedium)
+                                        .foregroundStyle(Color.textPrimary)
+                                    Spacer()
+                                    Toggle("", isOn: $markdownFormatting)
+                                        .labelsHidden()
+                                }
+
+                                Text(
+                                    "Adds bold, italic, bullet points, and numbered lists where they fit."
+                                )
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
                             }
 
-                            Text(
-                                "Optional. Runs on this Mac for longer dictations only. If the edit is too heavy, the original is kept."
-                            )
-                            .font(Typography.captionSmall)
-                            .foregroundStyle(Color.textMuted)
+                            
                         }
 
                         Divider()
@@ -786,9 +788,20 @@ struct GeneralSettingsTab: View {
             .padding(24)
         }
         .onAppear {
+            transcriptDeliveryMode = TranscriptDeliveryMode.current()
             openAtLogin = LoginItemService.isEnabled
             openAtLoginError = nil
         }
+    }
+
+    private var restoreClipboardHelpText: String {
+        if transcriptDeliveryMode != .autoPaste {
+            return
+                "Only available when Delivery is Auto paste transcription."
+        }
+        return restoreClipboardAfterAutoPaste
+            ? "After pasting into the active app, whatever was already on your clipboard is restored."
+            : "After pasting into the active app, the transcript stays on your clipboard for manual pasting."
     }
 
     private var updateButtonForeground: Color {

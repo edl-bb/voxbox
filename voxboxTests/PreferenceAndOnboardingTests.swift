@@ -21,21 +21,122 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         )
     }
 
-    func testCopyTranscriptToClipboardDefaultsOff() {
-        XCTAssertFalse(TranscriptClipboardPreference.defaultEnabled)
-        XCTAssertEqual(TranscriptClipboardPreference.defaultsKey, "copyTranscriptToClipboard")
+    func testTranscriptDeliveryModeDefaultsToAutoPaste() {
+        XCTAssertEqual(TranscriptDeliveryMode.defaultMode, .autoPaste)
+        XCTAssertEqual(TranscriptDeliveryMode.defaultsKey, "transcriptDeliveryMode")
 
-        let suite = "voxbox.tests.clipboard.\(UUID().uuidString)"
+        let suite = "voxbox.tests.delivery.default.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
 
+        XCTAssertNil(defaults.object(forKey: TranscriptDeliveryMode.defaultsKey))
+        XCTAssertEqual(TranscriptDeliveryMode.current(in: defaults), .autoPaste)
+        XCTAssertEqual(
+            defaults.string(forKey: TranscriptDeliveryMode.defaultsKey),
+            TranscriptDeliveryMode.autoPaste.rawValue
+        )
         XCTAssertFalse(TranscriptClipboardPreference.isEnabled(in: defaults))
+        XCTAssertFalse(StreamingMode.isEnabled(in: defaults))
+    }
 
-        defaults.set(true, forKey: TranscriptClipboardPreference.defaultsKey)
-        XCTAssertTrue(TranscriptClipboardPreference.isEnabled(in: defaults))
+    func testTranscriptDeliveryModeDisplayNamesMatchStageNames() {
+        XCTAssertEqual(
+            TranscriptDeliveryMode.clipboard.displayName,
+            "Copy transcription to clipboard"
+        )
+        XCTAssertEqual(
+            TranscriptDeliveryMode.autoPaste.displayName,
+            "Auto paste transcription"
+        )
+        XCTAssertEqual(
+            TranscriptDeliveryMode.streaming.displayName,
+            "Stream transcription"
+        )
+        XCTAssertEqual(TranscriptDeliveryMode.clipboard.segmentLabel, "Copy to clipboard")
+        XCTAssertEqual(TranscriptDeliveryMode.autoPaste.segmentLabel, "Auto-paste")
+        XCTAssertEqual(TranscriptDeliveryMode.streaming.segmentLabel, "Stream")
+        XCTAssertEqual(
+            TranscriptDeliveryMode.clipboard.summary,
+            "Copies the finished transcript to the clipboard. VoxBox does not paste or write into the focused app; paste it yourself."
+        )
+        XCTAssertEqual(
+            TranscriptDeliveryMode.autoPaste.summary,
+            "Waits until you stop, then pastes the finished transcript into the app you were in."
+        )
+        XCTAssertEqual(
+            TranscriptDeliveryMode.streaming.summary,
+            "The transcription is streamed into the destination text area as it appears and is processed."
+        )
+    }
 
-        defaults.set(false, forKey: TranscriptClipboardPreference.defaultsKey)
-        XCTAssertFalse(TranscriptClipboardPreference.isEnabled(in: defaults))
+    func testTranscriptDeliveryModeMigratesFromLegacyFlags() {
+        func suiteDefaults() -> (UserDefaults, String) {
+            let name = "voxbox.tests.delivery.migrate.\(UUID().uuidString)"
+            return (UserDefaults(suiteName: name)!, name)
+        }
+
+        let (streamingDefaults, streamingSuite) = suiteDefaults()
+        defer { streamingDefaults.removePersistentDomain(forName: streamingSuite) }
+        streamingDefaults.set(true, forKey: StreamingMode.defaultsKey)
+        XCTAssertEqual(TranscriptDeliveryMode.current(in: streamingDefaults), .streaming)
+
+        let (clipboardDefaults, clipboardSuite) = suiteDefaults()
+        defer { clipboardDefaults.removePersistentDomain(forName: clipboardSuite) }
+        clipboardDefaults.set(true, forKey: TranscriptClipboardPreference.defaultsKey)
+        XCTAssertEqual(TranscriptDeliveryMode.current(in: clipboardDefaults), .clipboard)
+
+        let (neitherDefaults, neitherSuite) = suiteDefaults()
+        defer { neitherDefaults.removePersistentDomain(forName: neitherSuite) }
+        XCTAssertEqual(TranscriptDeliveryMode.current(in: neitherDefaults), .autoPaste)
+
+        let (bothDefaults, bothSuite) = suiteDefaults()
+        defer { bothDefaults.removePersistentDomain(forName: bothSuite) }
+        bothDefaults.set(true, forKey: StreamingMode.defaultsKey)
+        bothDefaults.set(true, forKey: TranscriptClipboardPreference.defaultsKey)
+        XCTAssertEqual(TranscriptDeliveryMode.current(in: bothDefaults), .streaming)
+        XCTAssertTrue(StreamingMode.isEnabled(in: bothDefaults))
+        XCTAssertFalse(TranscriptClipboardPreference.isEnabled(in: bothDefaults))
+    }
+
+    func testClipboardCommitPlanNeverRequestsPaste() {
+        XCTAssertEqual(
+            TranscriptCommitPlanner.plan(
+                mode: .clipboard, canPaste: true, restoreClipboard: true),
+            .copyOnly
+        )
+        XCTAssertEqual(
+            TranscriptCommitPlanner.plan(
+                mode: .clipboard, canPaste: false, restoreClipboard: false),
+            .copyOnly
+        )
+    }
+
+    func testAutoPasteWithNoTargetStillCopies() {
+        XCTAssertEqual(
+            TranscriptCommitPlanner.plan(
+                mode: .autoPaste, canPaste: false, restoreClipboard: true),
+            .copyOnly
+        )
+        XCTAssertEqual(
+            TranscriptCommitPlanner.plan(
+                mode: .autoPaste, canPaste: true, restoreClipboard: true),
+            .paste(restoreClipboard: true)
+        )
+        XCTAssertEqual(
+            TranscriptCommitPlanner.plan(
+                mode: .autoPaste, canPaste: true, restoreClipboard: false),
+            .paste(restoreClipboard: false)
+        )
+        XCTAssertEqual(
+            TranscriptCommitPlanner.plan(
+                mode: .streaming, canPaste: false, restoreClipboard: true),
+            .copyOnly
+        )
+        XCTAssertEqual(
+            TranscriptCommitPlanner.plan(
+                mode: .streaming, canPaste: true, restoreClipboard: true),
+            .paste(restoreClipboard: true)
+        )
     }
 
     func testParakeetIncompleteCacheIsNotInstalled() throws {
@@ -182,8 +283,10 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         XCTAssertFalse(StreamingMode.isEnabled(in: defaults))
-        defaults.set(true, forKey: StreamingMode.defaultsKey)
+        TranscriptDeliveryMode.set(.streaming, in: defaults)
         XCTAssertTrue(StreamingMode.isEnabled(in: defaults))
+        TranscriptDeliveryMode.set(.autoPaste, in: defaults)
+        XCTAssertFalse(StreamingMode.isEnabled(in: defaults))
     }
 
     func testFieldSpanSplicesReplacementAndClampsBounds() {
@@ -381,13 +484,14 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
 
-        defaults.set(true, forKey: StreamingMode.defaultsKey)
+        TranscriptDeliveryMode.set(.streaming, in: defaults)
         XCTAssertTrue(
             StreamingMode.disableIfIncompatible(
                 with: ParakeetCatalog.v3Variant, defaults: defaults))
         XCTAssertFalse(StreamingMode.isEnabled(in: defaults))
+        XCTAssertEqual(TranscriptDeliveryMode.current(in: defaults), .autoPaste)
 
-        defaults.set(true, forKey: StreamingMode.defaultsKey)
+        TranscriptDeliveryMode.set(.streaming, in: defaults)
         XCTAssertFalse(
             StreamingMode.disableIfIncompatible(
                 with: "openai_whisper-tiny", defaults: defaults))

@@ -4,7 +4,10 @@ import SwiftUI
 
 enum TranscriptDelivery {
     case pasted
+    /// Auto-paste or streaming wanted a target and had none.
     case copiedToClipboard
+    /// Clipboard delivery: copy-only, not a missing-destination fallback.
+    case copiedOnPurpose
     /// Live rewrite already put the words in the focused field.
     case alreadyInField
 }
@@ -17,14 +20,6 @@ class MiniRecorderWindowController: NSObject {
     private var isObservingModels = false
     private var shouldRestoreClipboardAfterAutoPaste: Bool {
         UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
-    }
-
-    /// When on, every completed transcript stays on the clipboard after
-    /// dictation — even when it was also auto-pasted — so it can be pasted
-    /// again anywhere. Off by default for new installs. Takes precedence over
-    /// the clipboard-restore behavior.
-    private var shouldKeepTranscriptOnClipboard: Bool {
-        TranscriptClipboardPreference.isEnabled()
     }
 
     /// When on, the resting pill stays on screen even when idle. Default off:
@@ -309,48 +304,61 @@ class MiniRecorderWindowController: NSObject {
     }
 
     private func handleCommit(text: String) async -> TranscriptDelivery {
-        let accessibilityTrusted = ClipboardService.shared.isAccessibilityTrusted
+        let mode = TranscriptDeliveryMode.current()
         let target = resolvedPasteTarget()
-        let canPaste = accessibilityTrusted && target != nil
+        let canPaste = ClipboardService.shared.isAccessibilityTrusted && target != nil
+        let action = TranscriptCommitPlanner.plan(
+            mode: mode,
+            canPaste: canPaste,
+            restoreClipboard: shouldRestoreClipboardAfterAutoPaste
+        )
 
-        if !canPaste {
+        switch action {
+        case .copyOnly:
             ClipboardService.shared.copy(text: text)
+            if mode == .clipboard {
+                await MainActor.run {
+                    self.returnToIdle()
+                }
+                return .copiedOnPurpose
+            }
             print(
                 "⚠️ Auto-paste unavailable — transcript copied to clipboard"
             )
             return .copiedToClipboard
+
+        case .paste(let restoreClipboard):
+            let previousClipboard: ClipboardService.ClipboardSnapshot?
+            if restoreClipboard {
+                previousClipboard = ClipboardService.shared.copyForTemporaryPaste(text: text)
+            } else {
+                previousClipboard = nil
+                ClipboardService.shared.copy(text: text)
+            }
+
+            await MainActor.run {
+                self.returnToIdle()
+            }
+
+            _ = await MainActor.run {
+                target?.activate()
+            }
+
+            try? await Task.sleep(nanoseconds: 500_000_000)
+
+            await MainActor.run {
+                ClipboardService.shared.paste()
+            }
+
+            guard let previousClipboard else { return .pasted }
+
+            try? await Task.sleep(nanoseconds: 350_000_000)
+
+            await MainActor.run {
+                ClipboardService.shared.restore(previousClipboard, ifCurrentStringMatches: text)
+            }
+            return .pasted
         }
-
-        let previousClipboard: ClipboardService.ClipboardSnapshot?
-        if !shouldKeepTranscriptOnClipboard && shouldRestoreClipboardAfterAutoPaste {
-            previousClipboard = ClipboardService.shared.copyForTemporaryPaste(text: text)
-        } else {
-            previousClipboard = nil
-            ClipboardService.shared.copy(text: text)
-        }
-
-        await MainActor.run {
-            self.returnToIdle()
-        }
-
-        _ = await MainActor.run {
-            target?.activate()
-        }
-
-        try? await Task.sleep(nanoseconds: 500_000_000)
-
-        await MainActor.run {
-            ClipboardService.shared.paste()
-        }
-
-        guard let previousClipboard else { return .pasted }
-
-        try? await Task.sleep(nanoseconds: 350_000_000)
-
-        await MainActor.run {
-            ClipboardService.shared.restore(previousClipboard, ifCurrentStringMatches: text)
-        }
-        return .pasted
     }
 
     private func showAccessibilityAlert() {

@@ -35,7 +35,7 @@ It is a fork of [SpeakType](https://github.com/karansinghgit/speaktype). VoxBox 
 
 Raw speech-to-text gets messy on longer takes: fillers, false starts, missing punctuation. VoxBox can run an optional **on-device Apple Intelligence** pass after the speech model (so nothing leaves your Mac):
 
-- **Formatting** — capitals, commas, paragraph breaks only
+- **Basic** — capitals, commas, paragraph breaks only
 - **Light cleanup** — also drops fillers and fixes obvious grammar
 - **Polish** — smooths choppy dictation into fluent sentences
 
@@ -47,8 +47,11 @@ Instant, non-AI options are also available to strip "um's" and "ahh's" if you wa
 
 ## VoxBox quality of life improvements
 
-- **Copy on finish** — the transcript stays on the clipboard (default on)
-- **Copy last transcript** — ⌃⌥C if auto-paste missed the field
+- **Delivery** — choose how the transcript is delivered:
+  - **Copy transcription to clipboard** — copies only; VoxBox never auto-pastes
+  - **Auto paste transcription** — default; waits until you stop, then pastes into the app you were in
+  - **Stream transcription** — writes into the destination as tokens appear
+- **Copy last transcript** — ⌃⌥C to put the most recent transcript on the clipboard
 - **Australian English** — transcribe as English, then convert American spellings offline
 - **Custom hotkey** — any key combination, not only a single modifier
 - **Retention** — auto-delete audio and old transcripts; stats are kept
@@ -81,7 +84,7 @@ make build && make run
 1. Press the hotkey
 2. Speak — a sentence or a longer note
 3. Release (or press again in toggle mode)
-4. Text pastes into the focused field, or lands on the clipboard
+4. Text follows your Delivery setting: Auto paste (the default) pastes into the focused field; Copy transcription to clipboard never auto-pastes; Stream transcription writes as you speak.
 
 If paste misses, press **⌃⌥C** and paste yourself.
 

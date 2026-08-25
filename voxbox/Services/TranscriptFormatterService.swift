@@ -20,7 +20,7 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .formatting: return "Formatting"
+        case .formatting: return "Basic"
         case .lightCleanup: return "Light cleanup"
         case .polish: return "Polish"
         }
@@ -29,33 +29,34 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
     var summary: String {
         switch self {
         case .formatting:
-            return "Capitals, commas, and paragraph breaks only. Does not add or drop words."
+            return "Basic: Fix capitals, commas, and paragraph breaks only. Does not add or drop words."
         case .lightCleanup:
-            return "Drops false starts and repeated words, and fixes obvious grammar. Not the same as the filler-word toggle above — this can rewrite a phrase."
+            return "Light cleanup: Remove filler words and false starts, and fix obvious grammar and punctuation. (Usable with \"Markdown formatting\")"
         case .polish:
-            return "Turns choppy dictation into fluent sentences. Meaning and tone stay the same; wording may change."
+            return "Polish: Turns choppy dictation into fluent sentences and structured paragraphs. (Usable with \"Markdown formatting\")"
         }
     }
 
-    /// Model instructions for this level.
-    var instructions: String {
-        let base = """
-            You clean up text dictated by voice. Reply with only the cleaned text — \
-            no commentary, no labels, no quotation marks around it. Never write \
-            phrases such as “here’s the clean text” or “cleaned text:”. Never add \
-            information, never summarise, never reorder ideas.
-            """
+    /// Shared preamble for every intensity.
+    private static let baseInstructions = """
+        You clean up text dictated by voice. Reply with only the cleaned text — \
+        no commentary, no labels, no quotation marks around it. Never write \
+        phrases such as “here’s the clean text” or “cleaned text:”. Never add \
+        information, never summarise, never reorder ideas.
+        """
+
+    /// Intensity body with optional stages omitted. Markdown lives in
+    /// `FormattingPromptStage.markdownFormatting`, not here.
+    private var intensityInstructions: String {
         switch self {
         case .formatting:
-            return base + """
-
+            return """
                 Apply ONLY mechanical edits: fix spacing, capitalisation and \
                 punctuation, and add sentence/paragraph breaks where the flow of \
                 speech implies them. Do not add, remove or change any word.
                 """
         case .lightCleanup:
-            return base + """
-
+            return """
                 Apply these edits: remove filler words and false starts ("um", "uh", \
                 "ah", "er", "you know", filler "like", repeated words); fix grammar, \
                 punctuation, capitalisation and spacing; add sentence and paragraph \
@@ -63,18 +64,38 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
                 wording everywhere else.
                 """
         case .polish:
-            return base + """
-
-                Apply these edits: remove filler words and false starts ("um", "uh", \
-                "ah", "er", "you know", filler "like", repeated words); replace words \
-                that don't make sense in the context of the wider text, the text is \
-                a transcription so it's likely the correct word is phonetically similar. \
-                Next, fix grammar, punctuation, capitalisation and spacing; add sentence \
-                and paragraph breaks; where dictated phrasing is choppy or fragmented, \
-                smooth it into fluent sentences. Keep the speaker's meaning, vocabulary \
-                and tone — polish the delivery, never the message.
+            return """
+                Remove filler words and false starts ("um", "uh", "ah", "er", "you know", filler "like", repeated words);\
+                Fix grammar, punctuation, capitalisation and spacing; add sentence and paragraph breaks where the flow of speech implies them;\
+                Where a word is semantically out of place, and phonetically similar to a more likely word (e.g. pacing and pasting), replace it with the correct word;\
+                Where a small restructuing of a sentence or phrase is needed to improve the flow of speech, do so;\
+                Preserve the speaker's meaning, vocabulary and tone — polish the delivery, never the message.
                 """
         }
+    }
+
+    /// Model instructions for this level, including optional stages from
+    /// the current Settings toggles.
+    var instructions: String {
+        instructions(
+            includeMarkdownFormatting: TranscriptFormatterService.isMarkdownFormattingEnabled)
+    }
+
+    /// Instruction stages sent to the model: base + intensity body + optional
+    /// markdown + always-on output-only. Never mixed into the transcript input.
+    func instructionStages(includeMarkdownFormatting: Bool) -> [String] {
+        var stages = [Self.baseInstructions, intensityInstructions]
+        if includeMarkdownFormatting {
+            stages.append(FormattingPromptStage.markdownFormatting)
+        }
+        stages.append(FormattingPromptStage.outputTranscriptOnly)
+        return stages
+    }
+
+    /// Assembled instructions: base + intensity body + optional stages.
+    func instructions(includeMarkdownFormatting: Bool) -> String {
+        instructionStages(includeMarkdownFormatting: includeMarkdownFormatting)
+            .joined(separator: "\n\n")
     }
 
     /// Maximum fraction of words the model may change/remove at this level
@@ -82,9 +103,35 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
     var maximumChangeRatio: Double {
         switch self {
         case .formatting: return 0.10
-        case .lightCleanup: return 0.35
-        case .polish: return 0.70
+        case .lightCleanup: return 0.40
+        case .polish: return 0.80
         }
+    }
+}
+
+/// Prompt fragments appended after the intensity body. Settings-gated
+/// stages are included only when the matching toggle is on; always-on
+/// stages are appended every LLM pass.
+enum FormattingPromptStage {
+    /// Lifted from the Polish instructions. Do not rewrite — the Settings
+    /// toggle includes or omits this exact line.
+    static let markdownFormatting =
+        "You can provide limited markdown formatting (bold, italic, bullet points, numbered lists, etc.) where it makes sense to do so;"
+
+    /// Always-on. Last so it counters a markdown-bold “here is the cleaned text” wrap.
+    static let outputTranscriptOnly =
+        "Return only the rewritten transcript — no preamble, no “here is the cleaned text”, no wrapping quotes."
+}
+
+/// One on-device cleanup call: agent instructions vs the dictation to rewrite.
+struct FormattingRequest: Equatable {
+    /// Stages passed to `LanguageModelSession` as instructions, not as input.
+    let instructionStages: [String]
+    /// Original dictation only — never includes instruction fragments.
+    let input: String
+
+    var instructions: String {
+        instructionStages.joined(separator: "\n\n")
     }
 }
 
@@ -107,10 +154,17 @@ final class TranscriptFormatterService {
 
     static let enabledKey = "formatTranscriptWithOnDeviceAI"
     static let intensityKey = "formatTranscriptIntensity"
+    static let markdownFormattingKey = "formatTranscriptMarkdown"
 
     /// Opt-in; default off.
     static var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: enabledKey)
+    }
+
+    /// Default on: the Polish prompt already asked for markdown, so an
+    /// unset key keeps existing output.
+    static var isMarkdownFormattingEnabled: Bool {
+        UserDefaults.standard.object(forKey: markdownFormattingKey) as? Bool ?? true
     }
 
     static var intensity: FormattingIntensity {
@@ -141,6 +195,20 @@ final class TranscriptFormatterService {
         return words(in: text).count >= minimumWordCount
     }
 
+    /// Split `text` into model instructions vs dictation input. Markdown
+    /// belongs only in `instructions`; the transcript body stays dictation.
+    static func request(
+        for text: String,
+        intensity: FormattingIntensity,
+        includeMarkdownFormatting: Bool
+    ) -> FormattingRequest {
+        FormattingRequest(
+            instructionStages: intensity.instructionStages(
+                includeMarkdownFormatting: includeMarkdownFormatting),
+            input: text.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
     /// Clean up `text` at the user's chosen intensity, returning the input
     /// unchanged whenever the feature is off, the model is unavailable, the
     /// text is too short, the model errors, or the guardrail rejects the
@@ -154,10 +222,16 @@ final class TranscriptFormatterService {
         guard wordCount >= Self.minimumWordCount else { return text }
 
         let intensity = Self.intensity
+        let request = Self.request(
+            for: trimmed,
+            intensity: intensity,
+            includeMarkdownFormatting: Self.isMarkdownFormattingEnabled)
         do {
-            let session = LanguageModelSession(instructions: intensity.instructions)
+            let session = LanguageModelSession {
+                request.instructionStages
+            }
             let response = try await session.respond(
-                to: trimmed,
+                to: request.input,
                 options: GenerationOptions(temperature: 0.0)
             )
             let cleaned = Self.stripModelPreamble(
@@ -193,7 +267,11 @@ final class TranscriptFormatterService {
         guard !a.isEmpty || !b.isEmpty else { return 0 }
 
         let distance = levenshtein(a, b)
-        return Double(distance) / Double(max(a.count, b.count))
+        let outcome = Double(distance) / Double(max(a.count, b.count))
+        AppLogger.debug(
+            "On-device formatting change ratio: \(outcome)",
+            category: AppLogger.transcription)
+        return outcome
     }
 
     /// Tokens the guardrail treats as cleanup, not meaning. Matches the filler
@@ -248,25 +326,21 @@ final class TranscriptFormatterService {
         return out
     }
 
-    /// Drops labels the model sometimes prepends despite the instructions.
+    /// Drops labels the model sometimes prepends despite the instructions,
+    /// and instruction fragments it copies into the transcript.
     static func stripModelPreamble(_ text: String) -> String {
         var next = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let prefixes = [
-            "here's the cleaned-up text:",
-            "here is the cleaned-up text:",
-            "here's the cleaned text:",
-            "here is the cleaned text:",
-            "here's the clean text:",
-            "here is the clean text:",
-            "cleaned-up text:",
-            "cleaned text:",
-            "clean text:",
+        let leakedInstructions = [
+            FormattingPromptStage.markdownFormatting,
+            FormattingPromptStage.outputTranscriptOnly,
         ]
-        let lower = next.lowercased()
-        if let prefix = prefixes.first(where: { lower.hasPrefix($0) }) {
-            next = String(next.dropFirst(prefix.count))
+        for leak in leakedInstructions {
+            let needle = leak.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !needle.isEmpty, next.hasPrefix(needle) else { continue }
+            next = String(next.dropFirst(needle.count))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         }
+        next = stripLeadingWrapperParagraph(next)
         if next.count >= 2 {
             let wrappedQuotes =
                 (next.hasPrefix("\"") && next.hasSuffix("\""))
@@ -277,6 +351,103 @@ final class TranscriptFormatterService {
             }
         }
         return next
+    }
+
+    /// Drops one leading conversational wrapper line. Real dictation is kept.
+    static func stripLeadingWrapperParagraph(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return trimmed }
+
+        let firstLine: String
+        let remainder: String
+        if let newline = trimmed.firstIndex(of: "\n") {
+            firstLine = String(trimmed[..<newline])
+            remainder = String(trimmed[trimmed.index(after: newline)...])
+        } else {
+            firstLine = trimmed
+            remainder = ""
+        }
+
+        guard let afterWrapper = droppingWrapperPrefix(from: firstLine) else {
+            return trimmed
+        }
+        let pieces = [afterWrapper, remainder]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return pieces.joined(separator: "\n")
+    }
+
+    /// Known LLM labels, longest first so “cleaned-up” wins over “cleaned”.
+    private static let wrapperPrefixes = [
+        "here's the cleaned-up transcript:",
+        "here is the cleaned-up transcript:",
+        "here's the cleaned transcript:",
+        "here is the cleaned transcript:",
+        "here's the cleaned-up text:",
+        "here is the cleaned-up text:",
+        "here's the clean transcript:",
+        "here is the clean transcript:",
+        "here's the cleaned text:",
+        "here is the cleaned text:",
+        "here's the clean text:",
+        "here is the clean text:",
+        "here's the transcript:",
+        "here is the transcript:",
+        "cleaned-up transcript:",
+        "cleaned transcript:",
+        "cleaned-up text:",
+        "cleaned text:",
+        "clean text:",
+    ]
+
+    private static let courtesyOpeners = [
+        "sure, ",
+        "sure. ",
+        "sure ",
+        "okay, ",
+        "okay. ",
+        "ok, ",
+        "ok. ",
+    ]
+
+    /// If `line` starts with a wrapper (optional markdown bold/italic, optional
+    /// “Sure, ”), returns the rest of the line; otherwise nil.
+    private static func droppingWrapperPrefix(from line: String) -> String? {
+        var candidate = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        var openingWidth = 0
+        if candidate.hasPrefix("**") {
+            candidate = String(candidate.dropFirst(2))
+            openingWidth = 2
+        } else if candidate.hasPrefix("*") {
+            candidate = String(candidate.dropFirst())
+            openingWidth = 1
+        }
+
+        let comparable = candidate.lowercased()
+            .replacingOccurrences(of: "’", with: "'")
+            .replacingOccurrences(of: "‘", with: "'")
+        var search = comparable
+        var dropCount = 0
+        if let opener = courtesyOpeners.first(where: { search.hasPrefix($0) }) {
+            dropCount += opener.count
+            search = String(search.dropFirst(opener.count))
+        }
+        guard let prefix = wrapperPrefixes.first(where: { search.hasPrefix($0) }) else {
+            return nil
+        }
+        dropCount += prefix.count
+        var rest = String(candidate.dropFirst(dropCount))
+            .trimmingCharacters(in: .whitespaces)
+        if openingWidth == 2, rest.hasPrefix("**") {
+            rest = String(rest.dropFirst(2))
+        } else if openingWidth == 1, rest.hasPrefix("*") {
+            rest = String(rest.dropFirst())
+        } else if rest.hasPrefix("**") {
+            rest = String(rest.dropFirst(2))
+        } else if rest.hasPrefix("*") {
+            rest = String(rest.dropFirst())
+        }
+        return rest.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     static func words(in text: String) -> [String] {

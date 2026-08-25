@@ -45,13 +45,13 @@ enum ModelSelection {
     }
 }
 
-/// "Copy transcript to clipboard after dictation" — off for new installs.
+/// Legacy copy-to-clipboard toggle. Delivery is now `TranscriptDeliveryMode`;
+/// this key is only read to migrate, and `isEnabled` follows clipboard mode.
 enum TranscriptClipboardPreference {
     static let defaultsKey = "copyTranscriptToClipboard"
-    static let defaultEnabled = false
 
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
-        defaults.object(forKey: defaultsKey) as? Bool ?? defaultEnabled
+        TranscriptDeliveryMode.current(in: defaults) == .clipboard
     }
 }
 
