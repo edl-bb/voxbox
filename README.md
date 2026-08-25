@@ -39,8 +39,6 @@ Raw speech-to-text gets messy on longer takes: fillers, false starts, missing pu
 - **Light cleanup** — also drops fillers and fixes obvious grammar
 - **Polish** — smooths choppy dictation into fluent sentences
 
-A guardrail keeps the original if the edit is too heavy. That is why you can dictate a full thought or a longer note and still get usable text.
-
 Instant, non-AI options are also available to strip "um's" and "ahh's" if you want the fastest experience possible.
 
 ---
@@ -48,13 +46,13 @@ Instant, non-AI options are also available to strip "um's" and "ahh's" if you wa
 ## VoxBox quality of life improvements
 
 - **Delivery** — choose how the transcript is delivered:
-  - **Copy transcription to clipboard** — copies only; VoxBox never auto-pastes
-  - **Auto paste transcription** — default; waits until you stop, then pastes into the app you were in
-  - **Stream transcription** — writes into the destination as tokens appear
-- **Copy last transcript** — ⌃⌥C to put the most recent transcript on the clipboard
-- **Australian English** — transcribe as English, then convert American spellings offline
-- **Custom hotkey** — any key combination, not only a single modifier
-- **Retention** — auto-delete audio and old transcripts; stats are kept
+  - **Copy transcription to clipboard** — copy the completed transcript to your clipboard to use when you're ready
+  - **Auto paste transcription** — default; when you finish recording, write transcript to a waiting text box. Falls back to clipboard if no writable text area is found.
+  - **Stream transcription** — words appear as you speak them. Falls back to Auto paste/clipboard if no writable text area is found.
+- **Copy last transcript** — ⌃⌥C to put the most recent transcript on the clipboard (configurable shortcut)
+- **Australian English** — support for Australian English spelling
+- **Custom hotkey** — use the key combination you prefer to invoke VoxBox
+- **Retention** — auto-delete audio and old transcripts; usage stats are retained
 - **Model download progress** – improved visibility when models are downloading in the background so you know how long you need to wait to begin transcribing.
 
 ---
@@ -84,11 +82,10 @@ make build && make run
 1. Press the hotkey
 2. Speak — a sentence or a longer note
 3. Release (or press again in toggle mode)
-4. Text follows your Delivery setting: Auto paste (the default) pastes into the focused field; Copy transcription to clipboard never auto-pastes; Stream transcription writes as you speak.
+4. Transcript appears, ready for what comes next.
 
-If paste misses, press **⌃⌥C** and paste yourself.
 
-The first model load can take 30–60 seconds. After that, dictation is fast.
+The first model load for a newly downloaded model can take 30–60 seconds. After that, dictation is fast.
 
 ---
 
