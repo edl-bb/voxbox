@@ -13,6 +13,8 @@ struct AIModelsView: View {
                     .font(Typography.displayLarge)
                     .foregroundStyle(Color.textPrimary)
 
+                CurrentModelsStrip()
+
                 HStack(spacing: 0) {
                     ForEach(AIModelsTab.allCases) { tab in
                         AIModelsTabButton(
@@ -30,8 +32,6 @@ struct AIModelsView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    CurrentModelsStrip()
-
                     switch selectedTab {
                     case .transcription:
                         TranscriptionModelsTab()
@@ -106,7 +106,12 @@ private struct CurrentModelsStrip: View {
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage(TranscriptFormatterService.enabledKey)
     private var formatWithOnDeviceAI: Bool = false
+    // Bound via @AppStorage (not read from the service) so the strip
+    // re-renders the moment the effort level changes on another tab.
+    @AppStorage(TranscriptFormatterService.intensityKey)
+    private var formattingIntensityRaw: Int = FormattingIntensity.lightCleanup.rawValue
     @ObservedObject private var postProcessing = PostProcessingModelManager.shared
+    @ObservedObject private var rulesetStore = CustomRulesetStore.shared
 
     private var transcriptionModel: AIModel? {
         AIModel.availableModels.first { $0.variant == selectedModel }
@@ -159,11 +164,13 @@ private struct CurrentModelsStrip: View {
 
     private var cleanupDetail: String? {
         guard formatWithOnDeviceAI else { return nil }
-        let model = postProcessing.selectedModel
-        if !model.isRunnable {
+        if !postProcessing.selectedModel.isRunnable {
             return "Via Apple Intelligence until the local runtime ships"
         }
-        return TranscriptFormatterService.intensity.displayName
+        let intensity = FormattingIntensity(rawValue: formattingIntensityRaw) ?? .lightCleanup
+        guard intensity == .custom else { return intensity.displayName }
+        guard let ruleset = rulesetStore.activeRuleset else { return "Custom: no ruleset yet" }
+        return "Custom: \(ruleset.name)"
     }
 
     private func segment(
