@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import SwiftUI
 
 /// A user-authored cleanup ruleset for the on-device AI pass. Unlike the
 /// built-in intensities, a custom ruleset is sent to the model verbatim —
