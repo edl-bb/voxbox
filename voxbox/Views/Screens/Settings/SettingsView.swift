@@ -161,7 +161,23 @@ struct GeneralSettingsTab: View {
                     SettingsSectionHeader(
                         icon: "command", title: "Shortcuts",
                         subtitle: "Recording and clipboard hotkeys"
-                    )
+                    ) {
+                        Button(action: restoreFactoryShortcuts) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("Restore Defaults")
+                                    .font(Typography.labelSmall)
+                            }
+                            .foregroundStyle(Color.textPrimary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.bgHover)
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Resets the primary hotkey to Fn and recorded shortcuts to their original combinations.")
+                    }
 
                     VStack(spacing: 16) {
                         HStack {
@@ -189,7 +205,7 @@ struct GeneralSettingsTab: View {
                                 .background(Color.bgHover)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                             }
-                            .menuStyle(.borderlessButton)
+                            .settingsMenuStyle()
                         }
 
                         if selectedHotkey == .custom {
@@ -199,11 +215,14 @@ struct GeneralSettingsTab: View {
                                         .font(Typography.bodyMedium)
                                         .foregroundStyle(Color.textPrimary)
                                     Spacer()
-                                    KeyboardShortcuts.Recorder("", name: .toggleRecord)
+                                    KeyboardShortcuts.Recorder("", name: .toggleRecord) { shortcut in
+                                        ShortcutReset.recordedShortcutDidChange(
+                                            shortcut, for: .toggleRecord)
+                                    }
                                 }
 
                                 Text(
-                                    "Record any combination (e.g. ⌘D or ⌃⌥Space). Combinations are much less likely to collide with other apps than a single modifier key."
+                                    "Record any key combination to make VoxBox work the way you do."
                                 )
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
@@ -240,11 +259,15 @@ struct GeneralSettingsTab: View {
                                     .font(Typography.bodyMedium)
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
-                                KeyboardShortcuts.Recorder("", name: .copyLastTranscript)
+                                KeyboardShortcuts.Recorder("", name: .copyLastTranscript) {
+                                    shortcut in
+                                    ShortcutReset.recordedShortcutDidChange(
+                                        shortcut, for: .copyLastTranscript)
+                                }
                             }
 
                             Text(
-                                "Copies the most recent transcript to the clipboard so you can paste it yourself."
+                                "Copies the most recent transcript to the clipboard."
                             )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
@@ -437,7 +460,7 @@ struct GeneralSettingsTab: View {
                                     .background(Color.bgHover)
                                     .clipShape(RoundedRectangle(cornerRadius: 6))
                                 }
-                                .menuStyle(.borderlessButton)
+                                .settingsMenuStyle()
                             }
 
                             Text(
@@ -642,7 +665,7 @@ struct GeneralSettingsTab: View {
                             .background(Color.bgHover)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
-                        .menuStyle(.borderlessButton)
+                        .settingsMenuStyle()
                     }
 
                 }
@@ -689,7 +712,7 @@ struct GeneralSettingsTab: View {
                         title: "Updates",
                         subtitle: "VoxBox \(AppVersion.currentVersion)"
                     ) {
-                        Button(action: ReleaseNotesRoute.present) {
+                        Button(action: { ReleaseNotesRoute.present() }) {
                             HStack(spacing: 5) {
                                 Image(systemName: "doc.text")
                                     .font(.system(size: 11, weight: .semibold))
@@ -794,6 +817,11 @@ struct GeneralSettingsTab: View {
         }
     }
 
+    private func restoreFactoryShortcuts() {
+        selectedHotkey = .fn
+        ShortcutReset.restoreAll()
+    }
+
     private var restoreClipboardHelpText: String {
         if transcriptDeliveryMode != .autoPaste {
             return
@@ -861,7 +889,7 @@ struct GeneralSettingsTab: View {
                 .background(Color.bgHover)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
-            .menuStyle(.borderlessButton)
+            .settingsMenuStyle()
         }
     }
 

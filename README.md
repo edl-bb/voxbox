@@ -21,9 +21,9 @@
 
 ## What is VoxBox?
 
-VoxBox is a privacy-first dictation app for macOS. Speech is transcribed **on your Mac** with [WhisperKit](https://github.com/argmaxinc/WhisperKit) or Parakeet — nothing is sent to a cloud speech API.
+VoxBox is a privacy-first dictation app for macOS. Speech is transcribed **on your Mac** using native MacOS models. Customise your preferred model and use [WhisperKit](https://github.com/argmaxinc/WhisperKit) or Parakeet if you prefer. 
 
-It is a fork of [SpeakType](https://github.com/karansinghgit/speaktype). VoxBox adds on-device AI cleanup so longer dictations stay readable, plus support for Australian English and a few other quality-of-life improvements.
+No transcription data is sent off the device to a cloud provider. Your data remains safe on your device.
 
 - **Private** — transcription and cleanup stay on the device
 - **Local models** — choose your preferred transcription model and use it offline. Optional text cleanup utilises on device Apple Intelligence models.

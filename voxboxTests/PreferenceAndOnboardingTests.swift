@@ -57,7 +57,7 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertEqual(TranscriptDeliveryMode.streaming.segmentLabel, "Stream")
         XCTAssertEqual(
             TranscriptDeliveryMode.clipboard.summary,
-            "Copies the finished transcript to the clipboard. VoxBox does not paste or write into the focused app; paste it yourself."
+            "Copies the finished transcript to the clipboard."
         )
         XCTAssertEqual(
             TranscriptDeliveryMode.autoPaste.summary,
@@ -195,6 +195,29 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertFalse(AppTheme.systemIsDark(defaults: defaults))
     }
 
+    func testAppTintStaysReadableInDarkMode() {
+        let nsColor = NSColor(Color.navyInk)
+
+        func brightness(in appearance: NSAppearance) -> CGFloat {
+            var value: CGFloat = 0
+            appearance.performAsCurrentDrawingAppearance {
+                nsColor.usingColorSpace(.sRGB)?
+                    .getHue(nil, saturation: nil, brightness: &value, alpha: nil)
+            }
+            return value
+        }
+
+        let dark = brightness(in: NSAppearance(named: .darkAqua)!)
+        let light = brightness(in: NSAppearance(named: .aqua)!)
+
+        XCTAssertGreaterThan(
+            dark,
+            0.6,
+            "Menu chevrons inherit the app tint and vanish on dark backgrounds if navyInk stays dark"
+        )
+        XCTAssertLessThan(light, 0.4)
+    }
+
     func testAppleEngineKindRoutesFromCatalogVariant() {
         XCTAssertEqual(AIModel.engineKind(for: AppleSpeechCatalog.variant), .apple)
         XCTAssertEqual(TranscriptionEngineKind.apple.displayName, "Apple")
@@ -269,6 +292,50 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         )
         XCTAssertEqual(HotkeyOption.default, .fn)
         XCTAssertEqual(HotkeyOption.defaultsKey, "selectedHotkey")
+    }
+
+    func testRestoreAllSelectsTheFnPresetAfterACustomShortcut() {
+        let suite = "voxbox.tests.shortcut-reset.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        defaults.set(HotkeyOption.custom.rawValue, forKey: HotkeyOption.defaultsKey)
+        ShortcutReset.restoreAll(in: defaults)
+
+        XCTAssertEqual(
+            defaults.string(forKey: HotkeyOption.defaultsKey),
+            HotkeyOption.fn.rawValue
+        )
+    }
+
+    func testClearingARecordedShortcutRestoresTheFactoryCombo() {
+        let recorded = ShortcutReset.Recorded.copyLastTranscript
+        let previous = ShortcutReset.capture(recorded)
+        defer { ShortcutReset.restore(previous, for: recorded) }
+
+        ShortcutReset.assignNonFactoryCombo(recorded)
+        XCTAssertFalse(ShortcutReset.matchesFactory(recorded))
+
+        ShortcutReset.recordedShortcutDidChange(cleared: true, for: recorded)
+        XCTAssertTrue(ShortcutReset.matchesFactory(recorded))
+    }
+
+    func testRestoreAllRestoresRecordedShortcutsToFactoryCombos() {
+        let copy = ShortcutReset.Recorded.copyLastTranscript
+        let toggle = ShortcutReset.Recorded.toggleRecord
+        let previousCopy = ShortcutReset.capture(copy)
+        let previousToggle = ShortcutReset.capture(toggle)
+        defer {
+            ShortcutReset.restore(previousCopy, for: copy)
+            ShortcutReset.restore(previousToggle, for: toggle)
+        }
+
+        ShortcutReset.assignNonFactoryCombo(copy)
+        ShortcutReset.assignNonFactoryCombo(toggle)
+        ShortcutReset.restoreRecordedShortcuts()
+
+        XCTAssertTrue(ShortcutReset.matchesFactory(copy))
+        XCTAssertTrue(ShortcutReset.matchesFactory(toggle))
     }
 
     func testStreamingModeSupportsAppleSpeechAndWhisperKit() {
