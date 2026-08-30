@@ -14,6 +14,7 @@ Changes and release notes for VoxBox.
     - Made models list more compact.
     - The "Currently using" strip now shows the active model's capabilities and your Mac's specs.
 - Fixed the menu bar dropdown clipping at the bottom edge.
+- Fixed the Play button on the dashboard's recent transcriptions — it now plays (and stops) the recording.
 
 ## [1.1.2] - 2026-08-25
 - New feature: Send transcript to clipboard
