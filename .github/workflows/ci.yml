@@ -42,23 +42,38 @@ jobs:
 
       # Compile once with build-for-testing, then run the tests without rebuilding,
       # instead of a full `build` followed by a `test` that recompiles the app.
+      # On failure, compiler errors are re-emitted as ::error:: workflow
+      # commands so they surface as check-run annotations (readable via the
+      # API even when the raw log download is unavailable).
       - name: Build for testing
         run: |
-          xcodebuild build-for-testing \
+          set -o pipefail
+          if ! xcodebuild build-for-testing \
             -scheme voxbox \
             -configuration Debug \
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-build.log; then
+            grep -E "(^|[[:space:]])(error|fatal error): " xcodebuild-build.log \
+              | sort -u | head -40 \
+              | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
+            exit 1
+          fi
 
       - name: Unit tests
         run: |
-          xcodebuild test-without-building \
+          set -o pipefail
+          if ! xcodebuild test-without-building \
             -scheme voxbox \
             -destination 'platform=macOS' \
             -only-testing:voxboxTests \
             -clonedSourcePackagesDirPath SourcePackages \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-test.log; then
+            grep -E "(error: |Test Case .* failed|failed \()" xcodebuild-test.log \
+              | sort -u | head -40 \
+              | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
+            exit 1
+          fi
 
   lint:
     name: SwiftLint
