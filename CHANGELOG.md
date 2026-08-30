@@ -18,6 +18,7 @@ Changes and release notes for VoxBox.
     - Replaced the All/Streaming/Batch filter with per-model capability markers (check/cross streaming badges) on every card.
     - The "Currently using" strip now shows the active model's capabilities and your Mac's specs.
 - Fixed the menu bar dropdown clipping at the bottom edge.
+- Fixed the Play button on the dashboard's recent transcriptions — it now plays (and stops) the recording.
 - Upgraded WhisperKit to 0.18.
 
 ## [1.1.2] - 2026-08-25

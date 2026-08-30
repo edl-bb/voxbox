@@ -462,10 +462,27 @@ struct RecentTranscriptionRow: View {
     let item: HistoryItem
     @State private var isHovered = false
     @State private var showCopySuccess = false
+    @ObservedObject private var audioPlayer = AudioPlayerService.shared
 
     var wordCount: Int {
         item.transcript.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
             .count
+    }
+
+    private var isPlayingThisItem: Bool {
+        audioPlayer.isPlaying && audioPlayer.currentAudioURL == item.audioFileURL
+    }
+
+    private func togglePlayback() {
+        guard let url = item.audioFileURL else { return }
+        if isPlayingThisItem {
+            audioPlayer.stop()
+            return
+        }
+        if audioPlayer.currentAudioURL != url {
+            audioPlayer.loadAudio(from: url)
+        }
+        audioPlayer.play()
     }
 
     var body: some View {
@@ -539,14 +556,16 @@ struct RecentTranscriptionRow: View {
 
                         // Play audio button (if available)
                         if item.audioFileURL != nil {
-                            Button(action: {}) {
+                            Button(action: togglePlayback) {
                                 HStack(spacing: 4) {
-                                    Image(systemName: "play.fill")
+                                    Image(systemName: isPlayingThisItem ? "stop.fill" : "play.fill")
                                         .font(.system(size: 11))
-                                    Text("Play")
+                                    Text(isPlayingThisItem ? "Stop" : "Play")
                                         .font(Typography.captionSmall)
                                 }
-                                .foregroundStyle(Color.textSecondary)
+                                .foregroundStyle(
+                                    isPlayingThisItem ? Color.brandAccent : Color.textSecondary
+                                )
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
                                 .background(Color.bgHover)
