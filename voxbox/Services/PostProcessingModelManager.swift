@@ -83,25 +83,26 @@ final class PostProcessingModelManager: ObservableObject {
 
         let directory = Self.storageDir(for: variant)
         downloadTasks[variant] = Task.detached(priority: .utility) { [weak self] in
+            guard let self else { return }
             do {
                 try await Self.performDownload(model: model, repo: repo, directory: directory) {
                     received, total, completedFiles, totalFiles in
                     await MainActor.run {
-                        self?.applyProgress(
+                        self.applyProgress(
                             variant: variant, received: received, total: total,
                             completedFiles: completedFiles, totalFiles: totalFiles)
                     }
                 }
-                await MainActor.run { self?.finishDownload(variant: variant, completed: true) }
+                await MainActor.run { self.finishDownload(variant: variant, completed: true) }
             } catch is CancellationError {
                 try? FileManager.default.removeItem(at: directory)
-                await MainActor.run { self?.finishDownload(variant: variant, completed: false) }
+                await MainActor.run { self.finishDownload(variant: variant, completed: false) }
             } catch {
                 await MainActor.run {
                     AppLogger.warning(
                         "Post-processing model download failed: \(error.localizedDescription)",
                         category: AppLogger.transcription)
-                    self?.finishDownload(
+                    self.finishDownload(
                         variant: variant, completed: false,
                         errorMessage: "Download failed — check your connection and try again.")
                 }
