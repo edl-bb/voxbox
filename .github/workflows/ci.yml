@@ -25,6 +25,13 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app
 
+      # mlx-swift compiles .metal kernel sources; on Xcode 26 images the
+      # Metal toolchain is a separately downloaded component.
+      - name: Ensure Metal toolchain
+        run: |
+          xcodebuild -downloadComponent MetalToolchain \
+            || echo "Metal toolchain download skipped (may already be installed)"
+
       - name: Show versions
         run: |
           xcodebuild -version

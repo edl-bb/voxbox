@@ -4,7 +4,8 @@ Changes and release notes for VoxBox.
 
 ## [1.1.3] - 2026-08-30
 - AI Models is now a tabbed page: Transcription models, Post-processing models, and LLM Instructions.
-    - New Post-processing models tab: choose the LLM that cleans up transcripts. Apple Intelligence is built in, and you can download and manage local MLX models (Llama 3.2 1B/3B, Qwen 3 1.7B/4B) ahead of the local runtime that ships in a coming update.
+    - New Post-processing models tab: choose the LLM that cleans up transcripts. Apple Intelligence is built in, or download a local model (Llama 3.2 1B/3B, Qwen 3 1.7B/4B) and the cleanup pass runs on it via the on-device MLX runtime.
+    - If a local model fails, cleanup automatically retries on Apple Intelligence before falling back to the raw transcript.
     - The "currently using" strip now shows both the transcription model and the cleanup model.
     - Model cards are more compact, making better use of vertical space.
 - Settings: navigation rows (custom replacements, manage custom rulesets) now share one left-aligned style without leading icons.
@@ -17,6 +18,7 @@ Changes and release notes for VoxBox.
     - Replaced the All/Streaming/Batch filter with per-model capability markers (check/cross streaming badges) on every card.
     - The "Currently using" strip now shows the active model's capabilities and your Mac's specs.
 - Fixed the menu bar dropdown clipping at the bottom edge.
+- Upgraded WhisperKit to 0.18.
 
 ## [1.1.2] - 2026-08-25
 - New feature: Send transcript to clipboard

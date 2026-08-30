@@ -11,6 +11,9 @@
 		1CE4CB3F2F0EF6AF00C01C62 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 1CE4CB3E2F0EF6AF00C01C62 /* KeyboardShortcuts */; };
 		1CE4CB412F0EF86B00C01C62 /* whisperkit-cli in Frameworks */ = {isa = PBXBuildFile; productRef = 1CE4CB402F0EF86B00C01C62 /* whisperkit-cli */; };
 		FA0000000000000000000003 /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = FA0000000000000000000002 /* FluidAudio */; };
+		AB0000000000000000000021 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = AB0000000000000000000011 /* MLXLLM */; };
+		AB0000000000000000000022 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = AB0000000000000000000012 /* MLXLMCommon */; };
+		AB0000000000000000000023 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = AB0000000000000000000013 /* MLX */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +79,9 @@
 				1CE4CB3F2F0EF6AF00C01C62 /* KeyboardShortcuts in Frameworks */,
 				1CE4CB412F0EF86B00C01C62 /* whisperkit-cli in Frameworks */,
 				FA0000000000000000000003 /* FluidAudio in Frameworks */,
+				AB0000000000000000000021 /* MLXLLM in Frameworks */,
+				AB0000000000000000000022 /* MLXLMCommon in Frameworks */,
+				AB0000000000000000000023 /* MLX in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +155,9 @@
 				1CE4CB3E2F0EF6AF00C01C62 /* KeyboardShortcuts */,
 				1CE4CB402F0EF86B00C01C62 /* whisperkit-cli */,
 				FA0000000000000000000002 /* FluidAudio */,
+				AB0000000000000000000011 /* MLXLLM */,
+				AB0000000000000000000012 /* MLXLMCommon */,
+				AB0000000000000000000013 /* MLX */,
 			);
 			productName = voxbox;
 			productReference = 362947222F0DBC4E00BE895D /* voxbox.app */;
@@ -236,6 +245,8 @@
 				1C547F222F0E7D07008120A6 /* XCRemoteSwiftPackageReference "WhisperKit" */,
 				1CE4CB3D2F0EF6AF00C01C62 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
 				FA0000000000000000000001 /* XCRemoteSwiftPackageReference "FluidAudio" */,
+				AB0000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+				AB0000000000000000000002 /* XCRemoteSwiftPackageReference "mlx-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 362947232F0DBC4E00BE895D /* Products */;
@@ -659,7 +670,7 @@
 			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
 			requirement = {
 				kind = exactVersion;
-				version = 0.9.4;
+				version = 0.18.0;
 			};
 		};
 		1CE4CB3D2F0EF6AF00C01C62 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
@@ -676,6 +687,22 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.15.4;
+			};
+		};
+		AB0000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
+			requirement = {
+				kind = exactVersion;
+				version = 2.30.6;
+			};
+		};
+		AB0000000000000000000002 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.30.6;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -700,6 +727,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FA0000000000000000000001 /* XCRemoteSwiftPackageReference "FluidAudio" */;
 			productName = FluidAudio;
+		};
+		AB0000000000000000000011 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AB0000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLLM;
+		};
+		AB0000000000000000000012 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AB0000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLMCommon;
+		};
+		AB0000000000000000000013 /* MLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AB0000000000000000000002 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLX;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

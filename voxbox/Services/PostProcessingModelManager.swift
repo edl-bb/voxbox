@@ -38,6 +38,10 @@ final class PostProcessingModelManager: ObservableObject {
         set {
             objectWillChange.send()
             defaults.set(newValue, forKey: Self.selectionKey)
+            // Free the resident local model when it is no longer the pick.
+            if PostProcessingModel.model(for: newValue)?.kind != .mlx {
+                Task { await MLXModelCache.shared.unload() }
+            }
         }
     }
 
@@ -123,6 +127,7 @@ final class PostProcessingModelManager: ObservableObject {
             // Missing directory is fine; anything else leaves state unchanged.
         }
         downloadProgress[variant] = 0
+        Task { await MLXModelCache.shared.unload() }
         if selectedVariant == variant {
             selectedVariant = PostProcessingModel.appleSystemVariant
         }
