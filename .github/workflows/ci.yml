@@ -43,7 +43,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: SourcePackages
-          key: ${{ runner.os }}-spm-${{ hashFiles('VoxBox.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          # Also hash the pbxproj so the key still tracks the dependency
+          # graph while Package.resolved is absent from the repo.
+          key: ${{ runner.os }}-spm-${{ hashFiles('VoxBox.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'VoxBox.xcodeproj/project.pbxproj') }}
           restore-keys: |
             ${{ runner.os }}-spm-
 
@@ -55,19 +57,31 @@ jobs:
       - name: Build for testing
         run: |
           set -o pipefail
+          # MACOSX_DEPLOYMENT_TARGET pins every target — including SPM
+          # packages that declare no platforms (yyjson defaults to 10.13,
+          # which the Xcode 26.6 runner toolchain fails to link).
           if ! xcodebuild build-for-testing \
             -scheme voxbox \
             -configuration Debug \
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
+            MACOSX_DEPLOYMENT_TARGET=26.0 \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-build.log; then
             {
-              grep -E "(: error:|error: |fatal error: |ld: |Undefined symbols|duplicate symbol|no such module|cannot find )" xcodebuild-build.log | sort -u | head -25
-              # Linker failures put the real cause on the preceding lines.
-              grep -B10 "linker command failed" xcodebuild-build.log | head -25
+              # Undefined-symbol detail first: annotations cap at 10 per step.
+              grep -A8 "Undefined symbols" xcodebuild-build.log | head -10
+              grep -E "(: error:|error: |fatal error: |ld: |duplicate symbol|no such module|cannot find )" xcodebuild-build.log | sort -u | head -20
             } | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
             exit 1
           fi
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-build-log
+          path: xcodebuild-build.log
+          if-no-files-found: ignore
 
       - name: Unit tests
         run: |
@@ -77,6 +91,7 @@ jobs:
             -destination 'platform=macOS' \
             -only-testing:voxboxTests \
             -clonedSourcePackagesDirPath SourcePackages \
+            MACOSX_DEPLOYMENT_TARGET=26.0 \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-test.log; then
             grep -E "(error: |Test Case .* failed|failed \()" xcodebuild-test.log \
               | sort -u | head -40 \
