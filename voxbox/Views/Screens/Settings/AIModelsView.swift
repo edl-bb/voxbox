@@ -1,25 +1,207 @@
 import SwiftUI
 
-/// Screen for choosing the on-device transcription model and configuring the
-/// AI cleanup pass. Every model is a row in one flat catalog — capability
-/// badges (multilingual, streaming ✓/✗) on each card replace the old
-/// hero banner and the All/Streaming/Batch filter.
+/// The AI Models page, split into three tabs: transcription (speech → text)
+/// models, post-processing (cleanup LLM) models, and the LLM instruction
+/// settings. A strip above the tabs always shows both active models.
 struct AIModelsView: View {
+    @State private var selectedTab: AIModelsTab = .transcription
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("AI Models")
+                    .font(Typography.displayLarge)
+                    .foregroundStyle(Color.textPrimary)
+
+                HStack(spacing: 0) {
+                    ForEach(AIModelsTab.allCases) { tab in
+                        AIModelsTabButton(
+                            tab: tab,
+                            isSelected: selectedTab == tab,
+                            action: { selectedTab = tab }
+                        )
+                    }
+                    Spacer()
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    CurrentModelsStrip()
+
+                    switch selectedTab {
+                    case .transcription:
+                        TranscriptionModelsTab()
+                    case .postProcessing:
+                        PostProcessingModelsView()
+                    case .instructions:
+                        LLMInstructionsTab()
+                    }
+                }
+                .frame(maxWidth: 940, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 32)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
+            }
+        }
+        .background(Color.clear)
+        .onAppear {
+            if let tab = DashboardRoute.pendingAIModelsTab {
+                DashboardRoute.pendingAIModelsTab = nil
+                selectedTab = tab
+            }
+        }
+    }
+}
+
+enum AIModelsTab: String, CaseIterable, Identifiable {
+    case transcription = "Transcription models"
+    case postProcessing = "Post-processing models"
+    case instructions = "LLM Instructions"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .transcription: return "waveform"
+        case .postProcessing: return "sparkles"
+        case .instructions: return "text.quote"
+        }
+    }
+}
+
+/// Same treatment as the Settings tab bar, typed for this page's tabs.
+struct AIModelsTabButton: View {
+    let tab: AIModelsTab
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: 13))
+                Text(tab.rawValue)
+                    .font(Typography.bodyMedium)
+            }
+            .foregroundStyle(isSelected ? Color.textPrimary : Color.textMuted)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(isSelected ? Color.bgHover : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Currently-using strip
+
+/// Always-visible summary of the whole pipeline: the transcription model and
+/// the post-processing model side by side.
+private struct CurrentModelsStrip: View {
+    @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
+    @AppStorage(TranscriptFormatterService.enabledKey)
+    private var formatWithOnDeviceAI: Bool = false
+    @ObservedObject private var postProcessing = PostProcessingModelManager.shared
+
+    private var transcriptionModel: AIModel? {
+        AIModel.availableModels.first { $0.variant == selectedModel }
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            segment(
+                icon: "waveform",
+                label: "TRANSCRIBING WITH",
+                value: transcriptionModel?.name ?? "No model selected",
+                detail: transcriptionModel.map {
+                    StreamingMode.modelSupportsStreaming($0.variant)
+                        ? "Streaming" : "Batch"
+                }
+            )
+
+            Divider().frame(height: 34)
+
+            segment(
+                icon: "sparkles",
+                label: "CLEANING UP WITH",
+                value: cleanupValue,
+                detail: cleanupDetail
+            )
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 7) {
+                Image(systemName: "laptopcomputer").font(.system(size: 12))
+                Text("Your Mac · \(DeviceCapability.current.summary)")
+                    .font(Typography.uiMedium(12))
+            }
+            .foregroundStyle(Color.textMuted)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 13)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.bgCard)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.border.opacity(0.6), lineWidth: 1)
+        )
+    }
+
+    private var cleanupValue: String {
+        guard formatWithOnDeviceAI else { return "Off" }
+        return postProcessing.selectedModel.name
+    }
+
+    private var cleanupDetail: String? {
+        guard formatWithOnDeviceAI else { return nil }
+        let model = postProcessing.selectedModel
+        if !model.isRunnable {
+            return "Via Apple Intelligence until the local runtime ships"
+        }
+        return TranscriptFormatterService.intensity.displayName
+    }
+
+    private func segment(
+        icon: String, label: String, value: String, detail: String?
+    ) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(Color.brandAccentSoft)
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.brandAccent)
+            }
+            .frame(width: 34, height: 34)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label)
+                    .font(Typography.uiBold(9)).tracking(1.1)
+                    .foregroundStyle(Color.textMuted)
+                Text(value)
+                    .font(Typography.uiBold(14))
+                    .foregroundStyle(Color.textPrimary)
+                if let detail {
+                    Text(detail)
+                        .font(Typography.ui(11))
+                        .foregroundStyle(Color.textMuted)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Transcription models tab
+
+private struct TranscriptionModelsTab: View {
     private let downloadService = ModelDownloadService.shared
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage(TranscriptDeliveryMode.defaultsKey)
     private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
-
-    /// Keeps the content from stretching edge-to-edge on a wide window, so the
-    /// name and its action never sit at opposite ends of a huge empty band.
-    private let maxContentWidth: CGFloat = 940
-
-    // MARK: - Derived
-
-    private var capability: DeviceCapability { .current }
-    private var selectedModelObject: AIModel? {
-        AIModel.availableModels.first { $0.variant == selectedModel }
-    }
 
     /// The catalog, grouped by engine. Apple leads: it is the zero-download
     /// starting point every new install already has.
@@ -35,89 +217,10 @@ struct AIModelsView: View {
         .filter { !$0.models.isEmpty }
     }
 
-    // MARK: - Body
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                currentStrip
-                listSection
-                cleanupSection
-            }
-            .frame(maxWidth: maxContentWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 32)
-            .padding(.top, 24)
-            .padding(.bottom, 40)
-        }
-        .background(Color.clear)
-        .onAppear {
-            transcriptDeliveryMode = TranscriptDeliveryMode.current()
-            // Refresh download status; never overwrite the persisted selection here (#79).
-            Task { await downloadService.refreshDownloadedModels() }
-        }
-        .onChange(of: selectedModel) { _, variant in
-            if StreamingMode.disableIfIncompatible(with: variant) {
-                transcriptDeliveryMode = .autoPaste
-            }
-        }
-    }
-
-    // MARK: - Current model strip
-
-    /// Always-visible "what am I using right now", so the active model isn't
-    /// buried in the list.
-    private var currentStrip: some View {
-        let sel = selectedModelObject
-        return HStack(spacing: 13) {
-            ZStack {
-                Circle().fill(Color.brandAccentSoft)
-                Image(systemName: sel == nil ? "questionmark" : "waveform")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.brandAccent)
-            }
-            .frame(width: 42, height: 42)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("CURRENTLY USING")
-                    .font(Typography.uiBold(10)).tracking(1.2)
-                    .foregroundStyle(Color.textMuted)
-                Text(sel?.name ?? "No model selected yet")
-                    .font(Typography.uiBold(16))
-                    .foregroundStyle(sel == nil ? Color.textMuted : Color.textPrimary)
-            }
-
-            if let sel {
-                LanguageBadge(isEnglishOnly: sel.isEnglishOnly)
-                StreamingCapabilityBadge(
-                    supportsStreaming: StreamingMode.modelSupportsStreaming(sel.variant))
-            }
-
-            Spacer(minLength: 8)
-
-            HStack(spacing: 7) {
-                Image(systemName: "laptopcomputer").font(.system(size: 12))
-                Text("Your Mac · \(capability.summary)")
-                    .font(Typography.uiMedium(12))
-            }
-            .foregroundStyle(Color.textMuted)
-        }
-        .padding(.horizontal, 18).padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.bgCard)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.border.opacity(0.6), lineWidth: 1)
-        )
-    }
-
-    // MARK: - List
-
-    private var listSection: some View {
-        VStack(alignment: .leading, spacing: 26) {
+        VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Speech models")
+                Text("Transcription models")
                     .font(Typography.sectionTitle)
                     .foregroundStyle(Color.textPrimary)
                 Text("Apple Speech works out of the box. Download a model when you want a different speed, accuracy, or language trade-off.")
@@ -126,10 +229,10 @@ struct AIModelsView: View {
             }
 
             ForEach(engineGroups, id: \.title) { group in
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(group.title)
-                            .font(Typography.sectionTitle)
+                            .font(Typography.uiBold(15))
                             .foregroundStyle(Color.textPrimary)
                         Text(group.subtitle)
                             .font(Typography.ui(12))
@@ -148,17 +251,29 @@ struct AIModelsView: View {
                 }
             }
         }
+        .onAppear {
+            transcriptDeliveryMode = TranscriptDeliveryMode.current()
+            // Refresh download status; never overwrite the persisted selection here (#79).
+            Task { await downloadService.refreshDownloadedModels() }
+        }
+        .onChange(of: selectedModel) { _, variant in
+            if StreamingMode.disableIfIncompatible(with: variant) {
+                transcriptDeliveryMode = .autoPaste
+            }
+        }
     }
+}
 
-    // MARK: - Cleanup AI
+// MARK: - LLM Instructions tab
 
-    private var cleanupSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+private struct LLMInstructionsTab: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Cleanup AI")
+                Text("LLM Instructions")
                     .font(Typography.sectionTitle)
                     .foregroundStyle(Color.textPrimary)
-                Text("Runs after transcription, whichever speech model you use.")
+                Text("How the cleanup model edits your transcripts — pick a built-in effort level or write your own rulesets.")
                     .font(Typography.ui(13))
                     .foregroundStyle(Color.textMuted)
             }

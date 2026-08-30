@@ -5,6 +5,9 @@ import SwiftUI
 /// (⌘, while the window is closed, or the no-model pill).
 enum DashboardRoute {
     static var pending: SidebarItem?
+    /// Honored once by the AI Models page, then cleared — used when Settings
+    /// deep-links to a specific tab (e.g. ruleset management).
+    static var pendingAIModelsTab: AIModelsTab?
     /// Bound from a living SwiftUI scene so we can open the WindowGroup in-process.
     static var openWindow: ((String) -> Void)?
 

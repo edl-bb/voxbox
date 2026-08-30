@@ -43,8 +43,9 @@ struct MenuBarDashboardView: View {
         .padding(.horizontal, 16)
         .padding(.top, 16)
         // The MenuBarExtra window sizes to fit but crops flush against the
-        // bottom edge; extra bottom padding keeps the action row clear of it.
-        .padding(.bottom, 22)
+        // bottom edge; generous bottom padding keeps the action row clear of
+        // the panel's rounded corner.
+        .padding(.bottom, 30)
         .frame(width: 388)
     }
 

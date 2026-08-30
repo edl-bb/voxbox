@@ -57,14 +57,18 @@ struct ModelRow: View, Equatable {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center, spacing: 18) {
-                VStack(alignment: .leading, spacing: 11) {
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 7) {
                     titleRow
                     Text(model.details)
-                        .font(Typography.ui(13))
+                        .font(Typography.ui(12))
                         .foregroundStyle(Color.textSecondary)
-                    metaRow
-                    MetricBars(model: model, appeared: appeared)
+
+                    // One compact line: size chip + the two metric bars.
+                    HStack(spacing: 14) {
+                        chip(icon: "internaldrive", text: model.size)
+                        MetricBars(model: model, appeared: appeared)
+                    }
 
                     if let warning = model.ramWarning(deviceRAMGB: WhisperService.deviceRAMGB) {
                         note(icon: "exclamationmark.triangle.fill", text: warning, tint: .accentWarning)
@@ -78,7 +82,8 @@ struct ModelRow: View, Equatable {
 
                 actionColumn
             }
-            .padding(20)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
 
             if isDownloading {
                 downloadProgressSection
@@ -89,7 +94,7 @@ struct ModelRow: View, Equatable {
                     loadingStage: transcription.loadingStage,
                     onStartUsing: loadAndSelectModel
                 )
-                .padding(.horizontal, 20).padding(.bottom, 20)
+                .padding(.horizontal, 16).padding(.bottom, 14)
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
@@ -145,12 +150,6 @@ struct ModelRow: View, Equatable {
         .padding(.horizontal, 8).padding(.vertical, 3)
         .background(Capsule().fill(tint.opacity(0.14)))
         .foregroundStyle(tint)
-    }
-
-    private var metaRow: some View {
-        HStack(spacing: 8) {
-            chip(icon: "internaldrive", text: model.size)
-        }
     }
 
     private func chip(icon: String, text: String) -> some View {
@@ -237,7 +236,7 @@ struct ModelRow: View, Equatable {
             targetFraction: progress,
             status: snapshot.status
         )
-        .padding(.horizontal, 20).padding(.bottom, 20)
+        .padding(.horizontal, 16).padding(.bottom, 14)
     }
 
     // MARK: - Logic
@@ -389,13 +388,12 @@ struct MetricBars: View {
     var appeared: Bool = true
 
     var body: some View {
-        HStack(spacing: 22) {
+        HStack(spacing: 16) {
             MetricBar(label: "Speed", tier: model.speedTier, value: model.speed,
-                      tint: .brandAccent, appeared: appeared).frame(width: 148)
+                      tint: .brandAccent, appeared: appeared).frame(width: 116)
             MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy,
-                      tint: .brandAccent, appeared: appeared).frame(width: 148)
+                      tint: .brandAccent, appeared: appeared).frame(width: 116)
         }
-        .padding(.top, 2)
     }
 }
 

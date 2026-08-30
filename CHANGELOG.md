@@ -3,6 +3,11 @@
 Changes and release notes for VoxBox.
 
 ## [1.1.3] - 2026-08-30
+- AI Models is now a tabbed page: Transcription models, Post-processing models, and LLM Instructions.
+    - New Post-processing models tab: choose the LLM that cleans up transcripts. Apple Intelligence is built in, and you can download and manage local MLX models (Llama 3.2 1B/3B, Qwen 3 1.7B/4B) ahead of the local runtime that ships in a coming update.
+    - The "currently using" strip now shows both the transcription model and the cleanup model.
+    - Model cards are more compact, making better use of vertical space.
+- Settings: navigation rows (custom replacements, manage custom rulesets) now share one left-aligned style without leading icons.
 - New feature: Custom LLM cleanup rulesets
     - Create up to 5 of your own cleanup rulesets (name, instructions, temperature) under AI Models → Cleanup AI.
     - Pick "Custom" as the cleanup effort to run your active ruleset. Your instructions are sent to the model exactly as written — no hidden prompt and no change-ratio guardrail.

@@ -23,8 +23,8 @@ struct TranscriptCleanupAISection: View {
         SettingsSection {
             SettingsSectionHeader(
                 icon: "sparkles",
-                title: "Cleanup AI",
-                subtitle: "Post-process transcripts with the on-device LLM"
+                title: "On-device AI",
+                subtitle: "Master switch — the same toggle as Settings → Transcript Cleanup"
             ) {
                 Toggle("", isOn: $formatWithOnDeviceAI)
                     .labelsHidden()

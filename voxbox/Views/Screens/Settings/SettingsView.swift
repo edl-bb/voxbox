@@ -562,21 +562,14 @@ struct GeneralSettingsTab: View {
                                 .foregroundStyle(Color.textMuted)
 
                                 if FormattingIntensity(rawValue: formattingIntensityRaw) == .custom {
-                                    Button {
-                                        onOpenModels?()
-                                    } label: {
-                                        HStack(spacing: 6) {
-                                            Image(systemName: "slider.horizontal.3")
-                                                .font(.system(size: 11))
-                                            Text("Manage custom rulesets in AI Models")
-                                                .font(Typography.captionSmall)
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 9, weight: .semibold))
+                                    SettingsNavigationRow(
+                                        title: "Manage custom rulesets",
+                                        subtitle: "Create up to 5 of your own instruction sets, each with its own temperature. Lives in AI Models.",
+                                        action: {
+                                            DashboardRoute.pendingAIModelsTab = .instructions
+                                            onOpenModels?()
                                         }
-                                        .foregroundStyle(Color.brandAccent)
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
+                                    )
                                     .disabled(onOpenModels == nil)
                                 } else {
                                     HStack {
@@ -601,39 +594,11 @@ struct GeneralSettingsTab: View {
 
                         Divider()
 
-                        Button {
-                            onOpenDictionary?()
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: "character.book.closed")
-                                    .font(.system(size: 15))
-                                    .foregroundStyle(Color.textMuted)
-                                    .frame(width: 22)
-
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text("Custom replacements & snippets")
-                                        .font(Typography.bodyMedium)
-                                        .foregroundStyle(Color.textPrimary)
-                                    Text(
-                                        "Say “my email” to insert your address. Always on, every model."
-                                    )
-                                    .font(Typography.captionSmall)
-                                    .foregroundStyle(Color.textMuted)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                }
-
-                                Spacer(minLength: 8)
-
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(Color.textMuted)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                        SettingsNavigationRow(
+                            title: "Custom replacements & snippets",
+                            subtitle: "Say “my email” to insert your address. Always on, every model.",
+                            action: { onOpenDictionary?() }
+                        )
                         .disabled(onOpenDictionary == nil)
                     }
                 }
@@ -1123,6 +1088,41 @@ struct SettingsSection<Content: View>: View {
             content
         }
         .themedCard(padding: 24)
+    }
+}
+
+/// A left-aligned navigation row (title, subtitle, trailing chevron) that
+/// pushes to another page. No leading icon — the title lines up with the
+/// section's other rows.
+struct SettingsNavigationRow: View {
+    let title: String
+    let subtitle: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(Typography.bodyMedium)
+                        .foregroundStyle(Color.textPrimary)
+                    Text(subtitle)
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
