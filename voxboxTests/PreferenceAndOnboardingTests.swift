@@ -524,28 +524,6 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         )
     }
 
-    func testCatalogDecodeFilterDefaultsAndIncludes() {
-        XCTAssertEqual(CatalogDecodeFilter.defaultFilter(streamingEnabled: false), .all)
-        XCTAssertEqual(CatalogDecodeFilter.defaultFilter(streamingEnabled: true), .streaming)
-        XCTAssertEqual(
-            CatalogDecodeFilter.defaultFilter(
-                streamingEnabled: false, selectedVariant: ParakeetCatalog.v3Variant),
-            .batch
-        )
-        XCTAssertEqual(
-            CatalogDecodeFilter.defaultFilter(
-                streamingEnabled: false, selectedVariant: "openai_whisper-tiny"),
-            .all
-        )
-
-        XCTAssertTrue(CatalogDecodeFilter.all.includes(variant: AppleSpeechCatalog.variant))
-        XCTAssertTrue(CatalogDecodeFilter.all.includes(variant: ParakeetCatalog.v3Variant))
-        XCTAssertTrue(CatalogDecodeFilter.streaming.includes(variant: AppleSpeechCatalog.variant))
-        XCTAssertFalse(CatalogDecodeFilter.streaming.includes(variant: ParakeetCatalog.v3Variant))
-        XCTAssertFalse(CatalogDecodeFilter.batch.includes(variant: AppleSpeechCatalog.variant))
-        XCTAssertTrue(CatalogDecodeFilter.batch.includes(variant: ParakeetCatalog.v3Variant))
-    }
-
     func testStreamingModeDisablesWhenBatchModelSelected() {
         let suite = "voxbox.tests.streaming.revert.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

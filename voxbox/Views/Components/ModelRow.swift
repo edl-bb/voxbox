@@ -122,6 +122,10 @@ struct ModelRow: View, Equatable {
             LanguageBadge(isEnglishOnly: model.isEnglishOnly)
             StreamingCapabilityBadge(supportsStreaming: StreamingMode.modelSupportsStreaming(model.variant))
 
+            if isRecommended {
+                statusBadge(text: "Recommended", icon: "sparkles", tint: Color.brandAccent)
+            }
+
             if isActive && isDownloaded {
                 statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandAccent)
             } else if justCompleted {
@@ -313,19 +317,33 @@ struct LanguageBadge: View {
     }
 }
 
+/// A yes/no capability marker: "✓ STREAMING" / "✗ STREAMING" (SF Symbols,
+/// not emoji). The capability name stays constant so rows scan vertically;
+/// only the mark and tint change.
+struct CapabilityBadge: View {
+    let name: String
+    let supported: Bool
+
+    var body: some View {
+        let tint = supported ? Color.accentSuccess : Color.textMuted
+        HStack(spacing: 3) {
+            Image(systemName: supported ? "checkmark" : "xmark")
+                .font(.system(size: 8, weight: .bold))
+            Text(name.uppercased())
+                .font(Typography.uiBold(9)).tracking(0.6)
+        }
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(Capsule().fill(tint.opacity(0.14)))
+        .foregroundStyle(tint)
+        .help(supported ? "Supports \(name.lowercased())" : "No \(name.lowercased()) support")
+    }
+}
+
 struct StreamingCapabilityBadge: View {
     let supportsStreaming: Bool
 
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: supportsStreaming ? "checkmark" : "minus")
-                .font(.system(size: 8, weight: .bold))
-            Text(supportsStreaming ? "STREAMING" : "BATCH")
-                .font(Typography.uiBold(9)).tracking(0.6)
-        }
-        .padding(.horizontal, 7).padding(.vertical, 3)
-        .background(Capsule().fill((supportsStreaming ? Color.accentSuccess : Color.textMuted).opacity(0.14)))
-        .foregroundStyle(supportsStreaming ? Color.accentSuccess : Color.textMuted)
+        CapabilityBadge(name: "Streaming", supported: supportsStreaming)
     }
 }
 
@@ -378,18 +396,6 @@ struct MetricBars: View {
                       tint: .brandAccent, appeared: appeared).frame(width: 148)
         }
         .padding(.top, 2)
-    }
-}
-
-/// Speed + accuracy stacked — the hero's right column.
-struct MetricBarsStacked: View {
-    let model: AIModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            MetricBar(label: "Speed", tier: model.speedTier, value: model.speed, tint: .brandAccent)
-            MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy, tint: .brandAccent)
-        }
     }
 }
 

@@ -6,9 +6,10 @@ on:
   push:
     branches:
       - main
-      # CI on the working branch directly, so builds are verified before a PR
-      # is opened (this session cannot open PRs itself).
-      - claude/license-speaktype-attribution-nr8616
+      # Release/working branches (v1.1.3, v1.2, …) get CI directly, so builds
+      # are verified before a PR is opened.
+      - "v*"
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -35,7 +36,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: SourcePackages
-          key: ${{ runner.os }}-spm-${{ hashFiles('voxbox.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('VoxBox.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-spm-
 

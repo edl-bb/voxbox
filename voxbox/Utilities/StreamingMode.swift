@@ -58,44 +58,6 @@ enum StreamingModeCopy {
         "This setting needs a Streaming model. When you update your model choice, you can use live streaming."
 }
 
-/// List filter on the model page. Streaming when streaming mode is on;
-/// Batch when the selected model is batch; otherwise All.
-enum CatalogDecodeFilter: String, CaseIterable, Identifiable {
-    case all
-    case streaming
-    case batch
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .all: return "All"
-        case .streaming: return "Streaming"
-        case .batch: return "Batch"
-        }
-    }
-
-    static func defaultFilter(
-        streamingEnabled: Bool,
-        selectedVariant: String = ""
-    ) -> CatalogDecodeFilter {
-        if streamingEnabled { return .streaming }
-        if !selectedVariant.isEmpty, !StreamingMode.modelSupportsStreaming(selectedVariant) {
-            return .batch
-        }
-        return .all
-    }
-
-    func includes(variant: String) -> Bool {
-        let streaming = StreamingMode.modelSupportsStreaming(variant)
-        switch self {
-        case .all: return true
-        case .streaming: return streaming
-        case .batch: return !streaming
-        }
-    }
-}
-
 /// Stable prefix plus revisable hypothesis from a live engine.
 struct LiveTranscriptSnapshot: Equatable, Sendable {
     var stable: String

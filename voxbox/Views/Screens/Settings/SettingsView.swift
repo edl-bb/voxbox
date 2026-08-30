@@ -326,11 +326,10 @@ struct GeneralSettingsTab: View {
                                     .fixedSize(horizontal: false, vertical: true)
 
                                 Button {
-                                    DashboardRoute.pendingDecodeFilter = .streaming
                                     if let onOpenModels {
                                         onOpenModels()
                                     } else {
-                                        DashboardRoute.reveal(.aiModels, decodeFilter: .streaming)
+                                        DashboardRoute.reveal(.aiModels)
                                     }
                                 } label: {
                                     HStack(spacing: 12) {
@@ -562,20 +561,39 @@ struct GeneralSettingsTab: View {
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
 
-                                HStack {
-                                    Text("Markdown formatting")
-                                        .font(Typography.bodyMedium)
-                                        .foregroundStyle(Color.textPrimary)
-                                    Spacer()
-                                    Toggle("", isOn: $markdownFormatting)
-                                        .labelsHidden()
-                                }
+                                if FormattingIntensity(rawValue: formattingIntensityRaw) == .custom {
+                                    Button {
+                                        onOpenModels?()
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "slider.horizontal.3")
+                                                .font(.system(size: 11))
+                                            Text("Manage custom rulesets in AI Models")
+                                                .font(Typography.captionSmall)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 9, weight: .semibold))
+                                        }
+                                        .foregroundStyle(Color.brandAccent)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(onOpenModels == nil)
+                                } else {
+                                    HStack {
+                                        Text("Markdown formatting")
+                                            .font(Typography.bodyMedium)
+                                            .foregroundStyle(Color.textPrimary)
+                                        Spacer()
+                                        Toggle("", isOn: $markdownFormatting)
+                                            .labelsHidden()
+                                    }
 
-                                Text(
-                                    "Adds bold, italic, bullet points, and numbered lists where they fit."
-                                )
-                                .font(Typography.captionSmall)
-                                .foregroundStyle(Color.textMuted)
+                                    Text(
+                                        "Adds bold, italic, bullet points, and numbered lists where they fit."
+                                    )
+                                    .font(Typography.captionSmall)
+                                    .foregroundStyle(Color.textMuted)
+                                }
                             }
 
                             

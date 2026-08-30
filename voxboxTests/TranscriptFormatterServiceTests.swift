@@ -23,37 +23,47 @@ final class TranscriptFormatterServiceTests: XCTestCase {
             0)
     }
 
-    func testFillerRemovalDoesNotConsumeGuardrailBudget() {
+    func testFillerRemovalDoesNotConsumeGuardrailBudget() throws {
         let ratio = TranscriptFormatterService.changeRatio(
             from: "um so I think uh we should ship the release",
             to: "so I think we should ship the release")
         XCTAssertEqual(ratio, 0, accuracy: 0.001)
-        XCTAssertLessThanOrEqual(ratio, FormattingIntensity.lightCleanup.maximumChangeRatio)
+        XCTAssertLessThanOrEqual(
+            ratio, try XCTUnwrap(FormattingIntensity.lightCleanup.maximumChangeRatio))
     }
 
-    func testFalseStartRepeatsDoNotConsumeGuardrailBudget() {
+    func testFalseStartRepeatsDoNotConsumeGuardrailBudget() throws {
         let ratio = TranscriptFormatterService.changeRatio(
             from: "I was I was going to send the report tomorrow",
             to: "I was going to send the report tomorrow")
         XCTAssertEqual(ratio, 0, accuracy: 0.001)
-        XCTAssertLessThanOrEqual(ratio, FormattingIntensity.lightCleanup.maximumChangeRatio)
+        XCTAssertLessThanOrEqual(
+            ratio, try XCTUnwrap(FormattingIntensity.lightCleanup.maximumChangeRatio))
     }
 
-    func testPolishSizedCleanupStaysInsidePolishBudget() {
+    func testPolishSizedCleanupStaysInsidePolishBudget() throws {
         let ratio = TranscriptFormatterService.changeRatio(
             from: "yeah um so i was i was gonna say we should uh probably just go ahead and ship it you know tomorrow if thats okay",
             to: "i was going to say we should ship it tomorrow if that is okay")
-        XCTAssertLessThanOrEqual(ratio, FormattingIntensity.polish.maximumChangeRatio)
-        XCTAssertGreaterThan(ratio, FormattingIntensity.formatting.maximumChangeRatio)
+        XCTAssertLessThanOrEqual(
+            ratio, try XCTUnwrap(FormattingIntensity.polish.maximumChangeRatio))
+        XCTAssertGreaterThan(
+            ratio, try XCTUnwrap(FormattingIntensity.formatting.maximumChangeRatio))
     }
 
-    func testFullRewriteIsRejectedAtEveryLevel() {
+    func testFullRewriteIsRejectedAtEveryBuiltInLevel() throws {
         let ratio = TranscriptFormatterService.changeRatio(
             from: "please send the report to finance before the meeting tomorrow morning",
             to: "the quarterly numbers look great and everyone deserves a holiday")
-        for level in FormattingIntensity.allCases {
-            XCTAssertGreaterThan(ratio, level.maximumChangeRatio, "\(level) must reject a rewrite")
+        for level in FormattingIntensity.builtInCases {
+            XCTAssertGreaterThan(
+                ratio, try XCTUnwrap(level.maximumChangeRatio),
+                "\(level) must reject a rewrite")
         }
+    }
+
+    func testCustomLevelHasNoGuardrailBudget() {
+        XCTAssertNil(FormattingIntensity.custom.maximumChangeRatio)
     }
 
     func testEmptyInputsScoreZero() {
@@ -66,15 +76,16 @@ final class TranscriptFormatterServiceTests: XCTestCase {
         XCTAssertEqual(FormattingIntensity.formatting.displayName, "Basic")
         XCTAssertEqual(FormattingIntensity.lightCleanup.displayName, "Light cleanup")
         XCTAssertEqual(FormattingIntensity.polish.displayName, "Polish")
+        XCTAssertEqual(FormattingIntensity.custom.displayName, "Custom")
     }
 
-    func testIntensityBudgetsIncreaseWithLevel() {
+    func testIntensityBudgetsIncreaseWithLevel() throws {
         XCTAssertLessThan(
-            FormattingIntensity.formatting.maximumChangeRatio,
-            FormattingIntensity.lightCleanup.maximumChangeRatio)
+            try XCTUnwrap(FormattingIntensity.formatting.maximumChangeRatio),
+            try XCTUnwrap(FormattingIntensity.lightCleanup.maximumChangeRatio))
         XCTAssertLessThan(
-            FormattingIntensity.lightCleanup.maximumChangeRatio,
-            FormattingIntensity.polish.maximumChangeRatio)
+            try XCTUnwrap(FormattingIntensity.lightCleanup.maximumChangeRatio),
+            try XCTUnwrap(FormattingIntensity.polish.maximumChangeRatio))
     }
 
     func testDefaultIntensityIsLightCleanup() {

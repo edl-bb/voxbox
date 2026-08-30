@@ -2,6 +2,17 @@
 
 Changes and release notes for VoxBox.
 
+## [1.1.3] - 2026-08-30
+- New feature: Custom LLM cleanup rulesets
+    - Create up to 5 of your own cleanup rulesets (name, instructions, temperature) under AI Models → Cleanup AI.
+    - Pick "Custom" as the cleanup effort to run your active ruleset. Your instructions are sent to the model exactly as written — no hidden prompt and no change-ratio guardrail.
+    - The On-device AI controls now also live on the AI Models page; the toggle in Settings is the same switch.
+- AI Models page overhaul
+    - Removed the big recommendation banner; Apple Speech now appears in the catalog with a "Recommended" badge.
+    - Replaced the All/Streaming/Batch filter with per-model capability markers (check/cross streaming badges) on every card.
+    - The "Currently using" strip now shows the active model's capabilities and your Mac's specs.
+- Fixed the menu bar dropdown clipping at the bottom edge.
+
 ## [1.1.2] - 2026-08-25
 - New feature: Send transcript to clipboard
     - You can now copy a transcript directly to the clipboard rather than automatically pasting it to the screen.
