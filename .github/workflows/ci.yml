@@ -73,9 +73,11 @@ jobs:
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-build.log; then
             {
               # Undefined-symbol detail first: annotations cap at 10 per step.
-              grep -A8 "Undefined symbols" xcodebuild-build.log | head -10
-              grep -E "(: error:|error: |fatal error: |ld: |duplicate symbol|no such module|cannot find )" xcodebuild-build.log | sort -u | head -20
-            } | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
+              grep -A8 "Undefined symbols" xcodebuild-build.log | head -8
+              grep -E "(: error:|error: |fatal error: |ld: |duplicate symbol|no such module|cannot find |unresolved|Resolving package|could not)" xcodebuild-build.log | sort -u | head -8
+              # Whatever the failure shape, the tail always carries it.
+              tail -12 xcodebuild-build.log
+            } | head -10 | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
             exit 1
           fi
 
