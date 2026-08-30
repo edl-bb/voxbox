@@ -207,13 +207,20 @@ final class TranscriptFormatterService {
         return false
     }
 
+    /// Whether any cleanup engine can run: the system model, or a selected
+    /// local model that is downloaded. Gates the cleanup toggles and pass.
+    static var isCleanupAvailable: Bool {
+        CleanupEngineFactory.engine(for: PostProcessingModelManager.shared.selectedModel)
+            .isAvailable || isModelAvailable
+    }
+
     /// Dictations shorter than this many words skip the model entirely.
     static let minimumWordCount = 8
 
     private init() {}
 
     static func shouldFormat(_ text: String) -> Bool {
-        guard isEnabled, isModelAvailable else { return false }
+        guard isEnabled, isCleanupAvailable else { return false }
         return words(in: text).count >= minimumWordCount
     }
 
@@ -277,7 +284,6 @@ final class TranscriptFormatterService {
     /// output.
     func format(_ text: String) async -> String {
         guard Self.isEnabled else { return text }
-        guard Self.isModelAvailable else { return text }
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let wordCount = Self.words(in: trimmed).count
@@ -288,16 +294,15 @@ final class TranscriptFormatterService {
             intensity: Self.intensity,
             includeMarkdownFormatting: Self.isMarkdownFormattingEnabled,
             customRuleset: CustomRulesetStore.shared.usableActiveRuleset)
+
+        let engine = CleanupEngineFactory.engine(
+            for: PostProcessingModelManager.shared.selectedModel)
+        guard engine.isAvailable else { return text }
+
         do {
-            let session = LanguageModelSession {
-                request.instructionStages
-            }
-            let response = try await session.respond(
-                to: request.input,
-                options: GenerationOptions(temperature: request.temperature)
-            )
+            let output = try await Self.run(request, on: engine)
             let cleaned = Self.stripModelPreamble(
-                response.content.trimmingCharacters(in: .whitespacesAndNewlines))
+                output.trimmingCharacters(in: .whitespacesAndNewlines))
 
             let withinBudget: Bool
             if let budget = request.maximumChangeRatio {
@@ -318,6 +323,27 @@ final class TranscriptFormatterService {
                 "On-device formatting failed; keeping raw transcript",
                 category: AppLogger.transcription)
             return text
+        }
+    }
+
+    /// Runs the request on `engine`; a local-model failure retries once on
+    /// the system model so a broken download degrades gracefully instead of
+    /// silently skipping cleanup.
+    private static func run(
+        _ request: FormattingRequest,
+        on engine: CleanupEngine
+    ) async throws -> String {
+        do {
+            return try await engine.cleanup(request)
+        } catch {
+            let fallback = AppleIntelligenceCleanupEngine()
+            guard !(engine is AppleIntelligenceCleanupEngine), fallback.isAvailable else {
+                throw error
+            }
+            AppLogger.warning(
+                "Local cleanup model failed; retrying on the system model",
+                category: AppLogger.transcription)
+            return try await fallback.cleanup(request)
         }
     }
 

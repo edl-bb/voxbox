@@ -164,9 +164,6 @@ private struct CurrentModelsStrip: View {
 
     private var cleanupDetail: String? {
         guard formatWithOnDeviceAI else { return nil }
-        if !postProcessing.selectedModel.isRunnable {
-            return "Via Apple Intelligence until the local runtime ships"
-        }
         let intensity = FormattingIntensity(rawValue: formattingIntensityRaw) ?? .lightCleanup
         guard intensity == .custom else { return intensity.displayName }
         guard let ruleset = rulesetStore.activeRuleset else { return "Custom: no ruleset yet" }

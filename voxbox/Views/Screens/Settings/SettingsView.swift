@@ -523,7 +523,7 @@ struct GeneralSettingsTab: View {
                                 Spacer()
                                 Toggle("", isOn: $formatWithOnDeviceAI)
                                     .labelsHidden()
-                                    .disabled(!TranscriptFormatterService.isModelAvailable)
+                                    .disabled(!TranscriptFormatterService.isCleanupAvailable)
                             }
                             Text(
                                 "Uses a local MacOS LLM to process the transcript. Can also improve structure and add formatting. Takes longer to process than the default settings."
@@ -531,9 +531,9 @@ struct GeneralSettingsTab: View {
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
 
-                            if !TranscriptFormatterService.isModelAvailable {
+                            if !TranscriptFormatterService.isCleanupAvailable {
                                 Text(
-                                    "Apple Intelligence isn’t available on this Mac right now."
+                                    "No cleanup model is available on this Mac right now."
                                 )
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)

@@ -4,9 +4,8 @@ import Foundation
 enum PostProcessingEngineKind: String, Codable, Sendable {
     /// Apple FoundationModels — the ~3B system model that ships with macOS 26.
     case appleSystem
-    /// An MLX-format model downloaded from Hugging Face. Download and
-    /// management ship now; the on-device MLX runtime lands in a future
-    /// update, so cleanup falls back to Apple Intelligence meanwhile.
+    /// An MLX-format model downloaded from Hugging Face and run locally
+    /// through the MLX runtime.
     case mlx
 }
 
@@ -26,10 +25,6 @@ struct PostProcessingModel: Identifiable, Equatable, Sendable {
     let minimumRAMGB: Int
 
     var id: String { variant }
-
-    /// Whether VoxBox's cleanup pipeline can execute this model today.
-    /// Only the Apple system model runs until the MLX runtime ships.
-    var isRunnable: Bool { kind == .appleSystem }
 
     var sizeLabel: String {
         guard approxSizeBytes > 0 else { return "System" }

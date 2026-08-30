@@ -1,9 +1,7 @@
 import SwiftUI
 
 /// The "Post-processing models" tab: pick which LLM cleans up transcripts,
-/// and download/manage local models. The Apple system model is the only
-/// runnable engine today; downloaded MLX models are managed here and run
-/// once the local runtime ships (see docs/byo-llm-post-processing.md).
+/// and download/manage local models.
 struct PostProcessingModelsView: View {
     @ObservedObject private var manager = PostProcessingModelManager.shared
     @AppStorage(TranscriptFormatterService.enabledKey)
@@ -15,7 +13,7 @@ struct PostProcessingModelsView: View {
                 Text("Post-processing models")
                     .font(Typography.sectionTitle)
                     .foregroundStyle(Color.textPrimary)
-                Text("The LLM that cleans up transcripts after transcription. Apple Intelligence is built in; downloaded models are kept ready for the local runtime coming in a future update.")
+                Text("The model that cleans up transcripts after transcription. Apple Intelligence is built in, or download a model to run the cleanup with instead.")
                     .font(Typography.ui(13))
                     .foregroundStyle(Color.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -62,8 +60,6 @@ private struct PostProcessingModelRow: View {
                         Text(model.name)
                             .font(Typography.uiBold(15))
                             .foregroundStyle(Color.textPrimary)
-
-                        CapabilityBadge(name: "Runs now", supported: model.isRunnable)
 
                         if isSelected {
                             selectedBadge
@@ -179,10 +175,7 @@ private struct PostProcessingModelRow: View {
                         ActionButton.label(title: "Use", icon: "arrow.right", style: .secondary)
                     }
                     .buttonStyle(.plain)
-                    .help(
-                        model.isRunnable
-                            ? "Use this model for transcript cleanup"
-                            : "Select now — cleanup uses Apple Intelligence until the local runtime ships")
+                    .help("Use this model for transcript cleanup")
                 }
                 if model.kind == .mlx {
                     Button {

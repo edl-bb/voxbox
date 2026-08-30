@@ -24,15 +24,15 @@ struct TranscriptCleanupAISection: View {
             SettingsSectionHeader(
                 icon: "sparkles",
                 title: "On-device AI",
-                subtitle: "Master switch — the same toggle as Settings → Transcript Cleanup"
+                subtitle: "Clean up transcripts with the selected post-processing model"
             ) {
                 Toggle("", isOn: $formatWithOnDeviceAI)
                     .labelsHidden()
-                    .disabled(!TranscriptFormatterService.isModelAvailable)
+                    .disabled(!TranscriptFormatterService.isCleanupAvailable)
             }
 
-            if !TranscriptFormatterService.isModelAvailable {
-                Text("Apple Intelligence isn’t available on this Mac right now.")
+            if !TranscriptFormatterService.isCleanupAvailable {
+                Text("No cleanup model is available on this Mac right now.")
                     .font(Typography.captionSmall)
                     .foregroundStyle(Color.textMuted)
             } else if formatWithOnDeviceAI {
@@ -75,7 +75,7 @@ struct TranscriptCleanupAISection: View {
                 }
                 .padding(.top, 2)
             } else {
-                Text("Off — transcripts get instant rule-based cleanup only. This is the same switch as Settings → Transcript Cleanup.")
+                Text("Off — transcripts get instant rule-based cleanup only.")
                     .font(Typography.captionSmall)
                     .foregroundStyle(Color.textMuted)
             }

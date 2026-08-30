@@ -11,20 +11,18 @@ final class PostProcessingModelTests: XCTestCase {
         XCTAssertEqual(variants.count, Set(variants).count)
     }
 
-    func testAppleSystemModelLeadsTheCatalogAndIsRunnable() {
+    func testAppleSystemModelLeadsTheCatalog() {
         let first = PostProcessingModel.catalog[0]
         XCTAssertEqual(first.variant, PostProcessingModel.appleSystemVariant)
         XCTAssertEqual(first.kind, .appleSystem)
-        XCTAssertTrue(first.isRunnable)
         XCTAssertNil(first.huggingFaceRepo)
     }
 
-    func testDownloadableModelsHaveReposSizesAndAreNotYetRunnable() {
+    func testDownloadableModelsHaveReposAndSizes() {
         for model in PostProcessingModel.catalog where model.kind == .mlx {
             XCTAssertNotNil(model.huggingFaceRepo, "\(model.variant) needs a repo")
             XCTAssertGreaterThan(model.approxSizeBytes, 0)
             XCTAssertGreaterThan(model.minimumRAMGB, 0)
-            XCTAssertFalse(model.isRunnable, "MLX runtime hasn't shipped yet")
         }
     }
 
