@@ -249,6 +249,14 @@ struct MiniRecorderView: View {
     private static let waveBarWidth: CGFloat = 2.5
     private static let waveBarSpacing: CGFloat = 2.0
 
+    /// Idle V-wave — same silhouette as `MenuBarIconView` (five capsules hanging
+    /// from a shared top edge), drawn smaller so the resting pill stays quiet.
+    private static let idleBarWidth: CGFloat = 2.0
+    private static let idleBarSpacing: CGFloat = 0.8
+    private static let idleBarMaxHeight: CGFloat = 11
+    /// Match `MenuBarIconView.idleHeights` — the V of VoxBox.
+    private static let idleBarScale: [CGFloat] = [0.42, 0.68, 1.0, 0.68, 0.42]
+
     // Default Init for Preview
     init(
         onCommit: ((String) async -> TranscriptDelivery)? = nil,
@@ -280,7 +288,7 @@ struct MiniRecorderView: View {
     /// between these, morphing the resting handle into the full HUD.
     private var pillWidth: CGFloat {
         switch displayPhase {
-        case .idle: return 58
+        case .idle: return 36
         case .warming: return 280
         case .processing: return 360
         case .needsModel: return 380
@@ -291,7 +299,7 @@ struct MiniRecorderView: View {
     }
 
     private var pillHeight: CGFloat {
-        displayPhase == .idle ? 24 : 44
+        displayPhase == .idle ? 18 : 44
     }
 
     /// Live text stays in the pill only when the destination field cannot be rewritten.
@@ -303,18 +311,18 @@ struct MiniRecorderView: View {
 
     // MARK: - Phase content
 
-    /// Resting state — a small white waveform silhouette that sits perfectly
-    /// still. Calm, minimal, premium: the same quiet rest at first launch and
-    /// after a recording, with no idle "breathing" motion.
+    /// Resting state — the VoxBox V-wave, matching the menu bar mark. Five
+    /// capsules hang from a shared top edge so the silhouette reads as a V,
+    /// not a centered equalizer. Calm, still, no idle "breathing" motion.
     private var idleContent: some View {
-        HStack(spacing: 3) {
+        HStack(alignment: .top, spacing: Self.idleBarSpacing) {
             ForEach(Array(Self.idleBarScale.enumerated()), id: \.offset) { _, scale in
                 Capsule(style: .continuous)
                     .fill(Color.white)
-                    .frame(width: 2.5, height: 12 * scale)
+                    .frame(width: Self.idleBarWidth, height: Self.idleBarMaxHeight * scale)
             }
         }
-        .frame(height: 24)
+        .frame(height: Self.idleBarMaxHeight, alignment: .top)
         // Adapt to whatever shows through the glass: a difference blend renders the
         // bars subtly dark over a light backdrop and light over a dark one, so they
         // never just blend into white. Softened so it reads gentle, not harsh.
@@ -437,9 +445,6 @@ struct MiniRecorderView: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// Silhouette for the idle waveform — a soft, symmetric shape.
-    private static let idleBarScale: [CGFloat] = [0.5, 0.85, 1.0, 0.85, 0.5]
-
     /// The morphing pill itself, sized to the current phase.
     private var pillView: some View {
         ZStack {
@@ -461,10 +466,10 @@ struct MiniRecorderView: View {
         .frame(width: pillWidth, height: pillHeight)
         .clipShape(RoundedRectangle(cornerRadius: pillCornerRadius, style: .continuous))
         .shadow(
-            color: .black.opacity(displayPhase == .idle ? 0.35 : 0.45),
-            radius: displayPhase == .idle ? 8 : 14,
+            color: .black.opacity(displayPhase == .idle ? 0.28 : 0.45),
+            radius: displayPhase == .idle ? 6 : 14,
             x: 0,
-            y: displayPhase == .idle ? 3 : 5)
+            y: displayPhase == .idle ? 2 : 5)
         .animation(.spring(response: 0.45, dampingFraction: 0.90), value: displayPhase)
         .animation(.spring(response: 0.40, dampingFraction: 0.92), value: expanded)
         .animation(.spring(response: 0.55, dampingFraction: 0.86), value: showsLiveHUD)

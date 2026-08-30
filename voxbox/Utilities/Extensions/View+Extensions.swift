@@ -18,6 +18,15 @@ extension View {
         self.padding(Constants.UI.padding)
     }
     
+    /// Settings popup menus. Hide the system chevron (we draw our own) and
+    /// tint with text color so the arrows stay visible in dark mode.
+    func settingsMenuStyle() -> some View {
+        self
+            .menuIndicator(.hidden)
+            .menuStyle(.borderlessButton)
+            .tint(Color.textPrimary)
+    }
+
     /// Conditionally applies a modifier
     @ViewBuilder
     func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {

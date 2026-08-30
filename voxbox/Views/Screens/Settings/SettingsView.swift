@@ -161,7 +161,23 @@ struct GeneralSettingsTab: View {
                     SettingsSectionHeader(
                         icon: "command", title: "Shortcuts",
                         subtitle: "Recording and clipboard hotkeys"
-                    )
+                    ) {
+                        Button(action: restoreFactoryShortcuts) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("Restore Defaults")
+                                    .font(Typography.labelSmall)
+                            }
+                            .foregroundStyle(Color.textPrimary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.bgHover)
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Resets the primary hotkey to Fn and recorded shortcuts to their original combinations.")
+                    }
 
                     VStack(spacing: 16) {
                         HStack {
@@ -189,7 +205,7 @@ struct GeneralSettingsTab: View {
                                 .background(Color.bgHover)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                             }
-                            .menuStyle(.borderlessButton)
+                            .settingsMenuStyle()
                         }
 
                         if selectedHotkey == .custom {
@@ -199,11 +215,14 @@ struct GeneralSettingsTab: View {
                                         .font(Typography.bodyMedium)
                                         .foregroundStyle(Color.textPrimary)
                                     Spacer()
-                                    KeyboardShortcuts.Recorder("", name: .toggleRecord)
+                                    KeyboardShortcuts.Recorder("", name: .toggleRecord) { shortcut in
+                                        ShortcutReset.recordedShortcutDidChange(
+                                            shortcut, for: .toggleRecord)
+                                    }
                                 }
 
                                 Text(
-                                    "Record any combination (e.g. ⌘D or ⌃⌥Space). Combinations are much less likely to collide with other apps than a single modifier key."
+                                    "Record any key combination to make VoxBox work the way you do."
                                 )
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
@@ -240,11 +259,15 @@ struct GeneralSettingsTab: View {
                                     .font(Typography.bodyMedium)
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
-                                KeyboardShortcuts.Recorder("", name: .copyLastTranscript)
+                                KeyboardShortcuts.Recorder("", name: .copyLastTranscript) {
+                                    shortcut in
+                                    ShortcutReset.recordedShortcutDidChange(
+                                        shortcut, for: .copyLastTranscript)
+                                }
                             }
 
                             Text(
-                                "Copies the most recent transcript to the clipboard so you can paste it yourself."
+                                "Copies the most recent transcript to the clipboard."
                             )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
@@ -303,11 +326,10 @@ struct GeneralSettingsTab: View {
                                     .fixedSize(horizontal: false, vertical: true)
 
                                 Button {
-                                    DashboardRoute.pendingDecodeFilter = .streaming
                                     if let onOpenModels {
                                         onOpenModels()
                                     } else {
-                                        DashboardRoute.reveal(.aiModels, decodeFilter: .streaming)
+                                        DashboardRoute.reveal(.aiModels)
                                     }
                                 } label: {
                                     HStack(spacing: 12) {
@@ -437,7 +459,7 @@ struct GeneralSettingsTab: View {
                                     .background(Color.bgHover)
                                     .clipShape(RoundedRectangle(cornerRadius: 6))
                                 }
-                                .menuStyle(.borderlessButton)
+                                .settingsMenuStyle()
                             }
 
                             Text(
@@ -501,7 +523,7 @@ struct GeneralSettingsTab: View {
                                 Spacer()
                                 Toggle("", isOn: $formatWithOnDeviceAI)
                                     .labelsHidden()
-                                    .disabled(!TranscriptFormatterService.isModelAvailable)
+                                    .disabled(!TranscriptFormatterService.isCleanupAvailable)
                             }
                             Text(
                                 "Uses a local MacOS LLM to process the transcript. Can also improve structure and add formatting. Takes longer to process than the default settings."
@@ -509,9 +531,9 @@ struct GeneralSettingsTab: View {
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
 
-                            if !TranscriptFormatterService.isModelAvailable {
+                            if !TranscriptFormatterService.isCleanupAvailable {
                                 Text(
-                                    "Apple Intelligence isn’t available on this Mac right now."
+                                    "No cleanup model is available on this Mac right now."
                                 )
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
@@ -539,20 +561,32 @@ struct GeneralSettingsTab: View {
                                 .font(Typography.captionSmall)
                                 .foregroundStyle(Color.textMuted)
 
-                                HStack {
-                                    Text("Markdown formatting")
-                                        .font(Typography.bodyMedium)
-                                        .foregroundStyle(Color.textPrimary)
-                                    Spacer()
-                                    Toggle("", isOn: $markdownFormatting)
-                                        .labelsHidden()
-                                }
+                                if FormattingIntensity(rawValue: formattingIntensityRaw) == .custom {
+                                    SettingsNavigationRow(
+                                        title: "Manage custom rulesets",
+                                        subtitle: "Create up to 5 of your own instruction sets, each with its own temperature. Lives in AI Models.",
+                                        action: {
+                                            DashboardRoute.pendingAIModelsTab = .instructions
+                                            onOpenModels?()
+                                        }
+                                    )
+                                    .disabled(onOpenModels == nil)
+                                } else {
+                                    HStack {
+                                        Text("Markdown formatting")
+                                            .font(Typography.bodyMedium)
+                                            .foregroundStyle(Color.textPrimary)
+                                        Spacer()
+                                        Toggle("", isOn: $markdownFormatting)
+                                            .labelsHidden()
+                                    }
 
-                                Text(
-                                    "Adds bold, italic, bullet points, and numbered lists where they fit."
-                                )
-                                .font(Typography.captionSmall)
-                                .foregroundStyle(Color.textMuted)
+                                    Text(
+                                        "Adds bold, italic, bullet points, and numbered lists where they fit."
+                                    )
+                                    .font(Typography.captionSmall)
+                                    .foregroundStyle(Color.textMuted)
+                                }
                             }
 
                             
@@ -560,39 +594,11 @@ struct GeneralSettingsTab: View {
 
                         Divider()
 
-                        Button {
-                            onOpenDictionary?()
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: "character.book.closed")
-                                    .font(.system(size: 15))
-                                    .foregroundStyle(Color.textMuted)
-                                    .frame(width: 22)
-
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text("Custom replacements & snippets")
-                                        .font(Typography.bodyMedium)
-                                        .foregroundStyle(Color.textPrimary)
-                                    Text(
-                                        "Say “my email” to insert your address. Always on, every model."
-                                    )
-                                    .font(Typography.captionSmall)
-                                    .foregroundStyle(Color.textMuted)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                }
-
-                                Spacer(minLength: 8)
-
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(Color.textMuted)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                        SettingsNavigationRow(
+                            title: "Custom replacements & snippets",
+                            subtitle: "Say “my email” to insert your address. Always on, every model.",
+                            action: { onOpenDictionary?() }
+                        )
                         .disabled(onOpenDictionary == nil)
                     }
                 }
@@ -642,7 +648,7 @@ struct GeneralSettingsTab: View {
                             .background(Color.bgHover)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
-                        .menuStyle(.borderlessButton)
+                        .settingsMenuStyle()
                     }
 
                 }
@@ -689,7 +695,7 @@ struct GeneralSettingsTab: View {
                         title: "Updates",
                         subtitle: "VoxBox \(AppVersion.currentVersion)"
                     ) {
-                        Button(action: ReleaseNotesRoute.present) {
+                        Button(action: { ReleaseNotesRoute.present() }) {
                             HStack(spacing: 5) {
                                 Image(systemName: "doc.text")
                                     .font(.system(size: 11, weight: .semibold))
@@ -794,6 +800,11 @@ struct GeneralSettingsTab: View {
         }
     }
 
+    private func restoreFactoryShortcuts() {
+        selectedHotkey = .fn
+        ShortcutReset.restoreAll()
+    }
+
     private var restoreClipboardHelpText: String {
         if transcriptDeliveryMode != .autoPaste {
             return
@@ -861,7 +872,7 @@ struct GeneralSettingsTab: View {
                 .background(Color.bgHover)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
-            .menuStyle(.borderlessButton)
+            .settingsMenuStyle()
         }
     }
 
@@ -1077,6 +1088,41 @@ struct SettingsSection<Content: View>: View {
             content
         }
         .themedCard(padding: 24)
+    }
+}
+
+/// A left-aligned navigation row (title, subtitle, trailing chevron) that
+/// pushes to another page. No leading icon — the title lines up with the
+/// section's other rows.
+struct SettingsNavigationRow: View {
+    let title: String
+    let subtitle: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(Typography.bodyMedium)
+                        .foregroundStyle(Color.textPrimary)
+                    Text(subtitle)
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

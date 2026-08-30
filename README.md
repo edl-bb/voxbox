@@ -21,9 +21,9 @@
 
 ## What is VoxBox?
 
-VoxBox is a privacy-first dictation app for macOS. Speech is transcribed **on your Mac** with [WhisperKit](https://github.com/argmaxinc/WhisperKit) or Parakeet — nothing is sent to a cloud speech API.
+VoxBox is a privacy-first dictation app for macOS. Speech is transcribed **on your Mac** using native MacOS models. Customise your preferred model and use [WhisperKit](https://github.com/argmaxinc/WhisperKit) or Parakeet if you prefer. 
 
-It is a fork of [SpeakType](https://github.com/karansinghgit/speaktype). VoxBox adds on-device AI cleanup so longer dictations stay readable, plus support for Australian English and a few other quality-of-life improvements.
+No transcription data is sent off the device to a cloud provider. Your data remains safe on your device.
 
 - **Private** — transcription and cleanup stay on the device
 - **Local models** — choose your preferred transcription model and use it offline. Optional text cleanup utilises on device Apple Intelligence models.
@@ -38,8 +38,19 @@ Raw speech-to-text gets messy on longer takes: fillers, false starts, missing pu
 - **Basic** — capitals, commas, paragraph breaks only
 - **Light cleanup** — also drops fillers and fixes obvious grammar
 - **Polish** — smooths choppy dictation into fluent sentences
+- **Custom** – [New in v1.2.0]: create your own instructions for the LLM, so you can run the cleanup your way.
 
 Instant, non-AI options are also available to strip "um's" and "ahh's" if you want the fastest experience possible.
+
+### Custom on-device LLMs
+
+VoxBox uses the built-in Apple Intelligence model by default, but you are welcome to pick from 4 other open weight models if they fit your needs better. 
+
+VoxBox currently supports:
+- Llama 3.2 1B
+- Qwen 3 1.7B
+- Llama 3.2 3B
+- Qwen 3 4B
 
 ---
 
@@ -54,6 +65,7 @@ Instant, non-AI options are also available to strip "um's" and "ahh's" if you wa
 - **Custom hotkey** — use the key combination you prefer to invoke VoxBox
 - **Retention** — auto-delete audio and old transcripts; usage stats are retained
 - **Model download progress** – improved visibility when models are downloading in the background so you know how long you need to wait to begin transcribing.
+- **Local LLM post-processing** – use an LLM to clean up the transcript
 
 ---
 

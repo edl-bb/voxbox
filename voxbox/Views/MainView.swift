@@ -5,22 +5,21 @@ import SwiftUI
 /// (⌘, while the window is closed, or the no-model pill).
 enum DashboardRoute {
     static var pending: SidebarItem?
-    /// Honored once by the model page, then cleared. Used when Settings sends the user to pick a Streaming model.
-    static var pendingDecodeFilter: CatalogDecodeFilter?
+    /// Honored once by the AI Models page, then cleared — used when Settings
+    /// deep-links to a specific tab (e.g. ruleset management).
+    static var pendingAIModelsTab: AIModelsTab?
     /// Bound from a living SwiftUI scene so we can open the WindowGroup in-process.
     static var openWindow: ((String) -> Void)?
 
-    static func open(_ item: SidebarItem, decodeFilter: CatalogDecodeFilter? = nil) {
+    static func open(_ item: SidebarItem) {
         pending = item
-        if let decodeFilter { pendingDecodeFilter = decodeFilter }
         presentWindow()
         NotificationCenter.default.post(name: .dashboardRouteRequested, object: nil)
     }
 
     /// Switch sidebar page in the existing dashboard window. Does not open a new one.
-    static func reveal(_ item: SidebarItem, decodeFilter: CatalogDecodeFilter? = nil) {
+    static func reveal(_ item: SidebarItem) {
         pending = item
-        if let decodeFilter { pendingDecodeFilter = decodeFilter }
         NotificationCenter.default.post(name: .dashboardRouteRequested, object: nil)
     }
 
@@ -166,7 +165,6 @@ struct MainView: View {
             SettingsView(
                 onOpenDictionary: { selection = .dictionary },
                 onOpenModels: {
-                    DashboardRoute.pendingDecodeFilter = .streaming
                     selection = .aiModels
                 }
             )

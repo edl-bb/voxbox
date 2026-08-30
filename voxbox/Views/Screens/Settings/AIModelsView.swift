@@ -1,130 +1,153 @@
 import SwiftUI
 
-/// Screen for choosing the on-device transcription model.
+/// The AI Models page, split into three tabs: transcription (speech → text)
+/// models, post-processing (cleanup LLM) models, and the LLM instruction
+/// settings. A strip above the tabs always shows both active models.
 struct AIModelsView: View {
-    private let downloadService = ModelDownloadService.shared
-    @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
-    @AppStorage("modelUseCase") private var useCaseRaw: String = AIModel.UseCase.dictation.rawValue
-    @AppStorage(TranscriptDeliveryMode.defaultsKey)
-    private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
-    @State private var isPreparingHero = false
-    @State private var decodeFilter: CatalogDecodeFilter = .all
-
-    /// Keeps the content from stretching edge-to-edge on a wide window, so the
-    /// name and its action never sit at opposite ends of a huge empty band.
-    private let maxContentWidth: CGFloat = 940
-
-    // MARK: - Derived
-
-    private var capability: DeviceCapability { .current }
-    private var useCase: AIModel.UseCase { AIModel.UseCase(rawValue: useCaseRaw) ?? .dictation }
-    private var recommendedModel: AIModel { AIModel.recommendedModel(for: capability, useCase: useCase) }
-    private var selectedModelObject: AIModel? {
-        AIModel.availableModels.first { $0.variant == selectedModel }
-    }
-
-    private func isDownloaded(_ variant: String) -> Bool {
-        (downloadService.downloadProgress[variant] ?? 0) >= 1.0
-    }
-
-    /// Engine groups for the list — the recommended model is intentionally left
-    /// out here because it already headlines the hero (no more duplication).
-    private var engineGroups: [(title: String, subtitle: String, models: [AIModel])] {
-        [
-            (title: "Apple", subtitle: "Built-in · system speech assets, no Hugging Face download",
-             models: AIModel.models(for: .apple)),
-            (title: "Parakeet", subtitle: "NVIDIA · fastest, near-Whisper accuracy",
-             models: AIModel.models(for: .parakeet)),
-            (title: "Whisper", subtitle: "OpenAI · most accurate, a touch slower",
-             models: AIModel.models(for: .whisper)),
-        ]
-        .map {
-            (
-                $0.title,
-                $0.subtitle,
-                $0.models.filter {
-                    $0.variant != recommendedModel.variant && decodeFilter.includes(variant: $0.variant)
-                }
-            )
-        }
-        .filter { !$0.2.isEmpty }
-    }
-
-    // MARK: - Body
+    @State private var selectedTab: AIModelsTab = .transcription
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                currentStrip
-                heroSection
-                listSection
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("AI Models")
+                    .font(Typography.displayLarge)
+                    .foregroundStyle(Color.textPrimary)
+
+                CurrentModelsStrip()
+
+                HStack(spacing: 0) {
+                    ForEach(AIModelsTab.allCases) { tab in
+                        AIModelsTabButton(
+                            tab: tab,
+                            isSelected: selectedTab == tab,
+                            action: { selectedTab = tab }
+                        )
+                    }
+                    Spacer()
+                }
             }
-            .frame(maxWidth: maxContentWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 32)
+            .padding(.horizontal, 24)
             .padding(.top, 24)
-            .padding(.bottom, 40)
+            .padding(.bottom, 16)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    switch selectedTab {
+                    case .transcription:
+                        TranscriptionModelsTab()
+                    case .postProcessing:
+                        PostProcessingModelsView()
+                    case .instructions:
+                        LLMInstructionsTab()
+                    }
+                }
+                .frame(maxWidth: 940, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 32)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
+            }
         }
         .background(Color.clear)
         .onAppear {
-            if let forced = DashboardRoute.pendingDecodeFilter {
-                DashboardRoute.pendingDecodeFilter = nil
-                decodeFilter = forced
-            } else {
-                transcriptDeliveryMode = TranscriptDeliveryMode.current()
-                decodeFilter = .defaultFilter(
-                    streamingEnabled: transcriptDeliveryMode == .streaming,
-                    selectedVariant: selectedModel)
-            }
-            // Refresh download status; never overwrite the persisted selection here (#79).
-            Task { await downloadService.refreshDownloadedModels() }
-        }
-        .onChange(of: transcriptDeliveryMode) { _, mode in
-            decodeFilter = .defaultFilter(
-                streamingEnabled: mode == .streaming, selectedVariant: selectedModel)
-        }
-        .onChange(of: selectedModel) { _, variant in
-            if StreamingMode.disableIfIncompatible(with: variant) {
-                transcriptDeliveryMode = .autoPaste
-                decodeFilter = .batch
+            if let tab = DashboardRoute.pendingAIModelsTab {
+                DashboardRoute.pendingAIModelsTab = nil
+                selectedTab = tab
             }
         }
     }
+}
 
-    // MARK: - Current model strip
+enum AIModelsTab: String, CaseIterable, Identifiable {
+    case transcription = "Transcription models"
+    case postProcessing = "Post-processing models"
+    case instructions = "LLM Instructions"
 
-    /// Always-visible "what am I using right now", so the active model isn't
-    /// buried at the bottom of the list.
-    private var currentStrip: some View {
-        let sel = selectedModelObject
-        let differsFromPick = sel != nil && sel?.variant != recommendedModel.variant
-        return HStack(spacing: 13) {
-            ZStack {
-                Circle().fill(Color.brandAccentSoft)
-                Image(systemName: sel == nil ? "questionmark" : "waveform")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.brandAccent)
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .transcription: return "waveform"
+        case .postProcessing: return "sparkles"
+        case .instructions: return "text.quote"
+        }
+    }
+}
+
+/// Same treatment as the Settings tab bar, typed for this page's tabs.
+struct AIModelsTabButton: View {
+    let tab: AIModelsTab
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: 13))
+                Text(tab.rawValue)
+                    .font(Typography.bodyMedium)
             }
-            .frame(width: 42, height: 42)
+            .foregroundStyle(isSelected ? Color.textPrimary : Color.textMuted)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(isSelected ? Color.bgHover : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+}
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("CURRENTLY USING")
-                    .font(Typography.uiBold(10)).tracking(1.2)
-                    .foregroundStyle(Color.textMuted)
-                Text(sel?.name ?? "No model selected yet")
-                    .font(Typography.uiBold(16))
-                    .foregroundStyle(sel == nil ? Color.textMuted : Color.textPrimary)
-            }
+// MARK: - Currently-using strip
+
+/// Always-visible summary of the whole pipeline: the transcription model and
+/// the post-processing model side by side.
+private struct CurrentModelsStrip: View {
+    @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
+    @AppStorage(TranscriptFormatterService.enabledKey)
+    private var formatWithOnDeviceAI: Bool = false
+    // Bound via @AppStorage (not read from the service) so the strip
+    // re-renders the moment the effort level changes on another tab.
+    @AppStorage(TranscriptFormatterService.intensityKey)
+    private var formattingIntensityRaw: Int = FormattingIntensity.lightCleanup.rawValue
+    @ObservedObject private var postProcessing = PostProcessingModelManager.shared
+    @ObservedObject private var rulesetStore = CustomRulesetStore.shared
+
+    private var transcriptionModel: AIModel? {
+        AIModel.availableModels.first { $0.variant == selectedModel }
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            segment(
+                icon: "waveform",
+                label: "TRANSCRIBING WITH",
+                value: transcriptionModel?.name ?? "No model selected",
+                detail: transcriptionModel.map {
+                    StreamingMode.modelSupportsStreaming($0.variant)
+                        ? "Streaming" : "Batch"
+                }
+            )
+
+            Divider().frame(height: 34)
+
+            segment(
+                icon: "sparkles",
+                label: "CLEANING UP WITH",
+                value: cleanupValue,
+                detail: cleanupDetail
+            )
 
             Spacer(minLength: 8)
 
-            if differsFromPick {
-                Text("A better-matched pick is recommended below")
+            HStack(spacing: 7) {
+                Image(systemName: "laptopcomputer").font(.system(size: 12))
+                Text("Your Mac · \(DeviceCapability.current.summary)")
                     .font(Typography.uiMedium(12))
-                    .foregroundStyle(Color.textMuted)
             }
+            .foregroundStyle(Color.textMuted)
         }
-        .padding(.horizontal, 18).padding(.vertical, 14)
+        .padding(.horizontal, 18).padding(.vertical, 13)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.bgCard)
         )
@@ -134,217 +157,86 @@ struct AIModelsView: View {
         )
     }
 
-    // MARK: - Hero
+    private var cleanupValue: String {
+        guard formatWithOnDeviceAI else { return "Off" }
+        return postProcessing.selectedModel.name
+    }
 
-    private var heroSection: some View {
-        let rec = recommendedModel
-        let downloaded = isDownloaded(rec.variant)
-        let active = selectedModel == rec.variant
-        let justCompleted = ModelDownloadCompletion.isHighlighted(
-            downloaded: downloaded,
-            active: active,
-            recentlyCompleted: downloadService.recentlyCompleted.contains(rec.variant)
-        )
+    private var cleanupDetail: String? {
+        guard formatWithOnDeviceAI else { return nil }
+        let intensity = FormattingIntensity(rawValue: formattingIntensityRaw) ?? .lightCleanup
+        guard intensity == .custom else { return intensity.displayName }
+        guard let ruleset = rulesetStore.activeRuleset else { return "Custom: no ruleset yet" }
+        return "Custom: \(ruleset.name)"
+    }
 
-        return HStack(alignment: .top, spacing: 32) {
-            // LEFT — the pitch.
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 6) {
-                    Image(systemName: "sparkles").font(.system(size: 11, weight: .bold))
-                    Text("RECOMMENDED FOR YOU")
-                        .font(Typography.uiBold(11)).tracking(1.4)
-                }
-                .foregroundStyle(Color.brandAccent)
-
-                Text(rec.name)
-                    .font(Typography.heroName)
-                    .foregroundStyle(Color.textPrimary)
-                    .padding(.top, 16)
-
-                HStack(spacing: 8) {
-                    LanguageBadge(isEnglishOnly: rec.isEnglishOnly)
-                    StreamingCapabilityBadge(
-                        supportsStreaming: StreamingMode.modelSupportsStreaming(rec.variant))
-                }
-                .padding(.top, 12)
-
-                Text(AIModel.recommendationReason(for: rec, capability: capability, useCase: useCase))
-                    .font(Typography.ui(15))
-                    .foregroundStyle(Color.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 12)
-
-                HStack(spacing: 7) {
-                    Image(systemName: "laptopcomputer").font(.system(size: 12))
-                    Text("Your Mac · \(capability.summary)")
-                        .font(Typography.uiMedium(12))
-                }
-                .foregroundStyle(Color.textMuted)
-                .padding(.top, 16)
-
-                Spacer(minLength: 20)
-
-                heroAction(rec: rec, downloaded: downloaded, active: active)
-                    .padding(.top, 20)
+    private func segment(
+        icon: String, label: String, value: String, detail: String?
+    ) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(Color.brandAccentSoft)
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.brandAccent)
             }
+            .frame(width: 34, height: 34)
 
-            // RIGHT — the performance panel, so the hero isn't half-empty.
-            VStack(alignment: .leading, spacing: 14) {
-                Text("HOW IT PERFORMS")
-                    .font(Typography.uiBold(9)).tracking(1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label)
+                    .font(Typography.uiBold(9)).tracking(1.1)
                     .foregroundStyle(Color.textMuted)
-                MetricBarsStacked(model: rec)
-                HStack(spacing: 7) {
-                    Image(systemName: "internaldrive").font(.system(size: 11))
-                    Text(rec.engine == .apple ? rec.size : "\(rec.size) download")
-                        .font(Typography.uiMedium(12))
+                Text(value)
+                    .font(Typography.uiBold(14))
+                    .foregroundStyle(Color.textPrimary)
+                if let detail {
+                    Text(detail)
+                        .font(Typography.ui(11))
+                        .foregroundStyle(Color.textMuted)
                 }
-                .foregroundStyle(Color.textSecondary)
-            }
-            .padding(18)
-            .frame(width: 300, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.textPrimary.opacity(0.03))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.textPrimary.opacity(0.06), lineWidth: 1)
-            )
-        }
-        .padding(28)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.bgCard)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: justCompleted
-                                    ? [Color.accentSuccess.opacity(0.14), Color.accentSuccess.opacity(0.0)]
-                                    : [Color.brandAccent.opacity(0.07), Color.brandAccent.opacity(0.0)],
-                                startPoint: .topLeading, endPoint: .bottomTrailing))
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(
-                    justCompleted ? Color.accentSuccess.opacity(0.45) : Color.brandAccent.opacity(0.22),
-                    lineWidth: justCompleted ? 1.5 : 1
-                )
-        )
-        .shadow(
-            color: (justCompleted ? Color.accentSuccess : Color.brandAccent).opacity(0.10),
-            radius: 20, x: 0, y: 8
-        )
-        .animation(.easeInOut(duration: 0.45), value: justCompleted)
-    }
-
-    @ViewBuilder
-    private func heroAction(rec: AIModel, downloaded: Bool, active: Bool) -> some View {
-        if active && downloaded {
-            HStack(spacing: 7) {
-                Image(systemName: "checkmark.circle.fill")
-                Text("This is your default model").font(Typography.uiBold(13))
-            }
-            .foregroundStyle(Color.brandAccent)
-        } else if downloaded {
-            if ModelDownloadCompletion.isHighlighted(
-                downloaded: true,
-                active: false,
-                recentlyCompleted: downloadService.recentlyCompleted.contains(rec.variant)
-            ) {
-                DownloadCompleteBanner(
-                    isLoading: isPreparingHero,
-                    loadingStage: TranscriptionManager.shared.loadingStage,
-                    onStartUsing: { prepareHeroModel(rec.variant) }
-                )
-                .frame(maxWidth: 360)
-            } else if isPreparingHero {
-                HStack(spacing: 10) {
-                    Spinner(size: 14, lineWidth: 2, tint: Color.textSecondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(ModelLoadCopy.preparing)
-                            .font(Typography.uiBold(13))
-                        Text(ModelLoadCopy.firstLoadHint)
-                            .font(Typography.ui(11))
-                            .foregroundStyle(Color.textMuted)
-                    }
-                }
-                .foregroundStyle(Color.textSecondary)
-            } else {
-                Button {
-                    prepareHeroModel(rec.variant)
-                } label: {
-                    ActionButton.label(title: "Use this model", icon: "arrow.right",
-                                       style: .primary, large: true)
-                }
-                .buttonStyle(.plain)
-            }
-        } else if downloadService.snapshot(for: rec.variant).isDownloading {
-            let heroSnapshot = downloadService.snapshot(for: rec.variant)
-            AnimatedDownloadMeter(
-                targetFraction: heroSnapshot.progress,
-                status: heroSnapshot.status
-            )
-            .frame(maxWidth: 320)
-        } else {
-            Button {
-                downloadService.downloadModel(variant: rec.variant)
-            } label: {
-                ActionButton.label(title: "Download", icon: "arrow.down",
-                                   style: .primary, large: true)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private func prepareHeroModel(_ variant: String) {
-        isPreparingHero = true
-        Task {
-            do {
-                try await TranscriptionManager.shared.loadModel(variant: variant)
-                await MainActor.run {
-                    selectedModel = variant
-                    isPreparingHero = false
-                    downloadService.acknowledgeCompletedDownload(for: variant)
-                }
-            } catch {
-                await MainActor.run { isPreparingHero = false }
             }
         }
     }
+}
 
-    // MARK: - List
+// MARK: - Transcription models tab
 
-    private var listSection: some View {
-        VStack(alignment: .leading, spacing: 26) {
-            HStack(spacing: 12) {
-                Text("Models")
+private struct TranscriptionModelsTab: View {
+    private let downloadService = ModelDownloadService.shared
+    @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
+    @AppStorage(TranscriptDeliveryMode.defaultsKey)
+    private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
+
+    /// The catalog, grouped by engine. Apple leads: it is the zero-download
+    /// starting point every new install already has.
+    private var engineGroups: [(title: String, subtitle: String, models: [AIModel])] {
+        [
+            (title: "Apple", subtitle: "Built-in · system speech assets, no download",
+             models: AIModel.models(for: .apple)),
+            (title: "Parakeet", subtitle: "NVIDIA · fastest, near-Whisper accuracy",
+             models: AIModel.models(for: .parakeet)),
+            (title: "Whisper", subtitle: "OpenAI · most accurate, a touch slower",
+             models: AIModel.models(for: .whisper)),
+        ]
+        .filter { !$0.models.isEmpty }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Transcription models")
                     .font(Typography.sectionTitle)
                     .foregroundStyle(Color.textPrimary)
-                Spacer(minLength: 8)
-                Picker("Show", selection: $decodeFilter) {
-                    ForEach(CatalogDecodeFilter.allCases) { filter in
-                        Text(filter.label).tag(filter)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 260)
-                .labelsHidden()
-            }
-
-            if engineGroups.isEmpty {
-                Text(emptyFilterCopy)
+                Text("Apple Speech works out of the box. Download a model when you want a different speed, accuracy, or language trade-off.")
                     .font(Typography.ui(13))
                     .foregroundStyle(Color.textMuted)
             }
 
             ForEach(engineGroups, id: \.title) { group in
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(group.title)
-                            .font(Typography.sectionTitle)
+                            .font(Typography.uiBold(15))
                             .foregroundStyle(Color.textPrimary)
                         Text(group.subtitle)
                             .font(Typography.ui(12))
@@ -355,7 +247,7 @@ struct AIModelsView: View {
                         ModelRow(
                             model: model,
                             selectedModel: $selectedModel,
-                            isRecommended: false,
+                            isRecommended: model.engine == .apple,
                             snapshot: downloadService.snapshot(for: model.variant)
                         )
                         .equatable()
@@ -363,16 +255,34 @@ struct AIModelsView: View {
                 }
             }
         }
+        .onAppear {
+            transcriptDeliveryMode = TranscriptDeliveryMode.current()
+            // Refresh download status; never overwrite the persisted selection here (#79).
+            Task { await downloadService.refreshDownloadedModels() }
+        }
+        .onChange(of: selectedModel) { _, variant in
+            if StreamingMode.disableIfIncompatible(with: variant) {
+                transcriptDeliveryMode = .autoPaste
+            }
+        }
     }
+}
 
-    private var emptyFilterCopy: String {
-        switch decodeFilter {
-        case .streaming:
-            return "No other streaming models match this filter. Apple Speech is recommended above; WhisperKit rows appear here when they are not the hero."
-        case .batch:
-            return "No batch models match this filter."
-        case .all:
-            return "No models match this filter."
+// MARK: - LLM Instructions tab
+
+private struct LLMInstructionsTab: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("LLM Instructions")
+                    .font(Typography.sectionTitle)
+                    .foregroundStyle(Color.textPrimary)
+                Text("How the cleanup model edits your transcripts — pick a built-in effort level or write your own rulesets.")
+                    .font(Typography.ui(13))
+                    .foregroundStyle(Color.textMuted)
+            }
+
+            TranscriptCleanupAISection()
         }
     }
 }

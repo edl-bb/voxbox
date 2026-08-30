@@ -15,14 +15,22 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
     /// Polish: light cleanup plus smoothing choppy dictated phrasing into
     /// fluent sentences — meaning, wording and tone preserved.
     case polish = 2
+    /// Custom: the user's own ruleset (AI Models → Cleanup rulesets) is sent
+    /// verbatim — no built-in preamble, no change-ratio governor, and the
+    /// ruleset's own temperature.
+    case custom = 3
 
     var id: Int { rawValue }
+
+    /// The three built-in levels; `.custom` is driven by user rulesets.
+    static var builtInCases: [FormattingIntensity] { [.formatting, .lightCleanup, .polish] }
 
     var displayName: String {
         switch self {
         case .formatting: return "Basic"
         case .lightCleanup: return "Light cleanup"
         case .polish: return "Polish"
+        case .custom: return "Custom"
         }
     }
 
@@ -34,6 +42,8 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
             return "Light cleanup: Remove filler words and false starts, and fix obvious grammar and punctuation. (Usable with \"Markdown formatting\")"
         case .polish:
             return "Polish: Turns choppy dictation into fluent sentences and structured paragraphs. (Usable with \"Markdown formatting\")"
+        case .custom:
+            return "Custom: Your own cleanup instructions, sent to the model exactly as written. Manage rulesets in AI Models."
         }
     }
 
@@ -71,6 +81,10 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
                 Where a small restructuing of a sentence or phrase is needed to improve the flow of speech, do so;\
                 Preserve the speaker's meaning, vocabulary and tone — polish the delivery, never the message.
                 """
+        case .custom:
+            // Only reached when Custom is selected but no usable ruleset
+            // exists; behave like Light cleanup so the pass stays sensible.
+            return FormattingIntensity.lightCleanup.intensityInstructions
         }
     }
 
@@ -100,11 +114,14 @@ enum FormattingIntensity: Int, CaseIterable, Identifiable {
 
     /// Maximum fraction of words the model may change/remove at this level
     /// before the output is rejected in favour of the raw transcript.
-    var maximumChangeRatio: Double {
+    /// `nil` means ungoverned: custom rulesets run without the guardrail so
+    /// the user's instructions are honoured even when they rewrite heavily.
+    var maximumChangeRatio: Double? {
         switch self {
         case .formatting: return 0.10
         case .lightCleanup: return 0.40
         case .polish: return 0.80
+        case .custom: return nil
         }
     }
 }
@@ -129,6 +146,11 @@ struct FormattingRequest: Equatable {
     let instructionStages: [String]
     /// Original dictation only — never includes instruction fragments.
     let input: String
+    /// Sampling temperature. Built-in levels stay deterministic at 0;
+    /// custom rulesets carry their own value.
+    var temperature: Double = 0.0
+    /// Change-ratio budget for the guardrail; nil disables it (custom rulesets).
+    var maximumChangeRatio: Double?
 
     var instructions: String {
         instructionStages.joined(separator: "\n\n")
@@ -185,13 +207,20 @@ final class TranscriptFormatterService {
         return false
     }
 
+    /// Whether any cleanup engine can run: the system model, or a selected
+    /// local model that is downloaded. Gates the cleanup toggles and pass.
+    static var isCleanupAvailable: Bool {
+        CleanupEngineFactory.engine(for: PostProcessingModelManager.shared.selectedModel)
+            .isAvailable || isModelAvailable
+    }
+
     /// Dictations shorter than this many words skip the model entirely.
     static let minimumWordCount = 8
 
     private init() {}
 
     static func shouldFormat(_ text: String) -> Bool {
-        guard isEnabled, isModelAvailable else { return false }
+        guard isEnabled, isCleanupAvailable else { return false }
         return words(in: text).count >= minimumWordCount
     }
 
@@ -205,8 +234,48 @@ final class TranscriptFormatterService {
         FormattingRequest(
             instructionStages: intensity.instructionStages(
                 includeMarkdownFormatting: includeMarkdownFormatting),
-            input: text.trimmingCharacters(in: .whitespacesAndNewlines)
+            input: text.trimmingCharacters(in: .whitespacesAndNewlines),
+            maximumChangeRatio: intensity.maximumChangeRatio
         )
+    }
+
+    /// Request for a user ruleset: the instructions go to the model exactly
+    /// as written — no built-in preamble, no markdown stage — with the
+    /// ruleset's temperature and no change-ratio governor.
+    static func request(
+        for text: String,
+        ruleset: CustomCleanupRuleset
+    ) -> FormattingRequest {
+        FormattingRequest(
+            instructionStages: [
+                ruleset.instructions.trimmingCharacters(in: .whitespacesAndNewlines)
+            ],
+            input: text.trimmingCharacters(in: .whitespacesAndNewlines),
+            temperature: ruleset.temperature.clamped(to: CustomRulesetStore.temperatureRange),
+            maximumChangeRatio: nil
+        )
+    }
+
+    /// The request the formatter will actually run for the current settings:
+    /// the active custom ruleset when Custom is selected and usable, else a
+    /// built-in level (Custom with no usable ruleset degrades to the built-in
+    /// fallback instructions so the pass never goes out instruction-less).
+    static func effectiveRequest(
+        for text: String,
+        intensity: FormattingIntensity,
+        includeMarkdownFormatting: Bool,
+        customRuleset: CustomCleanupRuleset?
+    ) -> FormattingRequest {
+        if intensity == .custom, let ruleset = customRuleset, ruleset.isUsable {
+            return request(for: text, ruleset: ruleset)
+        }
+        // Custom with no usable ruleset degrades to Light cleanup, governor
+        // included — the ungoverned path is only for the user's own rules.
+        let effective: FormattingIntensity = intensity == .custom ? .lightCleanup : intensity
+        return request(
+            for: text,
+            intensity: effective,
+            includeMarkdownFormatting: includeMarkdownFormatting)
     }
 
     /// Clean up `text` at the user's chosen intensity, returning the input
@@ -215,30 +284,33 @@ final class TranscriptFormatterService {
     /// output.
     func format(_ text: String) async -> String {
         guard Self.isEnabled else { return text }
-        guard Self.isModelAvailable else { return text }
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let wordCount = Self.words(in: trimmed).count
         guard wordCount >= Self.minimumWordCount else { return text }
 
-        let intensity = Self.intensity
-        let request = Self.request(
+        let request = Self.effectiveRequest(
             for: trimmed,
-            intensity: intensity,
-            includeMarkdownFormatting: Self.isMarkdownFormattingEnabled)
-        do {
-            let session = LanguageModelSession {
-                request.instructionStages
-            }
-            let response = try await session.respond(
-                to: request.input,
-                options: GenerationOptions(temperature: 0.0)
-            )
-            let cleaned = Self.stripModelPreamble(
-                response.content.trimmingCharacters(in: .whitespacesAndNewlines))
+            intensity: Self.intensity,
+            includeMarkdownFormatting: Self.isMarkdownFormattingEnabled,
+            customRuleset: CustomRulesetStore.shared.usableActiveRuleset)
 
-            let ratio = Self.changeRatio(from: trimmed, to: cleaned)
-            let accepted = !cleaned.isEmpty && ratio <= intensity.maximumChangeRatio
+        let engine = CleanupEngineFactory.engine(
+            for: PostProcessingModelManager.shared.selectedModel)
+        guard engine.isAvailable else { return text }
+
+        do {
+            let output = try await Self.run(request, on: engine)
+            let cleaned = Self.stripModelPreamble(
+                output.trimmingCharacters(in: .whitespacesAndNewlines))
+
+            let withinBudget: Bool
+            if let budget = request.maximumChangeRatio {
+                withinBudget = Self.changeRatio(from: trimmed, to: cleaned) <= budget
+            } else {
+                withinBudget = true
+            }
+            let accepted = !cleaned.isEmpty && withinBudget
             guard accepted else {
                 AppLogger.debug(
                     "On-device formatting rejected by guardrail; keeping raw transcript",
@@ -251,6 +323,27 @@ final class TranscriptFormatterService {
                 "On-device formatting failed; keeping raw transcript",
                 category: AppLogger.transcription)
             return text
+        }
+    }
+
+    /// Runs the request on `engine`; a local-model failure retries once on
+    /// the system model so a broken download degrades gracefully instead of
+    /// silently skipping cleanup.
+    private static func run(
+        _ request: FormattingRequest,
+        on engine: CleanupEngine
+    ) async throws -> String {
+        do {
+            return try await engine.cleanup(request)
+        } catch {
+            let fallback = AppleIntelligenceCleanupEngine()
+            guard !(engine is AppleIntelligenceCleanupEngine), fallback.isAvailable else {
+                throw error
+            }
+            AppLogger.warning(
+                "Local cleanup model failed; retrying on the system model",
+                category: AppLogger.transcription)
+            return try await fallback.cleanup(request)
         }
     }
 

@@ -36,7 +36,7 @@ enum TranscriptDeliveryMode: String, CaseIterable, Identifiable {
         switch self {
         case .clipboard:
             return
-                "Copies the finished transcript to the clipboard. VoxBox does not paste or write into the focused app; paste it yourself."
+                "Copies the finished transcript to the clipboard."
         case .autoPaste:
             return
                 "Waits until you stop, then pastes the finished transcript into the app you were in."

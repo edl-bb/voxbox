@@ -33,14 +33,19 @@ struct MenuBarDashboardView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             header
             ActiveDownloadsView()
             statsGrid
             recentTranscriptsSection
             actionRow
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        // The MenuBarExtra window sizes to fit but crops flush against the
+        // bottom edge; generous bottom padding keeps the action row clear of
+        // the panel's rounded corner.
+        .padding(.bottom, 30)
         .frame(width: 388)
     }
 

@@ -57,14 +57,18 @@ struct ModelRow: View, Equatable {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center, spacing: 18) {
-                VStack(alignment: .leading, spacing: 11) {
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 7) {
                     titleRow
                     Text(model.details)
-                        .font(Typography.ui(13))
+                        .font(Typography.ui(12))
                         .foregroundStyle(Color.textSecondary)
-                    metaRow
-                    MetricBars(model: model, appeared: appeared)
+
+                    // One compact line: size chip + the two metric bars.
+                    HStack(spacing: 14) {
+                        chip(icon: "internaldrive", text: model.size)
+                        MetricBars(model: model, appeared: appeared)
+                    }
 
                     if let warning = model.ramWarning(deviceRAMGB: WhisperService.deviceRAMGB) {
                         note(icon: "exclamationmark.triangle.fill", text: warning, tint: .accentWarning)
@@ -78,7 +82,8 @@ struct ModelRow: View, Equatable {
 
                 actionColumn
             }
-            .padding(20)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
 
             if isDownloading {
                 downloadProgressSection
@@ -89,7 +94,7 @@ struct ModelRow: View, Equatable {
                     loadingStage: transcription.loadingStage,
                     onStartUsing: loadAndSelectModel
                 )
-                .padding(.horizontal, 20).padding(.bottom, 20)
+                .padding(.horizontal, 16).padding(.bottom, 14)
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
@@ -122,6 +127,10 @@ struct ModelRow: View, Equatable {
             LanguageBadge(isEnglishOnly: model.isEnglishOnly)
             StreamingCapabilityBadge(supportsStreaming: StreamingMode.modelSupportsStreaming(model.variant))
 
+            if isRecommended {
+                statusBadge(text: "Recommended", icon: "sparkles", tint: Color.brandAccent)
+            }
+
             if isActive && isDownloaded {
                 statusBadge(text: "Selected", icon: "checkmark", tint: Color.brandAccent)
             } else if justCompleted {
@@ -141,12 +150,6 @@ struct ModelRow: View, Equatable {
         .padding(.horizontal, 8).padding(.vertical, 3)
         .background(Capsule().fill(tint.opacity(0.14)))
         .foregroundStyle(tint)
-    }
-
-    private var metaRow: some View {
-        HStack(spacing: 8) {
-            chip(icon: "internaldrive", text: model.size)
-        }
     }
 
     private func chip(icon: String, text: String) -> some View {
@@ -233,7 +236,7 @@ struct ModelRow: View, Equatable {
             targetFraction: progress,
             status: snapshot.status
         )
-        .padding(.horizontal, 20).padding(.bottom, 20)
+        .padding(.horizontal, 16).padding(.bottom, 14)
     }
 
     // MARK: - Logic
@@ -313,19 +316,33 @@ struct LanguageBadge: View {
     }
 }
 
+/// A yes/no capability marker: "✓ STREAMING" / "✗ STREAMING" (SF Symbols,
+/// not emoji). The capability name stays constant so rows scan vertically;
+/// only the mark and tint change.
+struct CapabilityBadge: View {
+    let name: String
+    let supported: Bool
+
+    var body: some View {
+        let tint = supported ? Color.accentSuccess : Color.textMuted
+        HStack(spacing: 3) {
+            Image(systemName: supported ? "checkmark" : "xmark")
+                .font(.system(size: 8, weight: .bold))
+            Text(name.uppercased())
+                .font(Typography.uiBold(9)).tracking(0.6)
+        }
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(Capsule().fill(tint.opacity(0.14)))
+        .foregroundStyle(tint)
+        .help(supported ? "Supports \(name.lowercased())" : "No \(name.lowercased()) support")
+    }
+}
+
 struct StreamingCapabilityBadge: View {
     let supportsStreaming: Bool
 
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: supportsStreaming ? "checkmark" : "minus")
-                .font(.system(size: 8, weight: .bold))
-            Text(supportsStreaming ? "STREAMING" : "BATCH")
-                .font(Typography.uiBold(9)).tracking(0.6)
-        }
-        .padding(.horizontal, 7).padding(.vertical, 3)
-        .background(Capsule().fill((supportsStreaming ? Color.accentSuccess : Color.textMuted).opacity(0.14)))
-        .foregroundStyle(supportsStreaming ? Color.accentSuccess : Color.textMuted)
+        CapabilityBadge(name: "Streaming", supported: supportsStreaming)
     }
 }
 
@@ -371,24 +388,11 @@ struct MetricBars: View {
     var appeared: Bool = true
 
     var body: some View {
-        HStack(spacing: 22) {
+        HStack(spacing: 16) {
             MetricBar(label: "Speed", tier: model.speedTier, value: model.speed,
-                      tint: .brandAccent, appeared: appeared).frame(width: 148)
+                      tint: .brandAccent, appeared: appeared).frame(width: 116)
             MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy,
-                      tint: .brandAccent, appeared: appeared).frame(width: 148)
-        }
-        .padding(.top, 2)
-    }
-}
-
-/// Speed + accuracy stacked — the hero's right column.
-struct MetricBarsStacked: View {
-    let model: AIModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            MetricBar(label: "Speed", tier: model.speedTier, value: model.speed, tint: .brandAccent)
-            MetricBar(label: "Accuracy", tier: model.accuracyTier, value: model.accuracy, tint: .brandAccent)
+                      tint: .brandAccent, appeared: appeared).frame(width: 116)
         }
     }
 }

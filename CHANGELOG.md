@@ -2,6 +2,19 @@
 
 Changes and release notes for VoxBox.
 
+## [1.2.0] - 2026-08-30
+- **New Feature**: Choose your Post-processing Model: Post-processing defaults to the build-in Apple Intelligence model, but now you can choose from 4 other LLMs to clean up your transcripts. Choose from Apple Intelligence, Llama 3.2 1B/3B, Qwen 3 1.7B/4B
+- **New feature**: Custom LLM cleanup rulesets
+    - Create up to 5 of your own cleanup rulesets (name, instructions, temperature) under AI Models → Cleanup AI.
+    - Pick "Custom" as the cleanup effort to run your active ruleset. Your instructions are sent to the model exactly as written — no hidden prompt and no change-ratio guardrail.
+    - The On-device AI controls now also live on the AI Models page; the toggle in Settings is the same switch.
+- AI Models page overhaul
+    - AI Models page has been redesigned to facilitate the inclusion of custom Post-processing models, and the new Custom rulesets for Post-processing.
+    - Removed the big recommendation banner.
+    - Made models list more compact.
+    - The "Currently using" strip now shows the active model's capabilities and your Mac's specs.
+- Fixed the menu bar dropdown clipping at the bottom edge.
+
 ## [1.1.2] - 2026-08-25
 - New feature: Send transcript to clipboard
     - You can now copy a transcript directly to the clipboard rather than automatically pasting it to the screen.

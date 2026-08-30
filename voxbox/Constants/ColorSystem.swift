@@ -225,7 +225,16 @@ extension Color {
     static let chartGreen = Color(hex: "26947D")
 
     // Legacy
-    static let navyInk = Color(hex: "243056")
+    /// App-wide control tint. Menu chevrons inherit this, so it must stay
+    /// dark on cream and light on ink.
+    static let navyInk = Color(
+        nsColor: NSColor(
+            name: "navyInk",
+            dynamicProvider: { appearance in
+                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    ? NSColor(hex: "E8EEFF")
+                    : NSColor(hex: "243056")
+            }))
     static let navyLight = Color(hex: "3D4A78")
     static let navyMuted = Color(hex: "6B6B6B")
     static let charcoal = Color(hex: "1A1A1A")
