@@ -61,9 +61,11 @@ jobs:
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-build.log; then
-            grep -E "(^|[[:space:]])(error|fatal error): " xcodebuild-build.log \
-              | sort -u | head -40 \
-              | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
+            {
+              grep -E "(: error:|error: |fatal error: |ld: |Undefined symbols|duplicate symbol|no such module|cannot find )" xcodebuild-build.log | sort -u | head -25
+              # Linker failures put the real cause on the preceding lines.
+              grep -B10 "linker command failed" xcodebuild-build.log | head -25
+            } | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
             exit 1
           fi
 
