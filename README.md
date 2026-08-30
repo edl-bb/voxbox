@@ -44,6 +44,8 @@ Instant, non-AI options are also available to strip "um's" and "ahh's" if you wa
 
 ### Custom on-device LLMs
 
+![AI Models](branding/model-picker.png)
+
 VoxBox uses the built-in Apple Intelligence model by default, but you are welcome to pick from 4 other open weight models if they fit your needs better. 
 
 VoxBox currently supports:
