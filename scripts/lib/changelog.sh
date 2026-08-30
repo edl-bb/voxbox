@@ -105,8 +105,8 @@ changelog_github_notes() {
 changelog_file_for_tag() {
   local version="$1"
   local dest="$2"
-  if git cat-file -e "v${version}:CHANGELOG.md" 2>/dev/null; then
-    git show "v${version}:CHANGELOG.md" > "$dest"
+  if git cat-file -e "refs/tags/v${version}:CHANGELOG.md" 2>/dev/null; then
+    git show "refs/tags/v${version}:CHANGELOG.md" > "$dest"
     return 0
   fi
   if [ -f "$CHANGELOG" ]; then

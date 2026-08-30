@@ -71,7 +71,7 @@ if [ "$KEEP_VERSION" = 1 ]; then
   echo "  Build   : ${CURRENT_BUILD}"
 
   echo ""
-  if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+  if git rev-parse "refs/tags/v${VERSION}" >/dev/null 2>&1; then
     echo "📌 Tag v${VERSION} already exists"
   else
     echo "💾 Tagging HEAD as v${VERSION} (local only)..."

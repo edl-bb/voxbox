@@ -6,6 +6,8 @@
 # If no version is given, reads from dist/.release-version written by create-release.sh.
 # GitHub release notes come from the matching CHANGELOG.md section (what the
 # in-app update sheet shows). Git log is only used if that section is missing.
+# Re-deploying an existing tag replaces the DMG, rewrites the GitHub notes from
+# the current CHANGELOG.md, and moves the tag to HEAD so the source zip matches.
 
 set -e
 
@@ -48,37 +50,75 @@ echo "💿 DMG     : ${DMG_PATH}"
 echo "🏷️  Tag     : v${VERSION}"
 echo ""
 
+# Always address the tag by full ref. A release branch with the same name
+# (e.g. branch v1.2.0 + tag v1.2.0) makes a bare "v1.2.0" refspec ambiguous.
+TAG_REF="refs/tags/v${VERSION}"
+
 # ── Verify tag exists locally ──────────────────────────────────────────────────
-if ! git rev-parse "v${VERSION}" &>/dev/null; then
+if ! git rev-parse "$TAG_REF" &>/dev/null; then
   echo "❌ Local tag v${VERSION} not found."
   echo "   Run ./scripts/create-release.sh to create the release commit and tag first."
   exit 1
 fi
-
-# ── Push commits + tag ────────────────────────────────────────────────────────
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🔼 Pushing commits and tag to GitHub..."
-git push origin HEAD
-git push origin "v${VERSION}"
-echo "✅ Pushed"
-
-# ── Create GitHub Release with DMG ────────────────────────────────────────────
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📤 Creating GitHub Release and uploading DMG..."
 
 if ! command -v gh &>/dev/null; then
   echo "❌ GitHub CLI (gh) not installed. Install with: brew install gh"
   exit 1
 fi
 
-# Prefer CHANGELOG.md for this version (that is what the in-app update sheet shows).
-CHANGELOG_TMP=$(mktemp)
-NOTES=""
-if changelog_file_for_tag "$VERSION" "$CHANGELOG_TMP"; then
-  NOTES="$(changelog_github_notes "$VERSION" "$CHANGELOG_TMP")"
+RECYCLE=0
+if gh release view "v${VERSION}" --repo "$GITHUB_REPO" >/dev/null 2>&1; then
+  RECYCLE=1
 fi
-rm -f "$CHANGELOG_TMP"
+
+# ── Push commits + tag ────────────────────────────────────────────────────────
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔼 Pushing commits and tag to GitHub..."
+git push origin HEAD
+
+if [ "$RECYCLE" = 1 ]; then
+  TAG_SHA=$(git rev-parse "$TAG_REF")
+  HEAD_SHA=$(git rev-parse HEAD)
+  if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
+    echo "📌 Moving tag v${VERSION} to HEAD (${HEAD_SHA:0:7})"
+    echo "   so GitHub's source zip matches this build"
+    git tag -f "v${VERSION}" HEAD
+    git push --force origin "$TAG_REF"
+  else
+    git push origin "$TAG_REF"
+  fi
+else
+  git push origin "$TAG_REF"
+fi
+echo "✅ Pushed"
+
+# ── Create GitHub Release with DMG ────────────────────────────────────────────
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ "$RECYCLE" = 1 ]; then
+  echo "♻️  Recycle v${VERSION}: DMG, notes, and source zip..."
+else
+  echo "📤 Creating GitHub Release and uploading DMG..."
+fi
+
+# Prefer CHANGELOG.md for this version (that is what the in-app update sheet shows).
+# Recycle uses the working-tree file so post-tag changelog edits ship with the
+# GitHub notes. First publish still prefers the tagged snapshot.
+NOTES=""
+if [ "$RECYCLE" = 1 ]; then
+  NOTES="$(changelog_github_notes "$VERSION" "$CHANGELOG")"
+  if [ -z "$NOTES" ]; then
+    echo "❌ CHANGELOG.md has no notes for v${VERSION}."
+    echo "   Recycle refuses to publish without release notes."
+    exit 1
+  fi
+else
+  CHANGELOG_TMP=$(mktemp)
+  if changelog_file_for_tag "$VERSION" "$CHANGELOG_TMP"; then
+    NOTES="$(changelog_github_notes "$VERSION" "$CHANGELOG_TMP")"
+  fi
+  rm -f "$CHANGELOG_TMP"
+fi
 
 if [ -n "$NOTES" ]; then
   echo "📝 Release notes (from CHANGELOG.md):"
@@ -91,7 +131,7 @@ else
     # Cap the auto-generated git-log list only. Changelog notes are the full
     # markdown section, including nested lists.
     MAX_NOTE_LINES="${CHANGELOG_MAX_NOTE_LINES}"
-    ALL_NOTES=$(git log "${PREV_TAG}..v${VERSION}" \
+    ALL_NOTES=$(git log "${PREV_TAG}..${TAG_REF}" \
       --pretty=format:"- %s" \
       | grep -v "^- release:" \
       | grep -v "^- update build" \
@@ -108,18 +148,32 @@ else
   fi
 fi
 
-# Fall back to --generate-notes if we end up with nothing
-if [ -z "$NOTES" ]; then
+NOTES_FILE=$(mktemp)
+printf '%s\n' "$NOTES" > "$NOTES_FILE"
+
+if [ "$RECYCLE" = 1 ]; then
+  echo "💿 Replacing DMG..."
+  gh release upload "v${VERSION}" "$DMG_PATH" --clobber --repo "$GITHUB_REPO"
+  echo "📝 Updating GitHub release notes from CHANGELOG.md..."
+  gh release edit "v${VERSION}" \
+    --repo "$GITHUB_REPO" \
+    --title "VoxBox v${VERSION}" \
+    --notes-file "$NOTES_FILE" \
+    --target "$(git rev-parse HEAD)"
+elif [ -z "$NOTES" ]; then
   gh release create "v${VERSION}" "$DMG_PATH" \
+    --repo "$GITHUB_REPO" \
     --title "VoxBox v${VERSION}" \
     --generate-notes \
     --latest
 else
   gh release create "v${VERSION}" "$DMG_PATH" \
+    --repo "$GITHUB_REPO" \
     --title "VoxBox v${VERSION}" \
-    --notes "$NOTES" \
+    --notes-file "$NOTES_FILE" \
     --latest
 fi
+rm -f "$NOTES_FILE"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
