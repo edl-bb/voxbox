@@ -102,26 +102,42 @@ nonisolated final class LiveAudioSampleSink: AudioProcessing, @unchecked Sendabl
         lock.unlock()
     }
 
+    /// The sink is fed externally via `ingest`; the stream never opens a
+    /// microphone. Consumers we use poll `audioSamples` instead.
+    func startStreamingRecordingLive(
+        inputDeviceID: DeviceID?
+    ) -> (AsyncThrowingStream<[Float], Error>, AsyncThrowingStream<[Float], Error>.Continuation) {
+        lock.lock()
+        samples.removeAll(keepingCapacity: true)
+        lock.unlock()
+        return AsyncThrowingStream<[Float], Error>.makeStream(bufferingPolicy: .unbounded)
+    }
+
     func pauseRecording() {}
     func stopRecording() {}
     func resumeRecordingLive(inputDeviceID: DeviceID?, callback: (([Float]) -> Void)?) throws {}
 
     static func loadAudio(
         fromPath audioFilePath: String,
+        channelMode: ChannelMode,
         startTime: Double?,
         endTime: Double?,
         maxReadFrameSize: AVAudioFrameCount?
     ) throws -> AVAudioPCMBuffer {
         try AudioProcessor.loadAudio(
             fromPath: audioFilePath,
+            channelMode: channelMode,
             startTime: startTime,
             endTime: endTime,
             maxReadFrameSize: maxReadFrameSize
         )
     }
 
-    static func loadAudio(at audioPaths: [String]) async -> [Result<[Float], Swift.Error>] {
-        await AudioProcessor.loadAudio(at: audioPaths)
+    static func loadAudio(
+        at audioPaths: [String],
+        channelMode: ChannelMode
+    ) async -> [Result<[Float], Swift.Error>] {
+        await AudioProcessor.loadAudio(at: audioPaths, channelMode: channelMode)
     }
 
     static func padOrTrimAudio(
@@ -135,6 +151,19 @@ nonisolated final class LiveAudioSampleSink: AudioProcessing, @unchecked Sendabl
             startAt: startIndex,
             toLength: frameLength,
             saveSegment: saveSegment
+        )
+    }
+
+    func padOrTrim(
+        fromArray audioArray: [Float],
+        startAt startIndex: Int,
+        toLength frameLength: Int
+    ) -> (any AudioProcessorOutputType)? {
+        Self.padOrTrimAudio(
+            fromArray: audioArray,
+            startAt: startIndex,
+            toLength: frameLength,
+            saveSegment: false
         )
     }
 }
