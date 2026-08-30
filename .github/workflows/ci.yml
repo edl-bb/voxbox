@@ -57,14 +57,18 @@ jobs:
       - name: Build for testing
         run: |
           set -o pipefail
-          # MACOSX_DEPLOYMENT_TARGET pins every target — including SPM
-          # packages that declare no platforms (yyjson defaults to 10.13,
-          # which the Xcode 26.6 runner toolchain fails to link).
+          # -enableCodeCoverage NO: the autocreated test plan instruments
+          # builds with the profile runtime, and C package products (yyjson,
+          # via swift-transformers) fail to link it into their dylibs
+          # (undefined ___llvm_profile_runtime — swiftlang/swift#57137).
+          # MACOSX_DEPLOYMENT_TARGET pins SPM packages that declare no
+          # platforms (yyjson defaults to macOS 10.13) to the app's target.
           if ! xcodebuild build-for-testing \
             -scheme voxbox \
             -configuration Debug \
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
+            -enableCodeCoverage NO \
             MACOSX_DEPLOYMENT_TARGET=26.0 \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-build.log; then
             {
@@ -91,6 +95,7 @@ jobs:
             -destination 'platform=macOS' \
             -only-testing:voxboxTests \
             -clonedSourcePackagesDirPath SourcePackages \
+            -enableCodeCoverage NO \
             MACOSX_DEPLOYMENT_TARGET=26.0 \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-test.log; then
             grep -E "(error: |Test Case .* failed|failed \()" xcodebuild-test.log \
