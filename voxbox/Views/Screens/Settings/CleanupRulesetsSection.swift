@@ -24,7 +24,7 @@ struct TranscriptCleanupAISection: View {
             SettingsSectionHeader(
                 icon: "sparkles",
                 title: "On-device AI",
-                subtitle: "Clean up transcripts with the selected post-processing model"
+                subtitle: "Clean up transcripts with Apple Intelligence, on your Mac"
             ) {
                 Toggle("", isOn: $formatWithOnDeviceAI)
                     .labelsHidden()

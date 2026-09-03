@@ -83,6 +83,22 @@ final class PostProcessingModelTests: XCTestCase {
         XCTAssertEqual(reloaded.selectedVariant, "mlx-qwen3-1.7b-4bit")
     }
 
+    func testStoredDownloadableSelectionResolvesToAppleWhileParked() {
+        let suite = "voxbox.tests.postprocessing.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let manager = PostProcessingModelManager(defaults: defaults)
+        manager.selectedVariant = "mlx-qwen3-1.7b-4bit"
+        if PostProcessingModel.downloadableModelsEnabled {
+            XCTAssertEqual(manager.selectedModel.variant, "mlx-qwen3-1.7b-4bit")
+        } else {
+            XCTAssertEqual(manager.selectedModel.kind, .appleSystem, "a 1.2 choice must not silently pick a parked model")
+            XCTAssertEqual(PostProcessingModel.offered.map(\.kind), [.appleSystem])
+        }
+        XCTAssertEqual(manager.selectedVariant, "mlx-qwen3-1.7b-4bit", "the stored choice is kept for when the rows return")
+    }
+
     func testDeleteFallsBackToAppleSystemSelection() {
         let suite = "voxbox.tests.postprocessing.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

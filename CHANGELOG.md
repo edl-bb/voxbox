@@ -21,6 +21,7 @@ Changes and release notes for VoxBox.
     - Australian English spelling is applied after the model as well as before, so the model cannot re-Americanise.
     - Auto Edit keeps paragraph breaks, never leaves an orphan comma, and only capitalises the word after a filler it removed from the start of a sentence.
     - History keeps the raw transcript alongside the cleaned one, so custom rulesets can be tested against what was actually said.
+- Downloadable cleanup models (Llama 3.2, Qwen 3) are parked until macOS 27. In 1.2.0 the picker offered them but every cleanup still ran on Apple Intelligence; the picker now shows only Apple Intelligence and says so. Any saved choice of a downloaded model resolves to Apple Intelligence. They return with macOS 27's native on-device model support.
 
 ## [1.2.0] - 2026-08-30
 - **New Feature**: Choose your Post-processing Model: Post-processing defaults to the build-in Apple Intelligence model, but now you can choose from 4 other LLMs to clean up your transcripts. Choose from Apple Intelligence, Llama 3.2 1B/3B, Qwen 3 1.7B/4B

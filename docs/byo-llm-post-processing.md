@@ -30,6 +30,21 @@ architecture decision easy: keep everything flowing through one seam.
 | **Ollama** (HTTP to localhost:11434) | Zero inference code and users manage their own models, but requires a separately installed, running app — poor first-run UX. Worth offering later as an optional auto-detected backend, not the primary path. |
 | **FoundationModels adapters** | Not user-downloadable models; entitlement-gated training pipeline. Skip. |
 
+## Status (September 2026)
+
+Parked. A spike on branch `feat/mlx-cleanup-runtime` wired mlx-swift-lm 3.31.4
+behind the `CleanupEngine` seam, with a dependency-free byte-level BPE
+tokenizer read from `tokenizer.json` and hand-written Llama 3 / Qwen 3 chat
+templates (swift-transformers 0.1.8, pinned by WhisperKit 0.9.4, has no Jinja).
+It is blocked at build time: mlx-swift 0.31.6's `encuda` tool, built for its
+CudaBuild plugin on every platform, does not compile in Swift 6 mode against
+swift-argument-parser 1.3.0, which WhisperKit 0.9.4 also pins exactly. Ways out
+are a WhisperKit 1.x upgrade (the pin is negotiable), a fork of mlx-swift, or
+the macOS 27 `LanguageModel` path below. Decision: hide the downloadable rows
+in 1.3 (`PostProcessingModel.downloadableModelsEnabled`) and adopt the native
+path when macOS 27 is buildable. The catalog, download manager and engine seam
+stay in place so the rows can come back without a rewrite.
+
 ## Recommended approach
 
 1. Introduce a small `TranscriptPostProcessor` protocol seam in
