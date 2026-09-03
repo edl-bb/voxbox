@@ -358,17 +358,19 @@ struct MiniRecorderView: View {
 
             ZStack(alignment: .leading) {
                 if showsLiveHUD {
-                    Text(liveSession.hudText)
-                        .font(Typography.pillLabel)
-                        .foregroundColor(.white.opacity(0.92))
-                        .lineLimit(1)
-                        .truncationMode(.head)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .transition(
-                            .asymmetric(
-                                insertion: .opacity.combined(with: .offset(x: 18)),
-                                removal: .opacity
-                            ))
+                    HStack(spacing: 8) {
+                        // A short slice of the real input level keeps the
+                        // waveform honest while the text has the room.
+                        recordingWaveform
+                            .frame(width: 30)
+                        liveHUDText
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .offset(x: 18)),
+                            removal: .opacity
+                        ))
                 } else {
                     recordingWaveform
                         .transition(
@@ -395,6 +397,20 @@ struct MiniRecorderView: View {
         }
         .padding(.horizontal, 14)
         .transition(.opacity)
+    }
+
+    /// Locked words plain, words the engine may still revise dimmed and
+    /// italic. Truncates from the head so the newest words stay in view.
+    private var liveHUDText: some View {
+        let stable = liveSession.hudStableText
+        let revisable = liveSession.hudRevisableText
+        let joiner = stable.isEmpty || revisable.isEmpty ? "" : " "
+        return (Text(stable).foregroundColor(.white.opacity(0.95))
+            + Text(joiner + revisable).italic().foregroundColor(.white.opacity(0.55)))
+            .font(Typography.pillLabel)
+            .lineLimit(1)
+            .truncationMode(.head)
+            .animation(.easeOut(duration: 0.12), value: stable)
     }
 
     /// Live render of the microphone input. Calm when silent, peaks on speech.

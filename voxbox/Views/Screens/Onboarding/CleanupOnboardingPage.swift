@@ -193,8 +193,7 @@ struct CleanupOnboardingPage: View {
     private func finish() {
         let needsEditor = selection.apply(rulesetStore: rulesetStore)
         if selection == .custom || needsEditor {
-            DashboardRoute.pending = .aiModels
-            DashboardRoute.pendingAIModelsTab = .instructions
+            DashboardRoute.pending = .cleanup
         }
         continueAction()
     }

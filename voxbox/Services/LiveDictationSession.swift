@@ -51,6 +51,23 @@ final class LiveDictationSession {
         }
     }
 
+    /// The pill draws the two halves differently: locked words plainly,
+    /// words the engine may still revise dimmed. When stable words are being
+    /// typed into the field they are not repeated in the pill.
+    var hudStableText: String {
+        switch deliveryMode {
+        case .fullText, .stableOnly: return ""
+        case .none: return snapshot.stable
+        }
+    }
+
+    var hudRevisableText: String {
+        switch deliveryMode {
+        case .fullText: return ""
+        case .stableOnly, .none: return snapshot.revisable
+        }
+    }
+
     // MARK: - Lifecycle
 
     func start(language: String) async throws {

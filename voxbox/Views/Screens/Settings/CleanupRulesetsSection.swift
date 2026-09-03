@@ -1,90 +1,18 @@
 import SwiftUI
 
-/// On-device AI cleanup, as it appears on the AI Models page: the enable
-/// toggle (mirrored from Settings — same key), the effort picker including
-/// Custom, and the custom-ruleset manager. Configuration for custom rulesets
-/// lives here, not in Settings.
-struct TranscriptCleanupAISection: View {
-    @AppStorage(TranscriptFormatterService.enabledKey)
-    private var formatWithOnDeviceAI: Bool = false
-    @AppStorage(TranscriptFormatterService.intensityKey)
-    private var formattingIntensityRaw: Int = FormattingIntensity.lightCleanup.rawValue
-    @AppStorage(TranscriptFormatterService.markdownFormattingKey)
-    private var markdownFormatting: Bool = true
-
+/// The custom-ruleset list with New, Edit (sheet) and Delete. Lives on the
+/// Cleanup page under the Custom level.
+struct CustomRulesetManagerView: View {
     @ObservedObject private var store = CustomRulesetStore.shared
     @State private var editingRuleset: CustomCleanupRuleset?
 
-    private var intensity: FormattingIntensity {
-        FormattingIntensity(rawValue: formattingIntensityRaw) ?? .lightCleanup
-    }
-
     var body: some View {
-        SettingsSection {
-            SettingsSectionHeader(
-                icon: "sparkles",
-                title: "On-device AI",
-                subtitle: "Clean up transcripts with Apple Intelligence, on your Mac"
-            ) {
-                Toggle("", isOn: $formatWithOnDeviceAI)
-                    .labelsHidden()
-                    .disabled(!TranscriptFormatterService.isCleanupAvailable)
-            }
-
-            if !TranscriptFormatterService.isCleanupAvailable {
-                Text("No cleanup model is available on this Mac right now.")
-                    .font(Typography.captionSmall)
-                    .foregroundStyle(Color.textMuted)
-            } else if formatWithOnDeviceAI {
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack {
-                        Text("Effort")
-                            .font(Typography.bodyMedium)
-                            .foregroundStyle(Color.textPrimary)
-                        Spacer()
-                        Picker("", selection: $formattingIntensityRaw) {
-                            ForEach(FormattingIntensity.allCases) { level in
-                                Text(level.displayName).tag(level.rawValue)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .fixedSize(horizontal: true, vertical: false)
-                    }
-
-                    Text(intensity.summary)
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if intensity == .custom {
-                        rulesetManager
-                    } else {
-                        HStack {
-                            Text("Markdown formatting")
-                                .font(Typography.bodyMedium)
-                                .foregroundStyle(Color.textPrimary)
-                            Spacer()
-                            Toggle("", isOn: $markdownFormatting)
-                                .labelsHidden()
-                        }
-                        Text("Adds bold, italic, bullet points, and numbered lists where they fit.")
-                            .font(Typography.captionSmall)
-                            .foregroundStyle(Color.textMuted)
-                    }
+        rulesetManager
+            .sheet(item: $editingRuleset) { ruleset in
+                RulesetEditorSheet(ruleset: ruleset) { updated in
+                    store.update(updated)
                 }
-                .padding(.top, 2)
-            } else {
-                Text("Off — transcripts get instant rule-based cleanup only.")
-                    .font(Typography.captionSmall)
-                    .foregroundStyle(Color.textMuted)
             }
-        }
-        .sheet(item: $editingRuleset) { ruleset in
-            RulesetEditorSheet(ruleset: ruleset) { updated in
-                store.update(updated)
-            }
-        }
     }
 
     // MARK: - Ruleset manager
@@ -361,7 +289,7 @@ private struct RulesetEditorSheet: View {
 }
 
 #Preview {
-    TranscriptCleanupAISection()
+    CustomRulesetManagerView()
         .padding()
         .frame(width: 700)
         .background(Color.bgApp)
