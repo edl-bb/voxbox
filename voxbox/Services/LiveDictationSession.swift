@@ -70,7 +70,7 @@ final class LiveDictationSession {
         }
         deliveryMode = inserter.deliveryMode
         phase = .streaming
-        log("take=\(take) start mode=\(deliveryMode)")
+        AppLogger.info("live take=\(take) start mode=\(deliveryMode)", category: AppLogger.transcription)
 
         do {
             try await TranscriptionManager.shared.startLive(
@@ -147,9 +147,10 @@ final class LiveDictationSession {
         let pipelineStats = pipeline.map {
             "writes=\($0.writeCount) coalesced=\($0.coalescedCount) dropped=\($0.droppedCount) reentrant=\($0.reentrantEnqueues)"
         } ?? ""
-        log(
-            "take=\(take) finalize raw=\((raw as NSString).length) cleaned=\((cleaned as NSString).length) "
-                + "result=\(delivery) \(pipelineStats)")
+        AppLogger.info(
+            "live take=\(take) finalize raw=\((raw as NSString).length) cleaned=\((cleaned as NSString).length) "
+                + "result=\(delivery) \(pipelineStats)",
+            category: AppLogger.transcription)
         deliveryMode = .none
         phase = .idle
         snapshot = LiveTranscriptSnapshot(stable: cleaned, revisable: "")

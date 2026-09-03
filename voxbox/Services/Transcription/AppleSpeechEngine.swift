@@ -246,7 +246,9 @@ class AppleSpeechEngine: SpeechToTextEngine {
             try await analyzer.finalizeAndFinishThroughEndOfInput()
         }
         _ = await liveResultsTask?.value
-        let text = (liveStable + liveRevisable)
+        // Same seam rule as the HUD and the typed text, so the raw transcript
+        // extends what is already in the field instead of gluing words.
+        let text = LiveTranscriptSnapshot(stable: liveStable, revisable: liveRevisable).fullText
             .trimmingCharacters(in: .whitespacesAndNewlines)
         teardownLive()
         return text

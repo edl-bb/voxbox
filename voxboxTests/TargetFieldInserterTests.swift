@@ -307,6 +307,27 @@ final class TargetFieldInserterTests: XCTestCase {
         XCTAssertFalse(field.ops.contains { $0.hasPrefix("deleteBackward") })
     }
 
+    func testKeystrokeFinalizeToleratesTrailingWhitespaceFromTheLastBurst() {
+        // Apple finals can end in a space; the engine trims its final text.
+        let field = FakeFieldWriter()
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = inserter.update(snapshot("Hello there. "))
+        XCTAssertEqual(field.text, "Hello there. ")
+
+        XCTAssertEqual(
+            inserter.finalize(raw: "Hello there. This is it", cleaned: "Hello there. This is it."),
+            .inField)
+        XCTAssertEqual(field.text, "Hello there. This is it.", "no doubled space at the seam")
+
+        let unchanged = FakeFieldWriter()
+        let second = TargetFieldInserter()
+        second.bind(writer: unchanged, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = second.update(snapshot("Hello there. "))
+        XCTAssertEqual(second.finalize(raw: "Hello there.", cleaned: "Hello there."), .inField)
+        XCTAssertEqual(unchanged.text, "Hello there. ")
+    }
+
     func testKeystrokeFinalizeReportsPartialWhenRawDiverged() {
         let field = FakeFieldWriter()
         let inserter = TargetFieldInserter()

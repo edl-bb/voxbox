@@ -178,7 +178,7 @@ final class TargetFieldInserter {
     func begin() async -> Bool {
         reset()
         guard AXIsProcessTrusted() else {
-            log("bind skipped: Accessibility is off")
+            log("bind skipped: Accessibility is off", persist: true)
             return false
         }
         if DictationTarget.processIdentifier == nil {
@@ -190,16 +190,16 @@ final class TargetFieldInserter {
             focused = await resolveFocusedElementAfterChromeWakes()
         }
         guard let focused else {
-            log("bind skipped: no focused element")
+            log("bind skipped: no focused element", persist: true)
             return false
         }
         guard let writable = resolveWritableElement(from: focused) else {
             let role = stringAttribute(focused, kAXRoleAttribute as CFString) ?? "unknown"
-            log("bind skipped: focused role \(role) is not writable")
+            log("bind skipped: focused role \(role) is not writable", persist: true)
             return false
         }
         if isSecure(writable) {
-            log("bind skipped: secure field")
+            log("bind skipped: secure field", persist: true)
             return false
         }
 
@@ -225,7 +225,8 @@ final class TargetFieldInserter {
         log(
             "bind strategy=\(chosen) spanStart=\(caret.location) valueLen=\((value as NSString).length) "
                 + "bundle=\(bundle ?? "?") electron=\(electron) web=\(web) "
-                + "caretRestore=\(String(describing: caretRestoreMove(hasTyped: true)))"
+                + "caretRestore=\(String(describing: caretRestoreMove(hasTyped: true)))",
+            persist: true
         )
         return true
     }
@@ -318,7 +319,7 @@ final class TargetFieldInserter {
         // this composer ignores AX sets (Chromium). Type instead, once.
         if delivered.isEmpty, !hasTyped, writer.readValue() == before {
             strategy = .keystrokesOnly
-            log("write ax refused before first write; switching to keystrokes")
+            log("write ax refused before first write; switching to keystrokes", persist: true)
             return appendStable(input.stable, writer: writer)
         }
         return freeze(.axRefused, detail: "delivered=\((delivered as NSString).length)")
@@ -352,7 +353,7 @@ final class TargetFieldInserter {
             let now = writer.readSelection()?.location, now != expected
         {
             caretMovedCount += 1
-            log("caret moved since last burst expected=\(expected) now=\(now)")
+            log("caret moved since last burst expected=\(expected) now=\(now)", persist: true)
         }
         if let move = caretRestoreMove(hasTyped: hasTyped) {
             writer.moveCaret(move)
@@ -375,7 +376,7 @@ final class TargetFieldInserter {
 
         if let frozen {
             let result: LiveDelivery = delivered.isEmpty && !hasTyped ? .notWritten : .unverified
-            log("finalize frozen=\(frozen) result=\(result)")
+            log("finalize frozen=\(frozen) result=\(result)", persist: true)
             return result
         }
 
@@ -394,27 +395,27 @@ final class TargetFieldInserter {
             guard let current = writer.readValue(),
                 FieldSpan.region(current, start: start, length: spanLength) == delivered
             else {
-                log("finalize ax drift result=unverified")
+                log("finalize ax drift result=unverified", persist: true)
                 return .unverified
             }
         }
         if cleaned == delivered {
-            log("finalize ax unchanged result=inField")
+            log("finalize ax unchanged result=inField", persist: true)
             return .inField
         }
         if writeViaAccessibility(cleaned, writer: writer, start: start) {
-            log("finalize ax replaced \((delivered as NSString).length)->\((cleaned as NSString).length) result=inField")
+            log("finalize ax replaced \((delivered as NSString).length)->\((cleaned as NSString).length) result=inField", persist: true)
             return .inField
         }
         if delivered.isEmpty {
-            log("finalize ax first write refused result=notWritten")
+            log("finalize ax first write refused result=notWritten", persist: true)
             return .notWritten
         }
         if writeViaAccessibility("", writer: writer, start: start) {
-            log("finalize ax replace failed; span cleared result=notWritten")
+            log("finalize ax replace failed; span cleared result=notWritten", persist: true)
             return .notWritten
         }
-        log("finalize ax replace and clear failed result=unverified")
+        log("finalize ax replace and clear failed result=unverified", persist: true)
         return .unverified
     }
 
@@ -422,42 +423,48 @@ final class TargetFieldInserter {
         raw: String, cleaned: String, writer: FieldWriter
     ) -> LiveDelivery {
         guard hasTyped, !delivered.isEmpty else {
-            log("finalize keys nothing typed result=notWritten")
+            log("finalize keys nothing typed result=notWritten", persist: true)
             return .notWritten
         }
         guard isTargetFrontmost() else {
-            log("finalize keys target not frontmost result=unverified")
+            log("finalize keys target not frontmost result=unverified", persist: true)
             return .unverified
         }
 
-        // First bring the field up to the complete spoken transcript.
+        // First bring the field up to the complete spoken transcript. The
+        // engine trims its final text, so a burst that ended in a space is
+        // compared without that trailing whitespace.
         var completedRaw = false
-        switch AppendPlan.plan(typed: delivered, stable: raw) {
+        switch AppendPlan.plan(typed: Self.withoutTrailingWhitespace(delivered), stable: raw) {
         case .append(let tail):
-            typeTail(tail, writer: writer)
+            let typedTail = Self.dropLeadingWhitespaceIfTypedEndedWithIt(tail, typed: delivered)
+            typeTail(typedTail, writer: writer)
             delivered = raw
             completedRaw = true
         case .hold(.unchanged):
+            delivered = raw
             completedRaw = true
         case .hold(.stableDiverged):
             completedRaw = false
         }
 
-        if cleaned == delivered {
-            log("finalize keys cleaned==typed result=inField")
+        let typedCore = Self.withoutTrailingWhitespace(delivered)
+        if cleaned == typedCore {
+            log("finalize keys cleaned==typed result=inField", persist: true)
             return .inField
         }
-        if cleaned.hasPrefix(delivered) {
-            let tail = (cleaned as NSString).substring(from: (delivered as NSString).length)
+        if cleaned.hasPrefix(typedCore) {
+            let rest = (cleaned as NSString).substring(from: (typedCore as NSString).length)
+            let tail = Self.dropLeadingWhitespaceIfTypedEndedWithIt(rest, typed: delivered)
             typeTail(tail, writer: writer)
             delivered = cleaned
-            log("finalize keys typed cleaned tail=\((tail as NSString).length) result=inField")
+            log("finalize keys typed cleaned tail=\((tail as NSString).length) result=inField", persist: true)
             return .inField
         }
         let result: LiveDelivery = completedRaw ? .rawInField : .partialInField
         log(
             "finalize keys typed=\((delivered as NSString).length) raw=\((raw as NSString).length) "
-                + "cleaned=\((cleaned as NSString).length) caretMoves=\(caretMovedCount) result=\(result)")
+                + "cleaned=\((cleaned as NSString).length) caretMoves=\(caretMovedCount) result=\(result)", persist: true)
         return result
     }
 
@@ -542,12 +549,38 @@ final class TargetFieldInserter {
 
     private func freeze(_ reason: LiveFreezeReason, detail: String) -> LiveWriteOutcome {
         frozen = reason
-        log("write frozen reason=\(reason) \(detail)")
+        log("write frozen reason=\(reason) \(detail)", persist: true)
         return .frozen(reason)
     }
 
-    private func log(_ message: String) {
-        AppLogger.debug("live field \(message)", category: AppLogger.transcription)
+    static func withoutTrailingWhitespace(_ text: String) -> String {
+        var scalars = text.unicodeScalars
+        while let last = scalars.last, CharacterSet.whitespacesAndNewlines.contains(last) {
+            scalars.removeLast()
+        }
+        return String(scalars)
+    }
+
+    /// When the field already ends with whitespace from the last burst, the
+    /// tail must not add another one.
+    static func dropLeadingWhitespaceIfTypedEndedWithIt(_ tail: String, typed: String) -> String {
+        guard let last = typed.unicodeScalars.last,
+            CharacterSet.whitespacesAndNewlines.contains(last),
+            let first = tail.unicodeScalars.first,
+            CharacterSet.whitespacesAndNewlines.contains(first)
+        else { return tail }
+        return String(tail.unicodeScalars.dropFirst())
+    }
+
+    /// Per-write lines stay at debug (not persisted). Bind, freeze, caret
+    /// moves and finalize are `info` so `log show` can reconstruct a take
+    /// after the fact. Lengths and outcomes only, never transcript content.
+    private func log(_ message: String, persist: Bool = false) {
+        if persist {
+            AppLogger.info("live field \(message)", category: AppLogger.transcription)
+        } else {
+            AppLogger.debug("live field \(message)", category: AppLogger.transcription)
+        }
     }
 
     // MARK: - Resolve

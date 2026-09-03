@@ -34,8 +34,13 @@ final class AXFieldWriter: FieldWriter {
     /// Error code of the last failed AX call, for diagnostics.
     private(set) var lastError: AXError = .success
 
+    /// A busy renderer (Electron mid-layout) can hold an AX request for the
+    /// default six seconds; that would stall the main thread per write.
+    static let messagingTimeout: Float = 0.25
+
     init(element: AXUIElement) {
         self.element = element
+        AXUIElementSetMessagingTimeout(element, Self.messagingTimeout)
     }
 
     // MARK: Accessibility
