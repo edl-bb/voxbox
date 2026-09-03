@@ -66,17 +66,43 @@ jobs:
       - name: Unit tests
         run: |
           set -o pipefail
+          rm -rf TestResults.xcresult
           if ! xcodebuild test-without-building \
             -scheme voxbox \
             -destination 'platform=macOS' \
             -only-testing:voxboxTests \
             -clonedSourcePackagesDirPath SourcePackages \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-test.log; then
-            grep -E "(error: |Test Case .* failed|failed \()" xcodebuild-test.log \
-              | sort -u | head -40 \
+            grep -iE "(error: |Test case .* failed|failed \(|Fatal error|crashed)" xcodebuild-test.log \
+              | sort -u | head -10 \
               | while IFS= read -r line; do printf '::error::%s\n' "$line"; done
             exit 1
           fi
+
+      # GitHub caps annotations at ten errors per step, and the raw log is not
+      # reachable from every network, so the per-test failure report gets a
+      # step of its own: the first ten failures as errors, the next as
+      # warnings and notices.
+      - name: Report test failures
+        if: failure()
+        run: |
+          if [ ! -d TestResults.xcresult ]; then
+            echo "::warning::No result bundle was produced (the build or the test host failed before tests ran)."
+            exit 0
+          fi
+          xcrun xcresulttool get test-results summary --path TestResults.xcresult > test-summary.json || exit 0
+          python3 - <<'PY'
+          import json
+          summary = json.load(open("test-summary.json"))
+          failures = summary.get("testFailures", [])
+          print(f"::notice::Tests: {summary.get('failedTests', 0)} failed, "
+                f"{summary.get('passedTests', 0)} passed, {summary.get('skippedTests', 0)} skipped")
+          for index, failure in enumerate(failures):
+              text = " ".join(str(failure.get("failureText", "")).split())[:900]
+              level = "error" if index < 10 else ("warning" if index < 20 else "notice")
+              print(f"::{level}::{failure.get('testName', '?')}: {text}")
+          PY
 
   lint:
     name: SwiftLint
