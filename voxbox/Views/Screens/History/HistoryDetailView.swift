@@ -11,6 +11,21 @@ struct HistoryDetailView: View {
     /// Live transcript — starts as the stored item's text and updates in place
     /// when a correction is applied, so the fix is visible immediately.
     @State private var displayedTranscript = ""
+    /// Show the engine text instead of the cleaned one (only when History
+    /// kept it, i.e. takes recorded on 1.3 or later).
+    @State private var showRawTranscript = false
+
+    private var rawTranscript: String? {
+        guard let raw = item.rawTranscript?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty,
+            raw != item.transcript
+        else { return nil }
+        return raw
+    }
+
+    private var shownTranscript: String {
+        if showRawTranscript, let rawTranscript { return rawTranscript }
+        return displayedTranscript
+    }
 
     var body: some View {
         ScrollView {
@@ -30,14 +45,26 @@ struct HistoryDetailView: View {
                 
                 // Badges and copy button
                 HStack {
-                    // Original badge
-                    Text("Original")
-                        .font(Typography.badge)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.brandAccent)
-                        .foregroundStyle(.white)
-                        .cornerRadius(12)
+                    if rawTranscript != nil {
+                        // Before / after: what the engine heard vs what was pasted.
+                        Picker("", selection: $showRawTranscript) {
+                            Text("Cleaned").tag(false)
+                            Text("As spoken").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(width: 180)
+                        .help("Compare the raw transcript with the cleaned one that was pasted")
+                    } else {
+                        // Original badge
+                        Text("Original")
+                            .font(Typography.badge)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.brandAccent)
+                            .foregroundStyle(.white)
+                            .cornerRadius(12)
+                    }
                     
                     Spacer()
 
@@ -62,7 +89,7 @@ struct HistoryDetailView: View {
 
                     // Copy button
                     Button(action: {
-                        copyToClipboard(text: displayedTranscript)
+                        copyToClipboard(text: shownTranscript)
                     }) {
                         HStack(spacing: 6) {
                             Image(systemName: "doc.on.doc")
@@ -82,10 +109,18 @@ struct HistoryDetailView: View {
                 Divider()
 
                 // Transcript
-                Text(displayedTranscript)
-                    .font(Typography.bodyMedium)
-                    .textSelection(.enabled)
-                    .padding(.vertical, 8)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(shownTranscript)
+                        .font(Typography.bodyMedium)
+                        .textSelection(.enabled)
+                        .animation(nil, value: showRawTranscript)
+                    if showRawTranscript, rawTranscript != nil {
+                        Text("What the speech engine heard, before dictionary rules, Auto Edit and cleanup.")
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+                    }
+                }
+                .padding(.vertical, 8)
                 
                 Divider()
                 

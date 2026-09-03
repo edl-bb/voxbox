@@ -31,7 +31,7 @@ struct OnboardingView: View {
                         if isReplay {
                             Button(action: completeOnboarding) {
                                 Text("Exit setup")
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(Typography.labelSmall)
                                     .foregroundStyle(Color.textSecondary)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 6)
@@ -118,23 +118,23 @@ struct WelcomePage: View {
 
             VStack(spacing: 14) {
                 Text("Welcome to")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Typography.labelLarge)
                     .foregroundStyle(Color.textSecondary)
                     .textCase(.uppercase)
                     .tracking(2.5)
 
                 Text("VoxBox")
-                    .font(.system(size: 48, weight: .regular, design: .serif))
+                    .font(Typography.onboardingHero)
                     .foregroundStyle(Color.textPrimary)
                     .tracking(-0.5)
 
                 HStack(spacing: 0) {
                     Text("Voice to text, powered by AI.")
-                        .font(.system(size: 16, weight: .regular))
+                        .font(Typography.bodyLarge)
                         .foregroundStyle(Color.textSecondary)
 
                     Text(" Private. Fast. Offline.")
-                        .font(.system(size: 16, weight: .regular, design: .serif))
+                        .font(Typography.onboardingTagline)
                         .italic()
                         .foregroundStyle(Color.textSecondary)
                 }
@@ -172,7 +172,7 @@ struct GetStartedButton: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Text("Get Started")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(Typography.titleLarge)
                 Image(systemName: "arrow.right")
                     .font(.system(size: 12, weight: .medium))
                     .offset(x: isHovered ? 3 : 0)
@@ -216,17 +216,17 @@ struct PermissionsPage: View {
 
             VStack(spacing: 16) {
                 Text("QUICK SETUP")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(Typography.captionBold)
                     .foregroundStyle(Color.textSecondary)
                     .textCase(.uppercase)
                     .tracking(2)
 
                 Text("Permissions")
-                    .font(.system(size: 40, weight: .regular, design: .serif))
+                    .font(Typography.onboardingTitle)
                     .foregroundStyle(Color.textPrimary)
 
                 Text("Grant these permissions to unlock the full experience.")
-                    .font(.system(size: 15, weight: .regular))
+                    .font(Typography.bodyLarge)
                     .foregroundStyle(Color.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 380)
@@ -269,7 +269,7 @@ struct PermissionsPage: View {
                         skipAction()
                     }) {
                         Text("Skip for now")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(Typography.labelMedium)
                             .foregroundStyle(Color.textSecondary)
                     }
                     .buttonStyle(.plain)
@@ -402,7 +402,7 @@ struct FeatureCard: View {
 
             // Title in serif
             Text(title)
-                .font(.system(size: 16, weight: .medium, design: .serif))
+                .font(Typography.onboardingCardTitle)
                 .foregroundStyle(Color.textPrimary)
 
             Spacer()
@@ -410,7 +410,7 @@ struct FeatureCard: View {
 
             // Description
             Text(description)
-                .font(.system(size: 12, weight: .regular))
+                .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -472,11 +472,11 @@ struct OnboardingPermissionRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Typography.labelLarge)
                     .foregroundStyle(Color.textPrimary)
 
                 Text(description)
-                    .font(.system(size: 12, weight: .regular))
+                    .font(Typography.caption)
                     .foregroundStyle(Color.textSecondary)
             }
 
@@ -489,7 +489,7 @@ struct OnboardingPermissionRow: View {
             } else {
                 Button(action: action) {
                     Text("Allow")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Typography.labelMedium)
                         .foregroundStyle(Color.bgApp)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -528,7 +528,7 @@ struct ContinueButton: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Text("Continue")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(Typography.titleLarge)
                 Image(systemName: isEnabled ? "arrow.right" : "lock.fill")
                     .font(.system(size: isEnabled ? 12 : 10, weight: .medium))
                     .offset(x: (isHovered && isEnabled) ? 3 : 0)
@@ -569,19 +569,19 @@ struct GlobeKeyOptimizationPage: View {
 
             VStack(spacing: 16) {
                 Text("OPTIMIZE WORKFLOW")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(Typography.captionBold)
                     .foregroundStyle(Color.textSecondary)
                     .textCase(.uppercase)
                     .tracking(2)
 
                 Text("The Globe Key")
-                    .font(.system(size: 40, weight: .regular, design: .serif))
+                    .font(Typography.onboardingTitle)
                     .foregroundStyle(Color.textPrimary)
 
                 Text(
                     "By default, macOS uses the \u{1F310} key to show the Emoji Picker, which interrupts VoxBox.\n\nPlease open Keyboard Settings and change **\"Press \u{1F310} key to\"** to **\"Do Nothing\"**."
                 )
-                .font(.system(size: 15, weight: .regular))
+                .font(Typography.bodyLarge)
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 420)
@@ -594,7 +594,7 @@ struct GlobeKeyOptimizationPage: View {
                         Image(systemName: "switch.2")
                         Text("Open Keyboard Settings")
                     }
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Typography.labelLarge)
                     .foregroundStyle(Color.bgApp)
                     .frame(width: 260, height: 44)
                     .background(
@@ -637,12 +637,12 @@ struct ModelOnboardingPage: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Choose a model")
-                    .font(.system(size: 28, weight: .regular, design: .serif))
+                    .font(Typography.displayMedium)
                     .foregroundStyle(Color.textPrimary)
                 Text(
                     "Apple Speech is the built-in starter — you can dictate once its system assets are ready. Download Parakeet or Whisper later if you want; you can change this in AI Models."
                 )
-                .font(.system(size: 14))
+                .font(Typography.bodyMedium)
                 .foregroundStyle(Color.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -661,7 +661,7 @@ struct ModelOnboardingPage: View {
 
                 Button(action: skipAction) {
                     Text("I’ll choose later")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Typography.labelMedium)
                         .foregroundStyle(Color.textSecondary)
                 }
                 .buttonStyle(.plain)

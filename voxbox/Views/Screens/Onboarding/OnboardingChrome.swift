@@ -23,7 +23,7 @@ struct OnboardingEyebrow: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .semibold))
+            .font(Typography.captionBold)
             .foregroundStyle(Color.textSecondary)
             .textCase(.uppercase)
             .tracking(2)
@@ -38,7 +38,7 @@ struct OnboardingSkipButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 13, weight: .medium))
+                .font(Typography.labelMedium)
                 .foregroundStyle(Color.textSecondary)
         }
         .buttonStyle(.plain)
@@ -74,11 +74,11 @@ struct OnboardingSelectableCard: View {
                 }
                 Spacer().frame(height: 16)
                 Text(title)
-                    .font(.system(size: 16, weight: .medium, design: .serif))
+                    .font(Typography.onboardingCardTitle)
                     .foregroundStyle(Color.textPrimary)
                 Spacer().frame(height: 6)
                 Text(description)
-                    .font(.system(size: 12.5))
+                    .font(Typography.caption)
                     .foregroundStyle(Color.textSecondary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)

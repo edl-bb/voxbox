@@ -24,11 +24,11 @@ struct RecordingModeOnboardingPage: View {
                 OnboardingEyebrow(text: "Recording")
 
                 Text("How do you want to talk?")
-                    .font(.system(size: 40, weight: .regular, design: .serif))
+                    .font(Typography.onboardingTitle)
                     .foregroundStyle(Color.textPrimary)
 
                 Text(RecordingMode.onboardingSubtitle(hotkey: hotkeyLabel))
-                    .font(.system(size: 15))
+                    .font(Typography.bodyLarge)
                     .foregroundStyle(Color.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 440)
@@ -48,7 +48,7 @@ struct RecordingModeOnboardingPage: View {
             .padding(.top, 36)
 
             Text(RecordingMode.onboardingTip)
-                .font(.system(size: 12.5))
+                .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 440)

@@ -67,12 +67,12 @@ struct CleanupOnboardingPage: View {
         VStack(alignment: .leading, spacing: 6) {
             OnboardingEyebrow(text: "Cleanup")
             Text("Clean up your transcripts")
-                .font(.system(size: 28, weight: .regular, design: .serif))
+                .font(Typography.displayMedium)
                 .foregroundStyle(Color.textPrimary)
             Text(
                 "After each take, an on-device model can tidy what you said before it's pasted. Nothing leaves your Mac. Here's one dictation at every level. Pick what reads right to you. You can change it later in Settings."
             )
-            .font(.system(size: 14))
+            .font(Typography.bodyMedium)
             .foregroundStyle(Color.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -83,7 +83,7 @@ struct CleanupOnboardingPage: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("WHAT YOU SAID")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(Typography.captionBold)
                     .foregroundStyle(Color.textSecondary)
                     .tracking(1.2)
                 Spacer()
@@ -110,7 +110,7 @@ struct CleanupOnboardingPage: View {
                         Text(usingCustomText ? "Your text" : sample.title)
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
                     }
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Typography.labelSmall)
                     .foregroundStyle(Color.textSecondary)
                 }
                 .menuStyle(.borderlessButton)
@@ -120,14 +120,14 @@ struct CleanupOnboardingPage: View {
             if usingCustomText {
                 TextField("Type or paste a dictation of at least \(Self.minimumCustomWords) words", text: $customText, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
+                    .font(Typography.bodySmall)
                     .lineLimit(3...6)
                 HStack {
                     Text(
                         customWordCount >= Self.minimumCustomWords
                             ? "\(customWordCount) words"
                             : "\(customWordCount) of \(Self.minimumCustomWords) words needed")
-                        .font(.system(size: 11))
+                        .font(Typography.captionSmall)
                         .foregroundStyle(Color.textSecondary)
                     Spacer()
                     Button("Run cleanup") { runPreviews() }
@@ -136,7 +136,7 @@ struct CleanupOnboardingPage: View {
                 }
             } else {
                 Text(sample.text)
-                    .font(.system(size: 13))
+                    .font(Typography.bodySmall)
                     .foregroundStyle(Color.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -151,7 +151,7 @@ struct CleanupOnboardingPage: View {
             "Apple Intelligence isn't available on this Mac right now, so there's nothing to preview. You can still choose a level; cleanup starts working as soon as it's available.",
             systemImage: "exclamationmark.triangle.fill"
         )
-        .font(.system(size: 12))
+        .font(Typography.caption)
         .foregroundStyle(Color.accentWarning)
         .fixedSize(horizontal: false, vertical: true)
         .padding(12)
@@ -228,11 +228,11 @@ struct CleanupOptionCard: View {
                             .font(.system(size: 15))
                             .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary.opacity(0.6))
                         Text(choice.title)
-                            .font(.system(size: 15, weight: .medium, design: .serif))
+                            .font(Typography.onboardingCardTitle)
                             .foregroundStyle(Color.textPrimary)
                     }
                     Text(choice.summary)
-                        .font(.system(size: 12))
+                        .font(Typography.caption)
                         .foregroundStyle(Color.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -271,7 +271,7 @@ struct CleanupOptionCard: View {
                 Spinner(size: 12)
                 Text("Cleaning up…")
             }
-            .font(.system(size: 12))
+            .font(Typography.caption)
             .foregroundStyle(Color.textSecondary)
         case .failed(let message):
             muted(message)
@@ -280,7 +280,7 @@ struct CleanupOptionCard: View {
         case .done(let outcome):
             VStack(alignment: .leading, spacing: 8) {
                 Text(outcome.output)
-                    .font(.system(size: 13))
+                    .font(Typography.bodySmall)
                     .foregroundStyle(Color.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
@@ -297,7 +297,7 @@ struct CleanupOptionCard: View {
                             .foregroundStyle(Color.accentWarning)
                     }
                 }
-                .font(.system(size: 11))
+                .font(Typography.captionSmall)
                 .foregroundStyle(Color.textSecondary)
             }
         }
@@ -305,7 +305,7 @@ struct CleanupOptionCard: View {
 
     private func muted(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12))
+            .font(Typography.caption)
             .foregroundStyle(Color.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
     }
