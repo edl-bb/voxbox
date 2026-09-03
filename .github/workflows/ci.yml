@@ -9,6 +9,9 @@ on:
       # Release/working branches (v1.1.3, v1.2, …) get CI directly, so builds
       # are verified before a PR is opened.
       - "v*"
+      # Fix branches get CI directly too, so macOS builds and unit tests are
+      # verified without needing a PR.
+      - "fix/*"
   workflow_dispatch:
 
 concurrency:
