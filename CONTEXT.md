@@ -105,6 +105,18 @@ _Avoid_: Fidelity (unqualified); wording-faithful
 The change-ratio budget that discards on-device cleanup if the edit is too heavy, leaving the pre-model transcript.
 _Avoid_: Guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
 
+**Recording mode**:
+Whether the hotkey records while held (Hold to record) or flips recording on each press (Toggle). One setting, shown in onboarding, Settings, and the recorder pill.
+_Avoid_: Push to talk (in user-facing copy); toggle mode (when meaning the setting as a whole)
+
+**Sample dictation**:
+One of the built-in transcripts, or a recent take from History, that a preview runs cleanup on. Onboarding, the "Try it on a sample" panel and the ruleset editor share them.
+_Avoid_: Fixture (in user-facing copy); example (when meaning the preview input)
+
+**Preview**:
+A cleanup run on a sample dictation that changes no setting and records no history. Shows exactly what a real take would paste.
+_Avoid_: Test (in user-facing copy, except "Try it"); dry run
+
 **DEBUG tuner**:
 A development-only in-app editor for cleanup instructions and guardrail budgets. Release builds use the compiled values.
 _Avoid_: Transcript Cleanup (the production Settings section)

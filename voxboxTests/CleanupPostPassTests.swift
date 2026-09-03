@@ -73,6 +73,21 @@ final class CleanupPostPassTests: XCTestCase {
             "See you there...")
     }
 
+    func testAutoEditCapitalisesAfterALeadingFillerAndKeepsParagraphs() {
+        XCTAssertEqual(AutoEdit.apply(to: "um so we should ship it", enabled: true), "So we should ship it")
+        XCTAssertEqual(
+            AutoEdit.apply(to: "we need eggs, um, milk and bread", enabled: true),
+            "We need eggs, milk and bread", "one comma survives when the filler sat between two")
+        XCTAssertEqual(AutoEdit.apply(to: "ready. Um. Next thing", enabled: true), "Ready. Next thing")
+        XCTAssertEqual(
+            AutoEdit.apply(to: "first point, uh, done.\n\nsecond point", enabled: true),
+            "First point, done.\n\nSecond point")
+        XCTAssertEqual(AutoEdit.apply(to: "  um hello  ", enabled: false), "um hello")
+        XCTAssertEqual(
+            AutoEdit.apply(to: "the hum of the server rather than", enabled: true),
+            "The hum of the server rather than", "fillers are whole words only")
+    }
+
     func testTidyLeavesEmailsAndURLsAlone() {
         let email = "Send it to sam.reilly@northwindlabs.com , thanks"
         XCTAssertEqual(
@@ -82,6 +97,10 @@ final class CleanupPostPassTests: XCTestCase {
         XCTAssertEqual(
             CleanupPostPass.tidy(url, reference: url, markdownAllowed: false),
             "The build is at https://staging.voxbox.app/v2.1, have a play")
+        let two = "mail sam@x.io ,, then open www.voxbox.app .."
+        XCTAssertEqual(
+            CleanupPostPass.tidy(two, reference: two, markdownAllowed: false),
+            "Mail sam@x.io, then open www.voxbox.app.")
     }
 
     // MARK: - Casing

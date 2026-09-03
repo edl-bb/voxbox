@@ -32,13 +32,15 @@ nonisolated enum AutoEdit {
         edited = edited.replacingOccurrences(of: #"[ \t]+\n"#, with: "\n", options: .regularExpression)
         edited = edited.replacingOccurrences(of: #"\n[ \t]+"#, with: "\n", options: .regularExpression)
         edited = edited.replacingOccurrences(of: #"\n{3,}"#, with: "\n\n", options: .regularExpression)
-        edited = capitaliseAfterStrip(edited)
-        return edited.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Trim first: a stripped opening filler leaves a leading space, and
+        // the sentence-start rule anchors on the first character.
+        return capitaliseAfterStrip(edited.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     /// "I was, um, going" → "I was going"; "ready. Um. Next" → "ready. Next";
-    /// "Um, so we" → "so we". Keeps a terminal mark, keeps exactly one comma
-    /// when the filler sat between two.
+    /// "Um, so we" → "so we" (`apply` then capitalises the new sentence
+    /// start). Keeps a terminal mark, keeps exactly one comma when the filler
+    /// sat between two.
     static func stripFillers(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: fillerPattern) else { return text }
         let ns = NSMutableString(string: text)

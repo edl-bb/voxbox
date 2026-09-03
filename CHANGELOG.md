@@ -3,6 +3,18 @@
 Changes and release notes for VoxBox.
 
 ## [1.3.0] - Unreleased
+- **New**: Onboarding now asks how you want to record and how much cleanup you want.
+    - A Recording page explains Hold to record and Toggle side by side and saves your pick (the same setting as Settings → Recording Mode and the recorder pill menu).
+    - A Transcript cleanup page explains Off, Basic, Light cleanup, Polish and Custom, with a Preview button that runs a built-in sample dictation through all three built-in levels so you can compare them before choosing. Light cleanup is marked as recommended.
+- **New**: Try cleanup on a sample before you dictate.
+    - AI Models → LLM Instructions has a "Try it on a sample" panel under the effort picker. Pick one of three built-in dictations or one of your five most recent transcripts and run the current level on it.
+    - The ruleset editor has the same panel, so a custom ruleset can be tested on real text while you write it, before saving.
+    - History now keeps the engine text alongside the pasted text, so a ruleset is tested on what was actually said.
+- Improved on-device cleanup quality and made Light cleanup trip the guardrail far less often.
+    - Prompts rewritten: every level asks for sentence case (no title case, no ALL CAPS, no headings), single punctuation marks, and copies numbers, emails and URLs exactly. Basic no longer receives the Markdown stage, since it may not add characters.
+    - The guardrail no longer charges for the edits Light cleanup is told to make: dropping um/uh, "you know", "sort of", filler "like", repeated words and false starts is free, contractions are compared expanded, and function-word or near-spelling fixes cost half. A retention floor still rejects summaries. Free deletions no longer count against that floor, which is what vetoed short chatty takes.
+    - When a level is vetoed VoxBox steps down (Polish → Light → Basic) instead of pasting the raw text straight away.
+    - A deterministic post-pass strips leaked labels, fixes doubled punctuation, undoes ALL-CAPS and Title Case runs the speaker did not dictate, and capitalises sentence and list-item starts. Emails and URLs are never touched.
 - Fixed live streaming text getting stuck or jumping to the middle of the transcript.
     - Snapshot writes are now serialised and the newest one wins, so a write can never run inside another write.
     - In apps where accessibility writes are ignored (Slack, Notion, Superhuman, Cursor, web composers), VoxBox now types only committed words and never backspaces mid-take. Words still being revised show in the recorder pill.

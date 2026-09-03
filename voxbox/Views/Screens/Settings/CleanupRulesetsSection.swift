@@ -14,6 +14,7 @@ struct TranscriptCleanupAISection: View {
 
     @ObservedObject private var store = CustomRulesetStore.shared
     @State private var editingRuleset: CustomCleanupRuleset?
+    @State private var showTryPanel = false
 
     private var intensity: FormattingIntensity {
         FormattingIntensity(rawValue: formattingIntensityRaw) ?? .lightCleanup
@@ -72,6 +73,8 @@ struct TranscriptCleanupAISection: View {
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
                     }
+
+                    tryPanel
                 }
                 .padding(.top, 2)
             } else {
@@ -85,6 +88,37 @@ struct TranscriptCleanupAISection: View {
                 store.update(updated)
             }
         }
+    }
+
+    // MARK: - Try it
+
+    /// What a take would run right now, for the sample panel.
+    private var effectiveOption: CleanupOption {
+        CleanupOption(intensity: intensity, ruleset: store.usableActiveRuleset)
+    }
+
+    private var tryPanel: some View {
+        DisclosureGroup(isExpanded: $showTryPanel) {
+            CleanupTryPanel(
+                option: effectiveOption,
+                includeMarkdown: intensity == .custom ? false : markdownFormatting,
+                disabledReason: intensity == .custom && store.usableActiveRuleset == nil
+                    ? "Add instructions to the active ruleset first." : nil
+            )
+            .padding(.top, 10)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "text.magnifyingglass")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textMuted)
+                Text("Try it on a sample")
+                    .font(Typography.bodyMedium)
+                    .foregroundStyle(Color.textPrimary)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .padding(.top, 6)
     }
 
     // MARK: - Ruleset manager
@@ -254,6 +288,15 @@ private struct RulesetEditorSheet: View {
         _temperature = State(initialValue: ruleset.temperature)
     }
 
+    /// The unsaved draft, so the test panel runs exactly what would be saved.
+    private var draft: CustomCleanupRuleset {
+        CustomCleanupRuleset(
+            id: rulesetID,
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled ruleset" : name,
+            instructions: instructions,
+            temperature: temperature)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Edit ruleset")
@@ -277,7 +320,7 @@ private struct RulesetEditorSheet: View {
                     .font(Typography.ui(13))
                     .scrollContentBackground(.hidden)
                     .padding(8)
-                    .frame(minHeight: 160)
+                    .frame(minHeight: 130)
                     .background(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(Color.bgCard)
@@ -309,25 +352,34 @@ private struct RulesetEditorSheet: View {
                     .foregroundStyle(Color.textMuted)
             }
 
+            VStack(alignment: .leading, spacing: 6) {
+                Text("TRY IT")
+                    .font(Typography.uiBold(10)).tracking(1)
+                    .foregroundStyle(Color.textMuted)
+                Text("Runs the instructions above, as they are right now, on a built-in sample or one of your recent transcripts.")
+                    .font(Typography.captionSmall)
+                    .foregroundStyle(Color.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                CleanupTryPanel(
+                    option: .custom(draft),
+                    disabledReason: draft.isUsable ? nil : "Add some instructions first."
+                )
+                .padding(.top, 4)
+            }
+
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button("Save") {
-                    onSave(
-                        CustomCleanupRuleset(
-                            id: rulesetID,
-                            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? "Untitled ruleset" : name,
-                            instructions: instructions,
-                            temperature: temperature))
+                    onSave(draft)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
             }
         }
         .padding(24)
-        .frame(width: 520)
+        .frame(width: 600)
         .background(Color.bgApp)
     }
 }

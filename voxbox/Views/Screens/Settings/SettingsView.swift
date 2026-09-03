@@ -236,21 +236,18 @@ struct GeneralSettingsTab: View {
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
                                 Picker("", selection: $recordingMode) {
-                                    Text("Hold to record").tag(0)
-                                    Text("Toggle").tag(1)
+                                    ForEach(RecordingMode.allCases) { mode in
+                                        Text(mode.displayName).tag(mode.rawValue)
+                                    }
                                 }
                                 .pickerStyle(.segmented)
                                 .frame(width: 180)
                             }
 
-                            Text(
-                                recordingMode == 0
-                                    ? "Hold the hotkey down to record, release when done."
-                                    : "Press the hotkey to start recording, press again to stop."
-                            )
-                            .font(Typography.captionSmall)
-                            .foregroundStyle(Color.textMuted)
-                            .padding(.top, 2)
+                            Text((RecordingMode(rawValue: recordingMode) ?? .default).summary)
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+                                .padding(.top, 2)
                         }
 
                         VStack(alignment: .leading, spacing: 6) {

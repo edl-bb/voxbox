@@ -300,19 +300,34 @@ nonisolated enum CleanupPostPass {
 
     // MARK: - Helpers
 
+    /// Masks emails and URLs with private-use placeholders, runs `transform`
+    /// over the whole text once, then restores them. Transforming the gaps
+    /// one by one would let line-start anchors fire mid-sentence (", thanks"
+    /// after an address lost its comma that way).
     private static func applyOutsideProtectedSpans(_ text: String, _ transform: (String) -> String) -> String {
         let ns = text as NSString
         let protectedRanges = CleanupGuardrail.protectedRanges(in: text).sorted { $0.location < $1.location }
         guard !protectedRanges.isEmpty else { return transform(text) }
-        var result = ""
+        var masked = ""
+        var spans: [String] = []
         var cursor = 0
         for range in protectedRanges where range.location >= cursor {
-            result += transform(ns.substring(with: NSRange(location: cursor, length: range.location - cursor)))
-            result += ns.substring(with: range)
+            masked += ns.substring(with: NSRange(location: cursor, length: range.location - cursor))
+            masked += placeholder(spans.count)
+            spans.append(ns.substring(with: range))
             cursor = range.location + range.length
         }
-        result += transform(ns.substring(from: cursor))
+        masked += ns.substring(from: cursor)
+        var result = transform(masked)
+        for (index, span) in spans.enumerated() {
+            result = result.replacingOccurrences(of: placeholder(index), with: span)
+        }
         return result
+    }
+
+    /// No letters, no punctuation, no whitespace: nothing a tidy rule matches.
+    private static func placeholder(_ index: Int) -> String {
+        "\u{E000}\(index)\u{E001}"
     }
 
     private static func isInsideProtectedSpan(_ range: NSRange, in text: String) -> Bool {

@@ -6,11 +6,11 @@ struct OnboardingView: View {
     /// Returning users who lost a TCC grant skip welcome / Globe Key and land
     /// on the permissions step so auto-paste can be restored.
     var startAtPermissions: Bool = false
-    @State private var currentPage: Int
+    @State private var step: OnboardingStep
 
     init(startAtPermissions: Bool = false) {
         self.startAtPermissions = startAtPermissions
-        _currentPage = State(initialValue: startAtPermissions ? 2 : 0)
+        _step = State(initialValue: OnboardingStep.first(startAtPermissions: startAtPermissions))
     }
 
     var body: some View {
@@ -21,44 +21,42 @@ struct OnboardingView: View {
 
                 // Content ZStack
                 ZStack {
-                    if currentPage == 0 {
-                        WelcomePage(action: {
-                            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 1 }
-                        })
-                        .transition(.opacity)
-                    } else if currentPage == 1 {
-                        GlobeKeyOptimizationPage(action: {
-                            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 2 }
-                        })
-                        .transition(.opacity)
-                    } else if currentPage == 2 {
-                        PermissionsPage(
-                            finishAction: { advanceAfterPermissions() },
-                            skipAction: { advanceAfterPermissions() }
-                        )
-                        .transition(.opacity)
-                    } else {
-                        ModelOnboardingPage(
-                            finishAction: { completeOnboarding() },
-                            skipAction: { completeOnboarding() }
-                        )
-                        .transition(.opacity)
+                    switch step {
+                    case .welcome:
+                        WelcomePage(action: advance)
+                            .transition(.opacity)
+                    case .globeKey:
+                        GlobeKeyOptimizationPage(action: advance)
+                            .transition(.opacity)
+                    case .permissions:
+                        PermissionsPage(finishAction: advance, skipAction: advance)
+                            .transition(.opacity)
+                    case .recordingMode:
+                        RecordingModeOnboardingPage(action: advance)
+                            .transition(.opacity)
+                    case .cleanup:
+                        CleanupOnboardingPage(action: advance)
+                            .transition(.opacity)
+                    case .model:
+                        ModelOnboardingPage(finishAction: advance, skipAction: advance)
+                            .transition(.opacity)
                     }
                 }
-                .padding(currentPage == 3 ? 16 : 40)
+                .padding(step.contentPadding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 600, minHeight: 500)
     }
 
-    /// Returning users who only needed permissions skip the model page.
-    func advanceAfterPermissions() {
-        if startAtPermissions {
+    /// Next page, or finish. Returning users who only needed permissions
+    /// stop after that page.
+    func advance() {
+        guard let next = step.next(startAtPermissions: startAtPermissions) else {
             completeOnboarding()
-        } else {
-            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 3 }
+            return
         }
+        withAnimation(.easeInOut(duration: 0.5)) { step = next }
     }
 
     func completeOnboarding() {
