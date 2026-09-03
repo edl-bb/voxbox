@@ -234,7 +234,7 @@
     <div class="stage">
       <div class="pillstage">
         <div class="desk">
-          <div class="doc" id="doc">Hi Priya, just following up on the thing we talked about yesterday. <span class="typed" id="typed"></span><span class="caret"></span></div>
+          <div class="doc" id="doc">Hi Jack, just following up on the thing we talked about yesterday. <span class="typed" id="typed"></span><span class="caret"></span></div>
           <div class="pill" id="pill" data-state="listening">
             <div class="orb"><div class="bars"><i></i><i></i><i></i><i></i><i></i></div></div>
             <div class="live" id="live"><span class="stable">Can you send the updated deck to Sam by</span> <span class="revisable">like Thursday and put the</span></div>
@@ -308,8 +308,8 @@
             <div class="preview">
               <div class="ph"><span class="tag">Try it</span><span class="sel">Follow-up message <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></span></div>
               <div class="body">
-                <div class="said"><em>You said:</em> Um so hi Priya, just following up on, on the thing we talked about yesterday. Can you send the updated deck to sam.reilly@northwindlabs.com by like Thursday…</div>
-                <div class="out" id="out">Hi Priya, just following up on the thing we talked about yesterday. Can you send the updated deck to sam.reilly@northwindlabs.com by Thursday, and put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?</div>
+                <div class="said"><em>You said:</em> Um so hi Jack, just following up on, on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by like Thursday…</div>
+                <div class="out" id="out">Hi Jack, just following up on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by Thursday, and put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?</div>
                 <div class="foot"><span>Apple Intelligence</span><span>1.2 s</span><span class="ok">landed at Light</span><span>email + number intact</span></div>
                 <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn sm ghost">Use my last take</button><button class="btn sm">Run again</button></div>
               </div>
@@ -365,7 +365,7 @@
         <div class="card take">
           <div class="hd"><h3>Last take</h3><div class="seg" id="seg"><button data-v="raw">What you said</button><button data-v="diff" aria-pressed="true">What changed</button><button data-v="clean">What was pasted</button></div></div>
           <div class="meta">2 minutes ago · Slack · 71 words · 6.4 s of speech</div>
-          <div class="diff" id="diff"><del>Um so </del><ins>H</ins><del>h</del>i Priya, just following up on<del>, on</del> the thing we talked about yesterday. Can you send the updated deck to sam.reilly@northwindlabs.com by <del>like </del>Thursday, and<del>, um,</del> put the revised total, I think it was twelve thousand five hundred dollars, into the tracker<ins>.</ins> Also I meant to say, the <del>the </del>second slide still has the old logo so legal should probably see it for <del>there</del><ins>their</ins> review before it goes out.</div>
+          <div class="diff" id="diff"><del>Um so </del><ins>H</ins><del>h</del>i Priya, just following up on<del>, on</del> the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by <del>like </del>Thursday, and<del>, um,</del> put the revised total, I think it was twelve thousand five hundred dollars, into the tracker<ins>.</ins> Also I meant to say, the <del>the </del>second slide still has the old logo so legal should probably see it for <del>there</del><ins>their</ins> review before it goes out.</div>
           <div class="stats"><div><b>4</b>fillers dropped</div><div><b>2</b>repeats collapsed</div><div><b>1</b>spelling fixed</div><div><b>0</b>words changed otherwise</div></div>
           <div class="acts"><button class="btn sm">Copy</button><button class="btn sm ghost">Re-run as Polish</button><button class="btn sm ghost">Open in History</button></div>
         </div>
@@ -421,11 +421,11 @@
   // B: levels
   const levels=document.getElementById('levels'),rules=document.getElementById('rules'),out=document.getElementById('out');
   const outputs={
-    off:'Um so hi Priya, just following up on, on the thing we talked about yesterday. Can you send the updated deck to sam.reilly@northwindlabs.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker.',
-    basic:'Um so hi Priya, just following up on, on the thing we talked about yesterday. Can you send the updated deck to sam.reilly@northwindlabs.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?',
-    light:'Hi Priya, just following up on the thing we talked about yesterday. Can you send the updated deck to sam.reilly@northwindlabs.com by Thursday, and put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?',
-    polish:'Hi Priya, following up on what we discussed yesterday. Could you send the updated deck to sam.reilly@northwindlabs.com by Thursday and add the revised total, twelve thousand five hundred dollars, to the tracker?',
-    custom:'• Send updated deck to sam.reilly@northwindlabs.com by Thursday\n• Add revised total ($12,500) to the tracker'
+    off:'Um so hi Jack, just following up on, on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker.',
+    basic:'Um so hi Jack, just following up on, on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?',
+    light:'Hi Jack, just following up on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by Thursday, and put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?',
+    polish:'Hi Jack, following up on what we discussed yesterday. Could you send the updated deck to jules@testco.com by Thursday and add the revised total, twelve thousand five hundred dollars, to the tracker?',
+    custom:'• Send updated deck to jules@testco.com by Thursday\n• Add revised total ($12,500) to the tracker'
   };
   const labels={off:'Off',basic:'Basic',light:'Light cleanup',polish:'Polish',custom:'Meeting notes'};
   levels.addEventListener('click',e=>{

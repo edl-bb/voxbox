@@ -169,6 +169,80 @@ nonisolated enum CleanupGuardrail {
         for word in rawWords {
             out.append(contentsOf: expandContraction(word))
         }
+        return collapseSpokenNumbers(out)
+    }
+
+    // MARK: - Spoken numbers
+
+    private static let unitWords: [String: Int] = [
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+        "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+        "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+    ]
+    private static let tensWords: [String: Int] = [
+        "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+    ]
+    private static let scaleWords: [String: Int] = [
+        "hundred": 100, "thousand": 1_000, "million": 1_000_000, "billion": 1_000_000_000,
+    ]
+    /// Words a numeral rewrite absorbs into a symbol ("dollars" → "$",
+    /// "percent" → "%"). Deleting one is free.
+    static let numberUnitWords: Set<String> = [
+        "dollars", "dollar", "bucks", "cents", "cent", "percent", "pounds", "pound", "euros", "euro", "quid",
+    ]
+
+    static func isNumberWord(_ word: String) -> Bool {
+        unitWords[word] != nil || tensWords[word] != nil || scaleWords[word] != nil
+    }
+
+    /// "twelve thousand five hundred" → "12500", so a Light or Polish pass
+    /// that writes numerals compares equal to the dictation. Decimals split
+    /// the way the digit form does ("two point five" → "2", "5").
+    static func collapseSpokenNumbers(_ words: [String]) -> [String] {
+        var out: [String] = []
+        out.reserveCapacity(words.count)
+        var index = 0
+        while index < words.count {
+            guard isNumberWord(words[index]) else {
+                out.append(words[index])
+                index += 1
+                continue
+            }
+            var total = 0
+            var current = 0
+            var cursor = index
+            var sawScale = false
+            while cursor < words.count {
+                let word = words[cursor]
+                if let unit = unitWords[word] {
+                    current += unit
+                } else if let tens = tensWords[word] {
+                    current += tens
+                } else if let scale = scaleWords[word] {
+                    if scale == 100 {
+                        current = max(current, 1) * 100
+                    } else {
+                        total += max(current, 1) * scale
+                        current = 0
+                    }
+                    sawScale = true
+                } else if word == "and", sawScale, cursor + 1 < words.count, isNumberWord(words[cursor + 1]) {
+                    // "one hundred and five"
+                } else {
+                    break
+                }
+                cursor += 1
+            }
+            out.append(String(total + current))
+            if cursor + 1 < words.count, words[cursor] == "point", let first = unitWords[words[cursor + 1]], first < 10 {
+                cursor += 1
+                while cursor < words.count, let digit = unitWords[words[cursor]], digit < 10 {
+                    out.append(String(digit))
+                    cursor += 1
+                }
+            }
+            index = cursor
+        }
         return out
     }
 
@@ -321,6 +395,7 @@ nonisolated enum CleanupGuardrail {
 
     private static func deletionCost(_ token: String, nextKept: String?, lexicon: FillerLexicon) -> Double {
         if lexicon.pureTokens.contains(token) || lexicon.deletableTokens.contains(token) { return 0 }
+        if numberUnitWords.contains(token) { return 0 }
         if let nextKept {
             if nextKept == token { return 0 }  // false start: "want... wanted"
             if sharedPrefixLength(token, nextKept) >= 4 { return 0 }

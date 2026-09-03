@@ -47,8 +47,10 @@ struct CleanupOnboardingPage: View {
                 .padding(.bottom, 12)
             }
 
+            Divider()
+                .padding(.horizontal, 16)
             footer
-                .padding(.top, 12)
+                .padding(.top, 14)
                 .padding(.bottom, 8)
         }
         .onAppear { runPreviews() }

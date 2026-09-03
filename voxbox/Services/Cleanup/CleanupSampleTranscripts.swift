@@ -24,7 +24,7 @@ nonisolated enum CleanupSampleTranscripts: String, CaseIterable, Identifiable, S
         switch self {
         case .followUp:
             return
-                "Um so hi Priya, just following up on, on the thing we talked about yesterday. Can you send the updated deck to sam.reilly@northwindlabs.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker. Also I meant to say, the the second slide still has the old logo so legal should probably see it for there review before it goes out."
+                "Um so hi Jack, just following up on, on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker. Also I meant to say, the the second slide still has the old logo so legal should probably see it for there review before it goes out."
         case .noteToSelf:
             return
                 "Okay note to self, um, book the car in for a service sometime next week, probably Tuesday, and, uh, remember to peak at the quote from the other garage first because I think they were like two hundred bucks cheaper. Oh and call mum back, she rang twice, and I I still haven't sorted the, the birthday thing."

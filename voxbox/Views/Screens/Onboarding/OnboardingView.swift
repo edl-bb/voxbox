@@ -20,6 +20,42 @@ struct OnboardingView: View {
                 // Background - Match main app exactly
                 Color.bgApp.ignoresSafeArea()
 
+                VStack(spacing: 0) {
+                    // Progress and Exit live in their own row so no page has
+                    // to leave room for them.
+                    HStack {
+                        if step.showsStepDots {
+                            OnboardingStepDots(current: step)
+                        }
+                        Spacer()
+                        if isReplay {
+                            Button(action: completeOnboarding) {
+                                Text("Exit setup")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.textSecondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Capsule().fill(Color.textPrimary.opacity(0.06)))
+                            }
+                            .buttonStyle(.plain)
+                            .keyboardShortcut(.cancelAction)
+                        }
+                    }
+                    .frame(height: 28)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 14)
+
+                    pageContent
+                        .padding(step.contentPadding)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+        }
+        .frame(minWidth: 600, minHeight: 500)
+    }
+
+    @ViewBuilder
+    private var pageContent: some View {
                 ZStack {
                     switch step {
                     case .welcome:
@@ -47,35 +83,6 @@ struct OnboardingView: View {
                             .transition(.opacity)
                     }
                 }
-                .padding(step.contentPadding)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                VStack {
-                    HStack {
-                        if step.showsStepDots {
-                            OnboardingStepDots(current: step)
-                        }
-                        Spacer()
-                        if isReplay {
-                            Button(action: completeOnboarding) {
-                                Text("Exit setup")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(Color.textSecondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Capsule().fill(Color.textPrimary.opacity(0.06)))
-                            }
-                            .buttonStyle(.plain)
-                            .keyboardShortcut(.cancelAction)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    Spacer()
-                }
-            }
-        }
-        .frame(minWidth: 600, minHeight: 500)
     }
 
     private func advance() {

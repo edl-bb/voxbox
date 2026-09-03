@@ -22,6 +22,25 @@ final class CleanupGuardrailTests: XCTestCase {
         XCTAssertEqual(CleanupGuardrail.tokens("Priya’s deck"), ["priya", "deck"], "possessive drops the s")
     }
 
+    func testSpokenNumbersCollapseToTheDigitForm() {
+        XCTAssertEqual(CleanupGuardrail.tokens("twelve thousand five hundred dollars"), ["12500", "dollars"])
+        XCTAssertEqual(CleanupGuardrail.tokens("$12,500"), ["12500"])
+        XCTAssertEqual(CleanupGuardrail.tokens("one hundred and five people"), ["105", "people"])
+        XCTAssertEqual(CleanupGuardrail.tokens("twenty percent off"), ["20", "percent", "off"])
+        XCTAssertEqual(CleanupGuardrail.tokens("two point five"), ["2", "5"])
+        XCTAssertEqual(CleanupGuardrail.tokens("2.5"), ["2", "5"])
+        XCTAssertEqual(CleanupGuardrail.tokens("forty-two"), ["42"])
+        XCTAssertEqual(CleanupGuardrail.tokens("one of the reasons"), ["1", "of", "the", "reasons"], "both sides normalise the same way")
+    }
+
+    func testNumeralRewriteIsFreeAtLight() {
+        let result = evaluate(
+            "the total was twelve thousand five hundred dollars and twenty percent is due friday",
+            "The total was $12,500 and 20% is due Friday.", light)
+        XCTAssertEqual(result.cost, 0)
+        XCTAssertEqual(result.verdict, .accepted)
+    }
+
     func testContentTokensDropPureFillersAndPhrases() {
         XCTAssertEqual(
             CleanupGuardrail.contentTokens(in: "um so, you know, I mean we should uh ship", lexicon: .compiled),

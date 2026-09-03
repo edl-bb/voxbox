@@ -58,7 +58,7 @@ final class CleanupPromptSetTests: XCTestCase {
             XCTAssertFalse(sample.title.isEmpty)
         }
         XCTAssertEqual(CleanupSampleTranscripts.onboardingDefault, .followUp)
-        XCTAssertTrue(CleanupSampleTranscripts.followUp.text.contains("sam.reilly@northwindlabs.com"))
+        XCTAssertTrue(CleanupSampleTranscripts.followUp.text.contains("jules@testco.com"))
         XCTAssertTrue(CleanupSampleTranscripts.teamUpdate.text.contains("https://staging.voxbox.app"))
     }
 

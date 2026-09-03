@@ -92,7 +92,9 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
             basically, and filler like. Keep content like (I like it, looks like, like this). \
             Collapse false starts and repeated words: "I was I was going" becomes "I was going". \
             Fix obvious grammar slips and punctuation. Add sentence and paragraph breaks where the \
-            speech pauses.
+            speech pauses. Write numbers as numerals, including money, percentages and times: \
+            "twelve thousand five hundred dollars" becomes $12,500, "twenty percent" becomes 20%, \
+            "half past two" becomes 2:30. Keep every value exactly as spoken.
 
             Keep every other word exactly as spoken. Do NOT reword, shorten, summarise, or reorder. \
             This is wording-faithful tidying, not a rewrite.
@@ -105,14 +107,17 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
             intended word (peak → peek, there → their).
             3. Smooth choppy or run-on phrasing into fluent sentences, keeping the speaker's meaning, \
             vocabulary, and tone.
+            4. Write numbers as numerals, including money, percentages and times: "twelve thousand \
+            five hundred dollars" becomes $12,500, "twenty percent" becomes 20%, "half past two" \
+            becomes 2:30. Keep every value exactly as spoken.
 
             Do NOT add ideas, summarise, shorten for brevity, or drop or reorder points.
             """,
         style: """
             Write in sentence case: capitalise only the first word of each sentence, the word I, and \
             proper nouns. Do NOT use title case, ALL CAPS, or headings. Use each punctuation mark \
-            once: no doubled commas or full stops, no trailing ellipsis. Copy numbers, email \
-            addresses, URLs, and names exactly as dictated.
+            once: no doubled commas or full stops, no trailing ellipsis. Copy email addresses, URLs, \
+            and names exactly as dictated, and never change the value of a number.
             """,
         australianSpelling: "Use Australian English spelling: colour, organise, centre, realise.",
         markdown: """
@@ -134,9 +139,9 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
             .formatting:
                 "REMEMBER: keep every word; change only punctuation, capitals, spacing, and breaks. Reply with only the text.",
             .lightCleanup:
-                "REMEMBER: delete um, uh, ah, er, you know, I mean, sort of, kind of, basically, and filler like. Keep every other word. Sentence case. Reply with only the text.",
+                "REMEMBER: delete um, uh, ah, er, you know, I mean, sort of, kind of, basically, and filler like. Keep every other word. Numbers as numerals. Sentence case. Reply with only the text.",
             .polish:
-                "REMEMBER: keep the speaker's meaning and every point. Copy numbers, emails, and URLs exactly. Sentence case. Reply with only the text.",
+                "REMEMBER: keep the speaker's meaning and every point. Copy emails and URLs exactly; numbers as numerals with the exact value. Sentence case. Reply with only the text.",
         ],
         budgets: [
             .formatting: GuardrailBudget(maxCostRatio: 0.05, minFreeEdits: 1, minRetention: 0.95),
