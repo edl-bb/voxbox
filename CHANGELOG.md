@@ -10,6 +10,8 @@ Changes and release notes for VoxBox.
     - At the end of a take the cleaned transcript replaces the live text only when VoxBox can verify it landed. Otherwise the typed text stays and the cleaned transcript goes to the clipboard with a message in the pill. VoxBox no longer pastes over text it already typed.
     - If the field or focus changes mid-take, live writing stops instead of writing into the wrong place.
     - Electron apps are detected from the app bundle, not just a list, so composers like Claude type correctly when text is already in the box. On web content VoxBox never moves the selection until a write has verified, which is what sent the caret to the start of the box.
+    - Typed key events no longer inherit live modifier keys. Previously a held modifier could turn typed text into shortcuts (Cmd+Space opening Raycast, Cmd+A, sidebar toggles).
+    - VoxBox no longer presses Cmd+Down before each burst in Electron apps, so dictating mid-text in Claude stays at the caret instead of jumping to the end. If an app is found to move the caret on its own, it can be listed explicitly.
     - WhisperKit streaming updates are delivered in order on one thread and skip updates with no text change.
 
 ## [1.2.0] - 2026-08-30

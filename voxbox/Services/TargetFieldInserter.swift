@@ -157,6 +157,12 @@ final class TargetFieldInserter {
     private(set) var delivered = ""
     private(set) var hasTyped = false
     private(set) var frozen: LiveFreezeReason?
+    /// Explicit caret move before each burst after the first. `nil` means
+    /// consult `CaretRestore`; tests pass a move to exercise the mechanism.
+    private var caretRestoreOverride: CaretMove??
+    /// Where the caret read back after our last burst, when readable.
+    private var caretAfterLastBurst: Int?
+    private(set) var caretMovedCount = 0
 
     var isActive: Bool { writer != nil && spanStart != nil }
 
@@ -232,6 +238,7 @@ final class TargetFieldInserter {
         spanStart: Int,
         isElectronApp: Bool = false,
         isWebContent: Bool = false,
+        caretRestore: CaretMove?? = nil,
         isTargetFrontmost: @escaping () -> Bool = { true }
     ) {
         reset()
@@ -241,11 +248,15 @@ final class TargetFieldInserter {
         self.spanStart = spanStart
         self.isElectronApp = isElectronApp
         self.isWebContent = isWebContent
+        self.caretRestoreOverride = caretRestore
         self.isTargetFrontmost = isTargetFrontmost
     }
 
     private func caretRestoreMove(hasTyped: Bool) -> CaretMove? {
-        CaretRestore.move(forBundle: bundleIdentifier, isElectronApp: isElectronApp, hasTyped: hasTyped)
+        guard hasTyped else { return nil }
+        if let override = caretRestoreOverride { return override }
+        return CaretRestore.move(
+            forBundle: bundleIdentifier, isElectronApp: isElectronApp, hasTyped: hasTyped)
     }
 
     func reset() {
@@ -254,6 +265,9 @@ final class TargetFieldInserter {
         bundleIdentifier = nil
         isElectronApp = false
         isWebContent = false
+        caretRestoreOverride = nil
+        caretAfterLastBurst = nil
+        caretMovedCount = 0
         isTargetFrontmost = { true }
         spanStart = nil
         spanLength = 0
@@ -330,6 +344,16 @@ final class TargetFieldInserter {
     }
 
     private func typeTail(_ tail: String, writer: FieldWriter) {
+        // Diagnostic only: did the destination move the caret since our last
+        // burst? Reads can be unreliable on web content, so this never
+        // decides anything by itself. It tells us which apps need
+        // `CaretRestore.caretResettingComposers`.
+        if hasTyped, let expected = caretAfterLastBurst,
+            let now = writer.readSelection()?.location, now != expected
+        {
+            caretMovedCount += 1
+            log("caret moved since last burst expected=\(expected) now=\(now)")
+        }
         if let move = caretRestoreMove(hasTyped: hasTyped) {
             writer.moveCaret(move)
             writer.settle()
@@ -338,6 +362,7 @@ final class TargetFieldInserter {
         hasTyped = true
         spanLength = (delivered as NSString).length + (tail as NSString).length
         writer.settle()
+        caretAfterLastBurst = writer.readSelection()?.location
     }
 
     // MARK: - Finish
@@ -432,7 +457,7 @@ final class TargetFieldInserter {
         let result: LiveDelivery = completedRaw ? .rawInField : .partialInField
         log(
             "finalize keys typed=\((delivered as NSString).length) raw=\((raw as NSString).length) "
-                + "cleaned=\((cleaned as NSString).length) result=\(result)")
+                + "cleaned=\((cleaned as NSString).length) caretMoves=\(caretMovedCount) result=\(result)")
         return result
     }
 

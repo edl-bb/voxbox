@@ -148,11 +148,48 @@ final class TargetFieldInserterTests: XCTestCase {
 
     // MARK: - Append-only keystrokes
 
+    func testKeystrokesMidTextStayAtTheCaretAcrossPauses() {
+        // Claude: caret mid-text, no caret reset. Each committed burst must
+        // land where the previous one ended, not at the end of the block.
+        let field = FakeFieldWriter(text: "Intro paragraph.\n\nClosing line.", caret: 17)
+        let inserter = TargetFieldInserter()
+        inserter.bind(
+            writer: field, strategy: .keystrokesOnly, bundleIdentifier: "com.anthropic.claudefordesktop",
+            spanStart: 17, isElectronApp: true, isWebContent: true)
+
+        XCTAssertEqual(inserter.update(snapshot("Hello there", "this is")), .wrote(.append, chars: 11))
+        XCTAssertEqual(field.text, "Intro paragraph.\nHello there\nClosing line.")
+        XCTAssertEqual(inserter.update(snapshot("Hello there this is a test", "")), .wrote(.append, chars: 15))
+        XCTAssertEqual(field.text, "Intro paragraph.\nHello there this is a test\nClosing line.")
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("moveCaret") })
+        XCTAssertEqual(inserter.caretMovedCount, 0)
+
+        XCTAssertEqual(
+            inserter.finalize(raw: "Hello there this is a test", cleaned: "Hello there, this is a test."),
+            .rawInField)
+        XCTAssertEqual(field.text, "Intro paragraph.\nHello there this is a test\nClosing line.")
+    }
+
+    func testKeystrokesLogCaretMovesWithoutActingOnThem() {
+        let field = FakeFieldWriter()
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: "com.example.resetting", spanStart: 0)
+        _ = inserter.update(snapshot("Hello there"))
+        // The app moves the caret between bursts.
+        field.caret = 0
+        _ = inserter.update(snapshot("Hello there friend"))
+        XCTAssertEqual(inserter.caretMovedCount, 1)
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("moveCaret") })
+    }
+
     func testKeystrokesTypeOnlyStableWordsAndSurviveCaretReset() {
+        // Escape hatch for an app that really does reset the caret.
         let field = FakeFieldWriter()
         field.resetCaretToStartAfterType = true
         let inserter = TargetFieldInserter()
-        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: "com.tinyspeck.slackmacgap", spanStart: 0)
+        inserter.bind(
+            writer: field, strategy: .keystrokesOnly, bundleIdentifier: "com.tinyspeck.slackmacgap",
+            spanStart: 0, caretRestore: .some(.endOfDocument))
         XCTAssertEqual(inserter.deliveryMode, .stableOnly)
 
         XCTAssertEqual(inserter.update(snapshot("", "hello")), .held(.unchanged))
@@ -179,7 +216,9 @@ final class TargetFieldInserterTests: XCTestCase {
     func testKeystrokesDoNotRestoreCaretInEditors() {
         let field = FakeFieldWriter(text: "let x = 1\n\nlet y = 2", caret: 10)
         let inserter = TargetFieldInserter()
-        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: "com.todesktop.230313mzl4w4u92", spanStart: 10)
+        inserter.bind(
+            writer: field, strategy: .keystrokesOnly, bundleIdentifier: "com.todesktop.230313mzl4w4u92",
+            spanStart: 10, isElectronApp: true)
         _ = inserter.update(snapshot("// note"))
         _ = inserter.update(snapshot("// note about y"))
         XCTAssertEqual(field.text, "let x = 1\n// note about y\nlet y = 2")

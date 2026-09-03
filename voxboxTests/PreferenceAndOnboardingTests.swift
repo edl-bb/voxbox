@@ -456,27 +456,22 @@ final class PreferenceAndOnboardingTests: XCTestCase {
             LiveWriteStrategy.electronComposers.union(LiveWriteStrategy.electronEditors))
     }
 
-    func testCaretRestoreOnlyForComposersAfterTyping() {
-        XCTAssertNil(CaretRestore.move(forBundle: "com.tinyspeck.slackmacgap", hasTyped: false))
-        XCTAssertEqual(
-            CaretRestore.move(forBundle: "com.tinyspeck.slackmacgap", hasTyped: true),
-            .endOfDocument)
-        XCTAssertEqual(CaretRestore.move(forBundle: "notion.id", hasTyped: true), .endOfDocument)
-        XCTAssertNil(CaretRestore.move(forBundle: "com.microsoft.VSCode", hasTyped: true))
-        XCTAssertNil(CaretRestore.move(forBundle: "com.todesktop.230313mzl4w4u92", hasTyped: true))
-        XCTAssertNil(CaretRestore.move(forBundle: "com.apple.Notes", hasTyped: true))
-        XCTAssertNil(CaretRestore.move(forBundle: nil, hasTyped: true))
-        XCTAssertEqual(
-            CaretRestore.move(forBundle: "com.anthropic.claudefordesktop", hasTyped: true),
-            .endOfDocument)
-        // Unknown Electron app: treat as a composer unless it is a known editor.
-        XCTAssertEqual(
-            CaretRestore.move(forBundle: "com.example.unknown", isElectronApp: true, hasTyped: true),
-            .endOfDocument)
-        XCTAssertNil(
-            CaretRestore.move(forBundle: "com.microsoft.VSCode", isElectronApp: true, hasTyped: true))
-        XCTAssertNil(
-            CaretRestore.move(forBundle: "com.example.unknown", isElectronApp: true, hasTyped: false))
+    func testCaretRestoreIsOffUnlessAnAppIsKnownToResetTheCaret() {
+        // Dictating mid-text in Claude appended later bursts to the end
+        // because of a blind Cmd+Down; no app gets it by default now.
+        for bundle in [
+            "com.tinyspeck.slackmacgap", "notion.id", "com.anthropic.claudefordesktop",
+            "com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92", "com.apple.Notes",
+        ] {
+            XCTAssertNil(CaretRestore.move(forBundle: bundle, hasTyped: true), bundle)
+            XCTAssertNil(CaretRestore.move(forBundle: bundle, isElectronApp: true, hasTyped: true), bundle)
+        }
+        XCTAssertNil(CaretRestore.move(forBundle: nil, isElectronApp: true, hasTyped: true))
+        XCTAssertTrue(CaretRestore.caretResettingComposers.isEmpty)
+        for bundle in CaretRestore.caretResettingComposers {
+            XCTAssertEqual(CaretRestore.move(forBundle: bundle, hasTyped: true), .endOfDocument)
+            XCTAssertNil(CaretRestore.move(forBundle: bundle, hasTyped: false))
+        }
     }
 
     func testAppendPlanOnlyExtendsWhatWasTyped() {

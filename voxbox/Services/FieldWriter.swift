@@ -97,6 +97,12 @@ final class AXFieldWriter: FieldWriter {
     // MARK: HID
 
     /// `CGEventKeyboardSetUnicodeString` silently truncates; post in chunks.
+    ///
+    /// Flags are cleared on every event. Events created from the HID state
+    /// inherit whatever modifiers are live at that instant (the user's
+    /// held hotkey, or a Cmd we just pressed for a caret move), and a
+    /// Unicode event rides on virtual key 0 (`A`), so an inherited Cmd
+    /// becomes Cmd+A / Cmd+Space in the destination.
     func type(_ text: String) {
         guard !text.isEmpty else { return }
         let source = CGEventSource(stateID: .hidSystemState)
@@ -105,6 +111,8 @@ final class AXFieldWriter: FieldWriter {
             guard let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
                 let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
             else { continue }
+            down.flags = []
+            up.flags = []
             down.keyboardSetUnicodeString(stringLength: unichars.count, unicodeString: &unichars)
             up.keyboardSetUnicodeString(stringLength: unichars.count, unicodeString: &unichars)
             down.post(tap: .cghidEventTap)
@@ -119,6 +127,8 @@ final class AXFieldWriter: FieldWriter {
             guard let down = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true),
                 let up = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false)
             else { continue }
+            down.flags = []
+            up.flags = []
             down.post(tap: .cghidEventTap)
             up.post(tap: .cghidEventTap)
         }
@@ -142,6 +152,7 @@ final class AXFieldWriter: FieldWriter {
         cmdDown.flags = .maskCommand
         arrowDown.flags = .maskCommand
         arrowUp.flags = .maskCommand
+        cmdUp.flags = []
         cmdDown.post(tap: .cghidEventTap)
         arrowDown.post(tap: .cghidEventTap)
         arrowUp.post(tap: .cghidEventTap)

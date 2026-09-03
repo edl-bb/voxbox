@@ -204,25 +204,24 @@ nonisolated enum CaretMove: Equatable, Sendable {
     case endOfDocument
 }
 
-/// After the first keystroke burst, Notion / Slack often reset the caret to
-/// the start of the block. Later suffixes then insert in front of the first
-/// words (`This is` ends up at the end). Move to the end of the document
-/// before typing the next delta — only once we have already typed, and only
-/// in composers where end-of-document is where our text is.
+/// Moving the caret before a burst. Off by default: the Notion / Slack
+/// "caret jumps to the start after the first burst" seen in 1.1 came from
+/// the `AXSelectedTextRange` writes that used to run before falling back to
+/// typing, and those writes no longer reach Electron. A blind Cmd+↓ is also
+/// wrong whenever the user dictates mid-text (Claude appended to the end).
+/// `caretResettingComposers` is the escape hatch if an app really does
+/// reset; the inserter logs when the caret is not where it was left.
 nonisolated enum CaretRestore: Equatable {
-    /// Known composers, and any Electron app we do not know to be an
-    /// editor, get end-of-document. Editors and native apps get nothing.
+    /// Bundles observed to move the caret on their own after typed input.
+    static let caretResettingComposers: Set<String> = []
+
     static func move(
         forBundle bundleIdentifier: String?,
         isElectronApp: Bool = false,
         hasTyped: Bool
     ) -> CaretMove? {
-        guard hasTyped else { return nil }
-        if let bundleIdentifier {
-            if LiveWriteStrategy.isElectronEditor(bundleIdentifier) { return nil }
-            if LiveWriteStrategy.isElectronComposer(bundleIdentifier) { return .endOfDocument }
-        }
-        return isElectronApp ? .endOfDocument : nil
+        guard hasTyped, let bundleIdentifier else { return nil }
+        return caretResettingComposers.contains(bundleIdentifier) ? .endOfDocument : nil
     }
 }
 
