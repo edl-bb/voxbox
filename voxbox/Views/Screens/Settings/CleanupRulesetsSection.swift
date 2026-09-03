@@ -242,6 +242,7 @@ private struct RulesetEditorSheet: View {
     @State private var name: String
     @State private var instructions: String
     @State private var temperature: Double
+    @State private var showTestPanel = false
 
     private let rulesetID: UUID
     private let onSave: (CustomCleanupRuleset) -> Void
@@ -254,7 +255,23 @@ private struct RulesetEditorSheet: View {
         _temperature = State(initialValue: ruleset.temperature)
     }
 
+    /// The ruleset as it stands in the sheet, saved or not. The test panel
+    /// always runs this, so what you read is what Save would store.
+    private var draftRuleset: CustomCleanupRuleset {
+        CustomCleanupRuleset(id: rulesetID, name: name, instructions: instructions, temperature: temperature)
+    }
+
     var body: some View {
+        ScrollView {
+            editor
+                .padding(24)
+        }
+        .frame(width: 560)
+        .frame(maxHeight: 680)
+        .background(Color.bgApp)
+    }
+
+    private var editor: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Edit ruleset")
                 .font(Typography.sectionTitle)
@@ -309,6 +326,20 @@ private struct RulesetEditorSheet: View {
                     .foregroundStyle(Color.textMuted)
             }
 
+            DisclosureGroup(isExpanded: $showTestPanel) {
+                RulesetTestPanel(draft: draftRuleset)
+                    .padding(.top, 10)
+            } label: {
+                HStack(spacing: 8) {
+                    Text("TEST THIS RULESET")
+                        .font(Typography.uiBold(10)).tracking(1)
+                        .foregroundStyle(Color.textMuted)
+                    Text("Uses your unsaved edits")
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+                }
+            }
+
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }
@@ -326,9 +357,6 @@ private struct RulesetEditorSheet: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(24)
-        .frame(width: 520)
-        .background(Color.bgApp)
     }
 }
 

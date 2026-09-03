@@ -25,6 +25,7 @@ Changes and release notes for VoxBox.
     - A recording step asks whether you want to hold the hotkey while you talk or press it to toggle, with the copy naming your actual hotkey. Skip keeps the default.
     - A cleanup step runs one dictation through every level (Off, Basic, Light cleanup, Polish, Custom) on your Mac and shows the results side by side, so you choose by reading rather than guessing. Switch between three built-in dictations or paste your own. Custom creates a "My ruleset" and opens the editor after setup.
     - Progress dots on every step, and Settings › General gains "Replay the setup guide" so you can step through it again with your current choices preselected.
+- Custom rulesets can be tested before saving. The ruleset editor gains a "Test this ruleset" panel that runs your unsaved instructions and temperature over a built-in dictation or one of your five most recent transcripts (the raw take when History kept it), shows the result with timing and how much changed, and can run Basic, Light cleanup or Polish alongside for comparison. Nothing is written to History.
 - Downloadable cleanup models (Llama 3.2, Qwen 3) are parked until macOS 27. In 1.2.0 the picker offered them but every cleanup still ran on Apple Intelligence; the picker now shows only Apple Intelligence and says so. Any saved choice of a downloaded model resolves to Apple Intelligence. They return with macOS 27's native on-device model support.
 
 ## [1.2.0] - 2026-08-30
