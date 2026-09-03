@@ -8,8 +8,9 @@ nonisolated struct GuardrailBudget: Equatable, Sendable {
     var maxCostRatio: Double
     /// Absolute floor so a short take can still afford a few real edits.
     var minFreeEdits: Int
-    /// Fraction of input content tokens that must survive (kept or
-    /// substituted). Catches a summary whose deletions each fit the budget.
+    /// Fraction of input content tokens that must survive (kept, substituted,
+    /// or deleted for free as a filler, repeat or false start). Catches a
+    /// summary whose deletions each fit the budget.
     var minRetention: Double
 }
 
@@ -121,15 +122,12 @@ nonisolated enum CleanupGuardrail {
         }
 
         let edits = alignedEdits(a, b)
-        let cost = self.cost(of: edits, lexicon: lexicon)
-        let retained = edits.reduce(0.0) { partial, edit in
-            switch edit {
-            case .keep: return partial + 1
-            case .substitute: return partial + 1
-            case .delete, .insert: return partial
-            }
-        }
-        let retention = a.isEmpty ? 1 : retained / Double(a.count)
+        let breakdown = costBreakdown(of: edits, lexicon: lexicon)
+        let cost = breakdown.total
+        // Free deletions (fillers, repeats, false starts) are exactly what
+        // Light cleanup is told to make, so they do not count against
+        // retention; only deletions that cost something can signal a summary.
+        let retention = a.isEmpty ? 1 : Double(a.count - breakdown.costlyDeletions) / Double(a.count)
         let ratio = cost / Double(n)
         let allowance = max(Double(budget.minFreeEdits), budget.maxCostRatio * Double(n))
 
@@ -264,8 +262,19 @@ nonisolated enum CleanupGuardrail {
 
     // MARK: - Cost
 
+    struct CostBreakdown: Equatable {
+        var total: Double
+        /// Deleted input tokens that were not free (content words, function words).
+        var costlyDeletions: Int
+    }
+
     static func cost(of edits: [TokenEdit], lexicon: FillerLexicon) -> Double {
+        costBreakdown(of: edits, lexicon: lexicon).total
+    }
+
+    static func costBreakdown(of edits: [TokenEdit], lexicon: FillerLexicon) -> CostBreakdown {
         var total = 0.0
+        var costlyDeletions = 0
         var index = 0
         while index < edits.count {
             switch edits[index] {
@@ -293,12 +302,14 @@ nonisolated enum CleanupGuardrail {
                 }
                 let nextKept = following.first
                 for token in run {
-                    total += deletionCost(token, nextKept: nextKept, lexicon: lexicon)
+                    let tokenCost = deletionCost(token, nextKept: nextKept, lexicon: lexicon)
+                    total += tokenCost
+                    if tokenCost > 0 { costlyDeletions += 1 }
                 }
                 index = cursor
             }
         }
-        return total
+        return CostBreakdown(total: total, costlyDeletions: costlyDeletions)
     }
 
     private static func deletionCost(_ token: String, nextKept: String?, lexicon: FillerLexicon) -> Double {

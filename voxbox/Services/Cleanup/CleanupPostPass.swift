@@ -94,7 +94,7 @@ nonisolated enum CleanupPostPass {
     /// First letter of the text and of each sentence, when the word is all
     /// lowercase (leaves `iPhone`, emails, URLs alone).
     static func capitaliseSentenceStarts(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: #"(^|[.!?]\s+|\n\n|\n(?=[-*•] ?|\d+\. ))([a-z])"#) else {
+        guard let regex = try? NSRegularExpression(pattern: #"(^|[.!?]\s+|\n\n|\n[-*•] ?|\n\d+\. )([a-z])"#) else {
             return text
         }
         let ns = NSMutableString(string: text)
