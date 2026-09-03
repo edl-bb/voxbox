@@ -32,13 +32,14 @@ nonisolated enum AutoEdit {
         edited = edited.replacingOccurrences(of: #"[ \t]+\n"#, with: "\n", options: .regularExpression)
         edited = edited.replacingOccurrences(of: #"\n[ \t]+"#, with: "\n", options: .regularExpression)
         edited = edited.replacingOccurrences(of: #"\n{3,}"#, with: "\n\n", options: .regularExpression)
-        edited = capitaliseAfterStrip(edited)
         return edited.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// "I was, um, going" → "I was going"; "ready. Um. Next" → "ready. Next";
-    /// "Um, so we" → "so we". Keeps a terminal mark, keeps exactly one comma
-    /// when the filler sat between two.
+    /// "Um, so we" → "So we". Keeps a terminal mark, keeps exactly one comma
+    /// when the filler sat between two, and capitalises the word that follows
+    /// a filler removed from the start of a sentence. Text without fillers is
+    /// returned exactly as given.
     static func stripFillers(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: fillerPattern) else { return text }
         let ns = NSMutableString(string: text)
@@ -56,7 +57,11 @@ nonisolated enum AutoEdit {
             default:
                 replacement = ""
             }
+            let startsSentence = isSentenceStart(before: match.range.location, in: ns)
             ns.replaceCharacters(in: match.range, with: replacement)
+            if startsSentence {
+                capitaliseNextWord(from: match.range.location + (replacement as NSString).length, in: ns)
+            }
         }
         var result = ns as String
         // A stripped filler can leave "word ." or ", ," behind.
@@ -67,14 +72,22 @@ nonisolated enum AutoEdit {
         return result
     }
 
-    /// A filler at the start of a sentence leaves the next word lowercase.
-    private static func capitaliseAfterStrip(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: #"(^|[.!?]\s+|\n\n)([a-z])"#) else { return text }
-        let ns = NSMutableString(string: text)
-        for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).reversed() {
-            let range = match.range(at: 2)
-            ns.replaceCharacters(in: range, with: ns.substring(with: range).uppercased())
-        }
-        return ns as String
+    /// True when only whitespace, or sentence punctuation then whitespace,
+    /// precedes `location`.
+    private static func isSentenceStart(before location: Int, in ns: NSMutableString) -> Bool {
+        let before = ns.substring(to: location).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let last = before.last else { return true }
+        return ".!?".contains(last)
+    }
+
+    /// Uppercases the first letter of the next word when that word is plain
+    /// lowercase letters. Emails, URLs and mixed-case names are left alone.
+    private static func capitaliseNextWord(from location: Int, in ns: NSMutableString) {
+        let tail = ns.substring(from: min(location, ns.length))
+        guard let regex = try? NSRegularExpression(pattern: #"^\s*([a-z])(?=[a-z]*(?:[\s,.;:!?]|$))"#),
+            let match = regex.firstMatch(in: tail, range: NSRange(location: 0, length: (tail as NSString).length))
+        else { return }
+        let letterRange = NSRange(location: location + match.range(at: 1).location, length: 1)
+        ns.replaceCharacters(in: letterRange, with: ns.substring(with: letterRange).uppercased())
     }
 }

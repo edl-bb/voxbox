@@ -65,7 +65,7 @@ class HistoryService: ObservableObject {
         let normalizedTranscript = WhisperService.normalizedTranscription(from: transcript)
         guard !normalizedTranscript.isEmpty else { return }
         let normalizedRaw = rawTranscript
-            .map { WhisperService.normalizedTranscription(from: $0) }
+            .map { WhisperService.normalizedTranscription(from: $0, stripFillers: false) }
             .flatMap { $0.isEmpty ? nil : $0 }
 
         let timestamp = Date()

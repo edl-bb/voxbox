@@ -92,10 +92,12 @@ final class CustomRulesetTests: XCTestCase {
             for: "some dictated text here", ruleset: ruleset)
 
         XCTAssertEqual(request.instructionStages, ["Rewrite the transcript as a haiku."])
-        XCTAssertFalse(request.instructions.contains(FormattingPromptStage.markdownFormatting))
-        XCTAssertFalse(request.instructions.contains(FormattingPromptStage.outputTranscriptOnly))
+        XCTAssertFalse(request.instructions.contains(CleanupPromptSet.compiled.markdown))
+        XCTAssertFalse(request.instructions.contains(CleanupPromptSet.compiled.outputOnly))
         XCTAssertEqual(request.temperature, 0.7, accuracy: 0.0001)
         XCTAssertNil(request.maximumChangeRatio, "custom rulesets run ungoverned")
+        XCTAssertTrue(request.userPrompt.contains("some dictated text here"), "wrap template still applies")
+        XCTAssertFalse(request.userPrompt.contains("REMEMBER:"), "custom rulesets get no repeat suffix")
     }
 
     func testCustomRequestClampsTemperatureIntoRange() {
@@ -140,7 +142,7 @@ final class CustomRulesetTests: XCTestCase {
                 try XCTUnwrap(FormattingIntensity.lightCleanup.maximumChangeRatio),
                 "the ungoverned path is only for real user rules")
             XCTAssertTrue(
-                request.instructions.contains(FormattingPromptStage.outputTranscriptOnly))
+                request.instructions.contains(CleanupPromptSet.compiled.outputOnly))
             XCTAssertEqual(request.temperature, 0.0)
         }
     }

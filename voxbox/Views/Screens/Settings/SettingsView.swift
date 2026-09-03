@@ -603,6 +603,10 @@ struct GeneralSettingsTab: View {
                     }
                 }
 
+                #if DEBUG
+                    TranscriptCleanupDebugSection()
+                #endif
+
                 // Spoken Language
                 SettingsSection {
                     SettingsSectionHeader(

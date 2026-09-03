@@ -121,7 +121,8 @@ nonisolated enum CleanupGuardrail {
         }
 
         let edits = alignedEdits(a, b)
-        let cost = self.cost(of: edits, lexicon: lexicon)
+        let breakdown = costBreakdown(of: edits, lexicon: lexicon)
+        let cost = breakdown.cost
         let retained = edits.reduce(0.0) { partial, edit in
             switch edit {
             case .keep: return partial + 1
@@ -129,7 +130,10 @@ nonisolated enum CleanupGuardrail {
             case .delete, .insert: return partial
             }
         }
-        let retention = a.isEmpty ? 1 : retained / Double(a.count)
+        // Words the level was told to drop (fillers, false starts) are not
+        // "lost content", so they leave the denominator as well as the cost.
+        let retainable = Double(max(1, a.count - breakdown.freeDeletions))
+        let retention = a.isEmpty ? 1 : min(1, retained / retainable)
         let ratio = cost / Double(n)
         let allowance = max(Double(budget.minFreeEdits), budget.maxCostRatio * Double(n))
 
@@ -265,7 +269,18 @@ nonisolated enum CleanupGuardrail {
     // MARK: - Cost
 
     static func cost(of edits: [TokenEdit], lexicon: FillerLexicon) -> Double {
+        costBreakdown(of: edits, lexicon: lexicon).cost
+    }
+
+    struct CostBreakdown: Equatable {
+        var cost: Double
+        /// Deletions that cost nothing: fillers, deletable words, false starts.
+        var freeDeletions: Int
+    }
+
+    static func costBreakdown(of edits: [TokenEdit], lexicon: FillerLexicon) -> CostBreakdown {
         var total = 0.0
+        var freeDeletions = 0
         var index = 0
         while index < edits.count {
             switch edits[index] {
@@ -288,17 +303,20 @@ nonisolated enum CleanupGuardrail {
                 let following = keptTokens(in: edits, from: cursor, count: run.count)
                 if run == following {
                     // "I was I was going": the whole run repeats.
+                    freeDeletions += run.count
                     index = cursor
                     continue
                 }
                 let nextKept = following.first
                 for token in run {
-                    total += deletionCost(token, nextKept: nextKept, lexicon: lexicon)
+                    let price = deletionCost(token, nextKept: nextKept, lexicon: lexicon)
+                    if price == 0 { freeDeletions += 1 }
+                    total += price
                 }
                 index = cursor
             }
         }
-        return total
+        return CostBreakdown(cost: total, freeDeletions: freeDeletions)
     }
 
     private static func deletionCost(_ token: String, nextKept: String?, lexicon: FillerLexicon) -> Double {

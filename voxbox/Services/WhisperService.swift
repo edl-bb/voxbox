@@ -307,7 +307,9 @@ class WhisperService {
         return options
     }
 
-    static func normalizedTranscription(from rawText: String) -> String {
+    /// `stripFillers: false` keeps ums and uhs: History stores the raw take
+    /// that way so a ruleset can be re-run on what was actually said.
+    static func normalizedTranscription(from rawText: String, stripFillers: Bool = true) -> String {
         var normalized = rawText
 
         for pattern in placeholderPatterns {
@@ -330,7 +332,9 @@ class WhisperService {
             options: .regularExpression
         )
 
-        normalized = AutoEdit.apply(to: normalized)
+        if stripFillers {
+            normalized = AutoEdit.apply(to: normalized)
+        }
 
         return normalized.trimmingCharacters(in: .whitespacesAndNewlines)
     }

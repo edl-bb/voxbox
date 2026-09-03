@@ -13,6 +13,14 @@ Changes and release notes for VoxBox.
     - Typed key events no longer inherit live modifier keys. Previously a held modifier could turn typed text into shortcuts (Cmd+Space opening Raycast, Cmd+A, sidebar toggles).
     - VoxBox no longer presses Cmd+Down before each burst in Electron apps, so dictating mid-text in Claude stays at the caret instead of jumping to the end. If an app is found to move the caret on its own, it can be listed explicitly.
     - WhisperKit streaming updates are delivered in order on one thread and skip updates with no text change.
+- Improved on-device transcript cleanup.
+    - Light cleanup no longer trips the guardrail for doing what it was asked. The guardrail now charges nothing for dropping fillers, false starts and repeats, half price for grammar and near-spelling fixes, and full price only for real wording changes. Short takes get an absolute allowance so a nine-word dictation can still lose its ums.
+    - When a level does change too much, VoxBox steps down (Polish → Light → Basic) instead of pasting the raw transcript.
+    - Rewritten prompts for Basic, Light and Polish with explicit sentence-case and punctuation rules. Basic no longer receives the Markdown stage, so it cannot add bold or headings to a dictation it was told not to change.
+    - A deterministic post-pass tidies model output: leaked labels and "Here is the cleaned text" wrappers are stripped, doubled punctuation is collapsed, ALL CAPS and Title Case the speaker never dictated are reverted, and emails, URLs and numbers must survive or the pass is rejected.
+    - Australian English spelling is applied after the model as well as before, so the model cannot re-Americanise.
+    - Auto Edit keeps paragraph breaks, never leaves an orphan comma, and only capitalises the word after a filler it removed from the start of a sentence.
+    - History keeps the raw transcript alongside the cleaned one, so custom rulesets can be tested against what was actually said.
 
 ## [1.2.0] - 2026-08-30
 - **New Feature**: Choose your Post-processing Model: Post-processing defaults to the build-in Apple Intelligence model, but now you can choose from 4 other LLMs to clean up your transcripts. Choose from Apple Intelligence, Llama 3.2 1B/3B, Qwen 3 1.7B/4B

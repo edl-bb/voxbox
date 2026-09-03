@@ -102,8 +102,20 @@ Keeping the speaker's message when wording may change. The Polish contract.
 _Avoid_: Fidelity (unqualified); wording-faithful
 
 **Guardrail**:
-The change-ratio budget that discards on-device cleanup if the edit is too heavy, leaving the pre-model transcript.
-_Avoid_: Guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
+The asymmetric edit budget that vetoes a model pass when it changed too much. Fillers, false starts and repeats are free; grammar and near-spelling fixes cost half; other wording changes cost one. Each level has a cost ceiling, an absolute free-edit floor for short takes, and a retention floor against summaries. Emails, URLs and numbers must survive.
+_Avoid_: Change ratio (the 1.2.0 symmetric measure); guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
+
+**Step-down**:
+What happens after a veto: Polish → Light cleanup → Basic → raw, one rung per attempt, so a heavy Polish pass lands as Light rather than as the raw transcript. Previews and the ruleset test panel run a single rung.
+_Avoid_: Fallback (when meaning the engine retry on Apple Intelligence); retry
+
+**Post-pass**:
+Deterministic repairs to model output before the guardrail: preamble and refusal strip, punctuation and whitespace tidy outside emails and URLs, casing repair against the dictation, sentence-initial capitals.
+_Avoid_: Tidy (unqualified); formatting
+
+**Preview**:
+Running text through the same cleanup pipeline a take uses, without the enabled gate or minimum word count. Onboarding, the ruleset test panel and the eval harness all preview.
+_Avoid_: Dry run; simulate; test cleanup (in user-facing copy)
 
 **DEBUG tuner**:
 A development-only in-app editor for cleanup instructions and guardrail budgets. Release builds use the compiled values.

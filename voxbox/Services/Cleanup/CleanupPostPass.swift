@@ -70,8 +70,11 @@ nonisolated enum CleanupPostPass {
             (#"(?<!\.)\.\.(?!\.)"#, "."),
             (#"(?m)^\s*,\s*"#, ""),
             (#", ,"#, ","),
-            // One space after sentence punctuation between letters ("etc.Next").
-            (#"(?<=[A-Za-z]{2})([.!?,;:])(?=[A-Za-z])"#, "$1 "),
+            // One space after sentence punctuation when a new sentence follows
+            // ("etc.Next"). Lowercase continuations are left alone so bare
+            // filenames and domains ("report.pdf", "voxbox.app") survive.
+            (#"(?<=[A-Za-z]{2})([.!?])(?=[A-Z])"#, "$1 "),
+            (#"(?<=[A-Za-z]{2})([,;:])(?=[A-Za-z])"#, "$1 "),
         ]
         for (pattern, replacement) in rules {
             next = next.replacingOccurrences(of: pattern, with: replacement, options: .regularExpression)
@@ -94,7 +97,7 @@ nonisolated enum CleanupPostPass {
     /// First letter of the text and of each sentence, when the word is all
     /// lowercase (leaves `iPhone`, emails, URLs alone).
     static func capitaliseSentenceStarts(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: #"(^|[.!?]\s+|\n\n|\n(?=[-*•] ?|\d+\. ))([a-z])"#) else {
+        guard let regex = try? NSRegularExpression(pattern: #"(^|[.!?]\s+|\n\n|\n(?:[-*•] ?|\d+\. ))([a-z])"#) else {
             return text
         }
         let ns = NSMutableString(string: text)
@@ -300,19 +303,34 @@ nonisolated enum CleanupPostPass {
 
     // MARK: - Helpers
 
+    /// Emails and URLs are swapped for private-use placeholders while the
+    /// transform runs, then restored. Masking (rather than splitting the text
+    /// into segments) keeps line-start anchors and lookarounds honest: a
+    /// comma right after an email is still "after a word", not "at a line
+    /// start".
     private static func applyOutsideProtectedSpans(_ text: String, _ transform: (String) -> String) -> String {
         let ns = text as NSString
         let protectedRanges = CleanupGuardrail.protectedRanges(in: text).sorted { $0.location < $1.location }
         guard !protectedRanges.isEmpty else { return transform(text) }
-        var result = ""
+        var spans: [String] = []
+        var masked = ""
         var cursor = 0
         for range in protectedRanges where range.location >= cursor {
-            result += transform(ns.substring(with: NSRange(location: cursor, length: range.location - cursor)))
-            result += ns.substring(with: range)
+            masked += ns.substring(with: NSRange(location: cursor, length: range.location - cursor))
+            masked += placeholder(spans.count)
+            spans.append(ns.substring(with: range))
             cursor = range.location + range.length
         }
-        result += transform(ns.substring(from: cursor))
+        masked += ns.substring(from: cursor)
+        var result = transform(masked)
+        for (index, span) in spans.enumerated().reversed() {
+            result = result.replacingOccurrences(of: placeholder(index), with: span)
+        }
         return result
+    }
+
+    private static func placeholder(_ index: Int) -> String {
+        "\u{E000}\(index)\u{E001}"
     }
 
     private static func isInsideProtectedSpan(_ range: NSRange, in text: String) -> Bool {
