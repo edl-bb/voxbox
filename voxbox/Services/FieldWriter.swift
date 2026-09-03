@@ -21,6 +21,9 @@ protocol FieldWriter: AnyObject {
     func type(_ text: String)
     /// Backspace `count` times. One Backspace deletes one grapheme cluster.
     func deleteBackward(count: Int)
+    /// Put `text` on the clipboard and press Cmd+V. Composers treat pasted
+    /// newlines as soft breaks, where a typed Return would send.
+    func paste(_ text: String)
     func moveCaret(_ move: CaretMove)
     /// Give the destination a beat between a caret move and the next burst.
     /// Never spins the run loop: that is what let the next snapshot re-enter
@@ -136,6 +139,24 @@ final class AXFieldWriter: FieldWriter {
             up.flags = []
             down.post(tap: .cghidEventTap)
             up.post(tap: .cghidEventTap)
+        }
+    }
+
+    /// Same clipboard contract as auto-paste: the previous clipboard comes
+    /// back after the destination has read ours, when the user has that on.
+    func paste(_ text: String) {
+        let restore = UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
+        let previous: ClipboardService.ClipboardSnapshot?
+        if restore {
+            previous = ClipboardService.shared.copyForTemporaryPaste(text: text)
+        } else {
+            previous = nil
+            ClipboardService.shared.copy(text: text)
+        }
+        ClipboardService.shared.paste()
+        guard let previous else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            ClipboardService.shared.restore(previous, ifCurrentStringMatches: text)
         }
     }
 

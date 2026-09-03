@@ -431,23 +431,8 @@ final class TargetFieldInserter {
             return .unverified
         }
 
-        // First bring the field up to the complete spoken transcript. The
-        // engine trims its final text, so a burst that ended in a space is
-        // compared without that trailing whitespace.
-        var completedRaw = false
-        switch AppendPlan.plan(typed: Self.withoutTrailingWhitespace(delivered), stable: raw) {
-        case .append(let tail):
-            let typedTail = Self.dropLeadingWhitespaceIfTypedEndedWithIt(tail, typed: delivered)
-            typeTail(typedTail, writer: writer)
-            delivered = raw
-            completedRaw = true
-        case .hold(.unchanged):
-            delivered = raw
-            completedRaw = true
-        case .hold(.stableDiverged):
-            completedRaw = false
-        }
-
+        // The engine trims its final text, so a burst that ended in a space
+        // is compared without that trailing whitespace.
         let typedCore = Self.withoutTrailingWhitespace(delivered)
         if cleaned == typedCore {
             log("finalize keys cleaned==typed result=inField", persist: true)
@@ -461,11 +446,25 @@ final class TargetFieldInserter {
             log("finalize keys typed cleaned tail=\((tail as NSString).length) result=inField", persist: true)
             return .inField
         }
-        let result: LiveDelivery = completedRaw ? .rawInField : .partialInField
+
+        // Cleanup rewrote the words. We know exactly what we typed, so remove
+        // it (one Backspace per grapheme) and paste the cleaned transcript.
+        // Paste, not type: a typed Return sends in chat composers, a pasted
+        // paragraph break is a soft break.
+        let typedGraphemes = delivered.count
+        if let move = caretRestoreMove(hasTyped: true) {
+            writer.moveCaret(move)
+            writer.settle()
+        }
+        writer.deleteBackward(count: typedGraphemes)
+        writer.settle()
+        writer.paste(cleaned)
+        delivered = cleaned
         log(
-            "finalize keys typed=\((delivered as NSString).length) raw=\((raw as NSString).length) "
-                + "cleaned=\((cleaned as NSString).length) caretMoves=\(caretMovedCount) result=\(result)", persist: true)
-        return result
+            "finalize keys replaced typed=\(typedGraphemes) raw=\((raw as NSString).length) "
+                + "cleaned=\((cleaned as NSString).length) caretMoves=\(caretMovedCount) result=inField",
+            persist: true)
+        return .inField
     }
 
     /// Remove what we wrote (cancelled take).

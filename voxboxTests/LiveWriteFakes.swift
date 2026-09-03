@@ -101,6 +101,11 @@ final class FakeFieldWriter: FieldWriter {
         selectionLength = 0
     }
 
+    func paste(_ pasted: String) {
+        ops.append("paste(\((pasted as NSString).length))")
+        replaceSelection(with: pasted)
+    }
+
     func moveCaret(_ move: CaretMove) {
         ops.append("moveCaret(\(move))")
         selectionLength = 0

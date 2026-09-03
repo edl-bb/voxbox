@@ -166,8 +166,8 @@ final class TargetFieldInserterTests: XCTestCase {
 
         XCTAssertEqual(
             inserter.finalize(raw: "Hello there this is a test", cleaned: "Hello there, this is a test."),
-            .rawInField)
-        XCTAssertEqual(field.text, "Intro paragraph.\nHello there this is a test\nClosing line.")
+            .inField)
+        XCTAssertEqual(field.text, "Intro paragraph.\nHello there, this is a test.\nClosing line.")
     }
 
     func testKeystrokesLogCaretMovesWithoutActingOnThem() {
@@ -295,16 +295,18 @@ final class TargetFieldInserterTests: XCTestCase {
         XCTAssertEqual(field.text, "Hello there friend.")
     }
 
-    func testKeystrokeFinalizeKeepsRawWhenCleanedRewrites() {
-        let field = FakeFieldWriter()
+    func testKeystrokeFinalizeReplacesTypedTextWithCleanedByBackspaceAndPaste() {
+        let field = FakeFieldWriter(text: "Pre: ", caret: 5)
         let inserter = TargetFieldInserter()
-        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
-        _ = inserter.update(snapshot("um hello there"))
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 5)
+        _ = inserter.update(snapshot("um hello 👋 there"))
+        XCTAssertEqual(field.text, "Pre: um hello 👋 there")
         XCTAssertEqual(
-            inserter.finalize(raw: "um hello there friend", cleaned: "Hello there, friend."),
-            .rawInField)
-        XCTAssertEqual(field.text, "um hello there friend")
-        XCTAssertFalse(field.ops.contains { $0.hasPrefix("deleteBackward") })
+            inserter.finalize(raw: "um hello 👋 there friend", cleaned: "Hello 👋 there, friend.\n\nSecond paragraph."),
+            .inField)
+        XCTAssertEqual(field.text, "Pre: Hello 👋 there, friend.\n\nSecond paragraph.")
+        XCTAssertTrue(field.ops.contains("deleteBackward(16)"), "one per grapheme: \(field.ops)")
+        XCTAssertTrue(field.ops.contains { $0.hasPrefix("paste(") }, "paragraphs are pasted, never typed")
     }
 
     func testKeystrokeFinalizeToleratesTrailingWhitespaceFromTheLastBurst() {
@@ -319,6 +321,7 @@ final class TargetFieldInserterTests: XCTestCase {
             inserter.finalize(raw: "Hello there. This is it", cleaned: "Hello there. This is it."),
             .inField)
         XCTAssertEqual(field.text, "Hello there. This is it.", "no doubled space at the seam")
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("paste(") }, "a pure extension is typed, not pasted")
 
         let unchanged = FakeFieldWriter()
         let second = TargetFieldInserter()
@@ -328,15 +331,15 @@ final class TargetFieldInserterTests: XCTestCase {
         XCTAssertEqual(unchanged.text, "Hello there. ")
     }
 
-    func testKeystrokeFinalizeReportsPartialWhenRawDiverged() {
+    func testKeystrokeFinalizeReplacesEvenWhenRawDiverged() {
         let field = FakeFieldWriter()
         let inserter = TargetFieldInserter()
         inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
         _ = inserter.update(snapshot("Hello there"))
         XCTAssertEqual(
             inserter.finalize(raw: "Hello their friend", cleaned: "Hello their friend."),
-            .partialInField)
-        XCTAssertEqual(field.text, "Hello there")
+            .inField)
+        XCTAssertEqual(field.text, "Hello their friend.")
     }
 
     func testKeystrokeFinalizeWithNothingTypedHandsOffToPaste() {

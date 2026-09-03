@@ -56,7 +56,7 @@ Copies only (no live write, no Cmd+V). Stream transcription is live delivery int
 _Avoid_: Auto paste (when meaning clipboard-only copy)
 
 **Stable-only typing**:
-Live delivery into a keystroke-only target: only stable tokens are typed, nothing is deleted mid-take, and the revisable text stays in the HUD. At the end of the take the cleaned transcript replaces the typed text only when the field can be verified; otherwise the typed text stays and the cleaned transcript is copied to the clipboard.
+Live delivery into a keystroke-only target: only stable tokens are typed, nothing is deleted mid-take, and the revisable text stays in the HUD. At the end of the take VoxBox removes exactly what it typed and pastes the cleaned transcript. Only when the destination is no longer frontmost does the typed text stay and the cleaned transcript go to the clipboard.
 _Avoid_: Append-only (in user-facing copy); live revise
 
 **Coverage stage**:
