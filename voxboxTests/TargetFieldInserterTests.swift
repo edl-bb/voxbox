@@ -64,6 +64,38 @@ final class TargetFieldInserterTests: XCTestCase {
         XCTAssertEqual(field.text, "existing Hello there")
     }
 
+    func testWebContentNeverMovesSelectionBeforeAWriteVerifies() {
+        // Chromium contenteditable with a draft already in it: value sets are
+        // ignored, selection sets are honoured. The old code selected first
+        // and sent the caret to the start of the box.
+        let field = FakeFieldWriter(text: "Existing draft ", caret: 15)
+        field.axSetIsNoop = true
+        let inserter = TargetFieldInserter()
+        inserter.bind(
+            writer: field, strategy: .accessibilityRewrite, bundleIdentifier: "com.example.web",
+            spanStart: 15, isWebContent: true)
+
+        XCTAssertEqual(inserter.update(snapshot("Hello", "there")), .wrote(.append, chars: 5))
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("setSelection") }, "\(field.ops)")
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("setSelectedText") })
+        XCTAssertEqual(field.text, "Existing draft Hello")
+        XCTAssertEqual(inserter.strategy, .keystrokesOnly)
+    }
+
+    func testWebContentValueWriteParksCaretOnlyAfterVerifying() {
+        let field = FakeFieldWriter(text: "Draft ", caret: 6)
+        let inserter = TargetFieldInserter()
+        inserter.bind(
+            writer: field, strategy: .accessibilityRewrite, bundleIdentifier: "com.apple.Safari",
+            spanStart: 6, isWebContent: true)
+        XCTAssertEqual(inserter.update(snapshot("Hello")), .wrote(.axReplace, chars: 5))
+        XCTAssertEqual(field.text, "Draft Hello")
+        XCTAssertEqual(field.caret, 11)
+        let setValueIndex = field.ops.firstIndex { $0.hasPrefix("setValue") }!
+        let setSelectionIndex = field.ops.firstIndex { $0.hasPrefix("setSelection") }!
+        XCTAssertLessThan(setValueIndex, setSelectionIndex)
+    }
+
     func testAccessibilityRefusedAfterWritingFreezesInsteadOfTyping() {
         let field = FakeFieldWriter()
         let inserter = TargetFieldInserter()

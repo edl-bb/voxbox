@@ -412,6 +412,35 @@ final class PreferenceAndOnboardingTests: XCTestCase {
             .keystrokesOnly)
         XCTAssertFalse(LiveWriteStrategy.isElectronBundle("com.apple.Notes"))
         XCTAssertTrue(LiveWriteStrategy.isElectronBundle("com.todesktop.230313mzl4w4u92"))
+        // An Electron app we have never heard of, with text already in the
+        // composer, must still type rather than move the caret via AX.
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(
+                hasWebMarkers: true, axValue: "Existing draft",
+                bundleIdentifier: "com.example.unknown-electron", isElectronApp: true),
+            .keystrokesOnly)
+        XCTAssertEqual(
+            LiveWriteStrategy.choose(
+                hasWebMarkers: true, axValue: "Existing draft",
+                bundleIdentifier: "com.google.Chrome", isElectronApp: false),
+            .accessibilityRewrite)
+    }
+
+    func testElectronDetectionLooksForTheFrameworkInsideTheBundle() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("voxbox-electron-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let electronApp = root.appendingPathComponent("Fake.app")
+        try FileManager.default.createDirectory(
+            at: electronApp.appendingPathComponent("Contents/Frameworks/Electron Framework.framework"),
+            withIntermediateDirectories: true)
+        let nativeApp = root.appendingPathComponent("Native.app")
+        try FileManager.default.createDirectory(
+            at: nativeApp.appendingPathComponent("Contents/MacOS"),
+            withIntermediateDirectories: true)
+
+        XCTAssertTrue(DictationTarget.isElectronBundle(at: electronApp))
+        XCTAssertFalse(DictationTarget.isElectronBundle(at: nativeApp))
     }
 
     func testElectronBundlesSplitIntoComposersAndEditors() {
@@ -437,6 +466,17 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertNil(CaretRestore.move(forBundle: "com.todesktop.230313mzl4w4u92", hasTyped: true))
         XCTAssertNil(CaretRestore.move(forBundle: "com.apple.Notes", hasTyped: true))
         XCTAssertNil(CaretRestore.move(forBundle: nil, hasTyped: true))
+        XCTAssertEqual(
+            CaretRestore.move(forBundle: "com.anthropic.claudefordesktop", hasTyped: true),
+            .endOfDocument)
+        // Unknown Electron app: treat as a composer unless it is a known editor.
+        XCTAssertEqual(
+            CaretRestore.move(forBundle: "com.example.unknown", isElectronApp: true, hasTyped: true),
+            .endOfDocument)
+        XCTAssertNil(
+            CaretRestore.move(forBundle: "com.microsoft.VSCode", isElectronApp: true, hasTyped: true))
+        XCTAssertNil(
+            CaretRestore.move(forBundle: "com.example.unknown", isElectronApp: true, hasTyped: false))
     }
 
     func testAppendPlanOnlyExtendsWhatWasTyped() {

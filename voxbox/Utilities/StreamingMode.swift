@@ -136,11 +136,15 @@ nonisolated enum LiveWriteStrategy: Equatable {
     case accessibilityRewrite
     case keystrokesOnly
 
+    /// `isElectronApp` comes from the app bundle (an `Electron Framework`
+    /// inside it), so apps missing from the bundle list still type.
     static func choose(
         hasWebMarkers: Bool,
         axValue: String,
-        bundleIdentifier: String? = nil
+        bundleIdentifier: String? = nil,
+        isElectronApp: Bool = false
     ) -> LiveWriteStrategy {
+        if isElectronApp { return .keystrokesOnly }
         if let bundleIdentifier, isElectronBundle(bundleIdentifier) {
             return .keystrokesOnly
         }
@@ -176,6 +180,7 @@ nonisolated enum LiveWriteStrategy: Equatable {
         "com.tinyspeck.slackmacgap",
         "com.superhuman.electron",
         "com.hnc.Discord",
+        "com.anthropic.claudefordesktop",
     ]
 
     static let electronEditors: Set<String> = [
@@ -205,10 +210,19 @@ nonisolated enum CaretMove: Equatable, Sendable {
 /// before typing the next delta — only once we have already typed, and only
 /// in composers where end-of-document is where our text is.
 nonisolated enum CaretRestore: Equatable {
-    static func move(forBundle bundleIdentifier: String?, hasTyped: Bool) -> CaretMove? {
-        guard hasTyped, let bundleIdentifier else { return nil }
-        guard LiveWriteStrategy.isElectronComposer(bundleIdentifier) else { return nil }
-        return .endOfDocument
+    /// Known composers, and any Electron app we do not know to be an
+    /// editor, get end-of-document. Editors and native apps get nothing.
+    static func move(
+        forBundle bundleIdentifier: String?,
+        isElectronApp: Bool = false,
+        hasTyped: Bool
+    ) -> CaretMove? {
+        guard hasTyped else { return nil }
+        if let bundleIdentifier {
+            if LiveWriteStrategy.isElectronEditor(bundleIdentifier) { return nil }
+            if LiveWriteStrategy.isElectronComposer(bundleIdentifier) { return .endOfDocument }
+        }
+        return isElectronApp ? .endOfDocument : nil
     }
 }
 

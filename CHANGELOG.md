@@ -9,6 +9,7 @@ Changes and release notes for VoxBox.
     - Caret restore uses end-of-document instead of end-of-line, which is what caused text to land mid-paragraph once a take wrapped.
     - At the end of a take the cleaned transcript replaces the live text only when VoxBox can verify it landed. Otherwise the typed text stays and the cleaned transcript goes to the clipboard with a message in the pill. VoxBox no longer pastes over text it already typed.
     - If the field or focus changes mid-take, live writing stops instead of writing into the wrong place.
+    - Electron apps are detected from the app bundle, not just a list, so composers like Claude type correctly when text is already in the box. On web content VoxBox never moves the selection until a write has verified, which is what sent the caret to the start of the box.
     - WhisperKit streaming updates are delivered in order on one thread and skip updates with no text change.
 
 ## [1.2.0] - 2026-08-30

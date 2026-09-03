@@ -44,6 +44,21 @@ enum DictationTarget {
         return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
     }
 
+    /// Every Electron app ships `Electron Framework.framework` inside its
+    /// bundle. Catches composers our bundle list has never heard of.
+    static var isElectronApp: Bool {
+        guard let pid = processIdentifier,
+            let url = NSRunningApplication(processIdentifier: pid)?.bundleURL
+        else { return false }
+        return isElectronBundle(at: url)
+    }
+
+    static func isElectronBundle(at bundleURL: URL) -> Bool {
+        let framework = bundleURL
+            .appendingPathComponent("Contents/Frameworks/Electron Framework.framework")
+        return FileManager.default.fileExists(atPath: framework.path)
+    }
+
     /// The destination still owns the keyboard. Typing into anything else
     /// would put the take in the wrong app.
     static var isFrontmost: Bool {
@@ -129,6 +144,11 @@ final class TargetFieldInserter {
     private(set) var writer: FieldWriter?
     private(set) var strategy: LiveWriteStrategy = .accessibilityRewrite
     private(set) var bundleIdentifier: String?
+    private(set) var isElectronApp = false
+    /// Web content: never move the selection until a write has verified,
+    /// because Chromium honours `AXSelectedTextRange` sets (jumping the
+    /// caret) while ignoring `AXSelectedText` and `AXValue` sets.
+    private(set) var isWebContent = false
     private var isTargetFrontmost: () -> Bool = { true }
 
     private var spanStart: Int?
@@ -181,19 +201,25 @@ final class TargetFieldInserter {
         let value = axWriter.readValue() ?? ""
         let caret = axWriter.readSelection() ?? CFRange(location: (value as NSString).length, length: 0)
         let bundle = DictationTarget.bundleIdentifier
+        let electron = DictationTarget.isElectronApp
+        let web = hasWebMarkers(writable)
         let chosen = LiveWriteStrategy.choose(
-            hasWebMarkers: hasWebMarkers(writable),
+            hasWebMarkers: web,
             axValue: value,
-            bundleIdentifier: bundle)
+            bundleIdentifier: bundle,
+            isElectronApp: electron)
         bind(
             writer: axWriter,
             strategy: chosen,
             bundleIdentifier: bundle,
             spanStart: caret.location,
+            isElectronApp: electron,
+            isWebContent: web,
             isTargetFrontmost: { DictationTarget.isFrontmost })
         log(
             "bind strategy=\(chosen) spanStart=\(caret.location) valueLen=\((value as NSString).length) "
-                + "bundle=\(bundle ?? "?") caretRestore=\(String(describing: CaretRestore.move(forBundle: bundle, hasTyped: true)))"
+                + "bundle=\(bundle ?? "?") electron=\(electron) web=\(web) "
+                + "caretRestore=\(String(describing: caretRestoreMove(hasTyped: true)))"
         )
         return true
     }
@@ -204,6 +230,8 @@ final class TargetFieldInserter {
         strategy: LiveWriteStrategy,
         bundleIdentifier: String?,
         spanStart: Int,
+        isElectronApp: Bool = false,
+        isWebContent: Bool = false,
         isTargetFrontmost: @escaping () -> Bool = { true }
     ) {
         reset()
@@ -211,13 +239,21 @@ final class TargetFieldInserter {
         self.strategy = strategy
         self.bundleIdentifier = bundleIdentifier
         self.spanStart = spanStart
+        self.isElectronApp = isElectronApp
+        self.isWebContent = isWebContent
         self.isTargetFrontmost = isTargetFrontmost
+    }
+
+    private func caretRestoreMove(hasTyped: Bool) -> CaretMove? {
+        CaretRestore.move(forBundle: bundleIdentifier, isElectronApp: isElectronApp, hasTyped: hasTyped)
     }
 
     func reset() {
         writer = nil
         strategy = .accessibilityRewrite
         bundleIdentifier = nil
+        isElectronApp = false
+        isWebContent = false
         isTargetFrontmost = { true }
         spanStart = nil
         spanLength = 0
@@ -294,7 +330,7 @@ final class TargetFieldInserter {
     }
 
     private func typeTail(_ tail: String, writer: FieldWriter) {
-        if let move = CaretRestore.move(forBundle: bundleIdentifier, hasTyped: hasTyped) {
+        if let move = caretRestoreMove(hasTyped: hasTyped) {
             writer.moveCaret(move)
             writer.settle()
         }
@@ -418,7 +454,7 @@ final class TargetFieldInserter {
         case .keystrokesOnly:
             guard hasTyped, !delivered.isEmpty, isTargetFrontmost() else { return }
             if case .delete(let count) = KeystrokeDelta.revertPlan(previous: delivered) {
-                if let move = CaretRestore.move(forBundle: bundleIdentifier, hasTyped: true) {
+                if let move = caretRestoreMove(hasTyped: true) {
                     writer.moveCaret(move)
                     writer.settle()
                 }
@@ -431,6 +467,12 @@ final class TargetFieldInserter {
     // MARK: - AX replace
 
     private func writeViaAccessibility(_ text: String, writer: FieldWriter, start: Int) -> Bool {
+        // Web content: a value write can be verified before the selection is
+        // touched. The selected-text path has to move the selection first,
+        // and Chromium applies that even when it ignores the text set.
+        if isWebContent {
+            return replaceViaValue(text, writer: writer, start: start)
+        }
         // Messages reports AXSelectedText unsettable; a set can still return
         // success without changing the field. Skip that path when the runtime
         // contract says it is not writable.
@@ -458,10 +500,12 @@ final class TargetFieldInserter {
         let spliced = FieldSpan.splice(
             existing: current, start: start, length: spanLength, replacement: text)
         guard writer.setValue(spliced.value) else { return false }
-        _ = writer.setSelection(CFRange(location: start + spliced.newLength, length: 0))
+        // Verify before parking the caret: on a composer that ignored the
+        // value set, a selection set would still move the user's caret.
         guard regionReads(text, writer: writer, start: start, length: spliced.newLength) else {
             return false
         }
+        _ = writer.setSelection(CFRange(location: start + spliced.newLength, length: 0))
         spanLength = spliced.newLength
         return true
     }
