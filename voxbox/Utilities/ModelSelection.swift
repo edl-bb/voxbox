@@ -61,6 +61,17 @@ enum PillStatusCopy {
     static let tidyingUp = "Tidying up..."
     static let noDestination = "No destination. Copied to clipboard..."
     static let noModels = "No models detected. Click to download a model"
+    static let typedAsSpoken = "Typed as spoken. Cleaned copy on the clipboard."
+    static let liveIncomplete = "Live text incomplete. Full transcript copied."
+    static let fieldChanged = "Field changed. Transcript copied to clipboard."
+
+    static func liveFallback(_ delivery: LiveDelivery) -> String {
+        switch delivery {
+        case .rawInField: return typedAsSpoken
+        case .partialInField: return liveIncomplete
+        case .unverified, .notWritten, .inField: return fieldChanged
+        }
+    }
 }
 
 /// First-load copy while CoreML compiles a newly chosen model into memory.

@@ -2,7 +2,7 @@ import Cocoa
 import Observation
 import SwiftUI
 
-enum TranscriptDelivery {
+enum TranscriptDelivery: Equatable {
     case pasted
     /// Auto-paste or streaming wanted a target and had none.
     case copiedToClipboard
@@ -10,6 +10,9 @@ enum TranscriptDelivery {
     case copiedOnPurpose
     /// Live rewrite already put the words in the focused field.
     case alreadyInField
+    /// Live typing left the field in a state we could not finish or verify;
+    /// the transcript was copied instead of pasted.
+    case liveFallbackCopied(LiveDelivery)
 }
 
 class MiniRecorderWindowController: NSObject {

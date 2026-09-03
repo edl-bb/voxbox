@@ -59,25 +59,38 @@ enum StreamingModeCopy {
 }
 
 /// Stable prefix plus revisable hypothesis from a live engine.
-struct LiveTranscriptSnapshot: Equatable, Sendable {
+nonisolated struct LiveTranscriptSnapshot: Equatable, Sendable {
     var stable: String
     var revisable: String
 
-    var fullText: String {
-        if stable.isEmpty { return revisable }
-        if revisable.isEmpty { return stable }
-        if stable.last!.isWhitespace || revisable.first!.isWhitespace {
-            return stable + revisable
+    var fullText: String { Self.join(stable, revisable) }
+
+    /// Seam rule shared by `fullText` and the engines' stable accumulation,
+    /// so `stable` is always a prefix of `fullText`. Inserts one space unless
+    /// either side already has whitespace at the seam.
+    static func join(_ head: String, _ tail: String) -> String {
+        if head.isEmpty { return tail }
+        if tail.isEmpty { return head }
+        if head.last!.isWhitespace || tail.first!.isWhitespace {
+            return head + tail
         }
-        return stable + " " + revisable
+        return head + " " + tail
     }
 
     static let empty = LiveTranscriptSnapshot(stable: "", revisable: "")
 }
 
+/// Snapshot stamped with the take it belongs to and its arrival order, so a
+/// late hop from a finished take, or an older snapshot, can be dropped.
+nonisolated struct SequencedSnapshot: Equatable, Sendable {
+    let take: Int
+    let seq: Int
+    let snapshot: LiveTranscriptSnapshot
+}
+
 /// How to read `AXValue` for a text splice. An empty Messages composer
 /// reports `kAXErrorNoValue` even though `AXValue` is settable.
-enum AXStringValue {
+nonisolated enum AXStringValue {
     static func read(error: AXError, value: CFTypeRef?) -> String? {
         switch error {
         case .success:
@@ -92,7 +105,7 @@ enum AXStringValue {
 
 /// Pure splice used by the Accessibility field writer — and by tests.
 /// Indexes are UTF-16, matching `AXSelectedTextRange`.
-enum FieldSpan {
+nonisolated enum FieldSpan {
     static func splice(
         existing: String,
         start: Int,
@@ -119,7 +132,7 @@ enum FieldSpan {
 /// queued `AXSelectedTextRange` writes then jump the caret to the start.
 /// Skip AX entirely and type. AppKit (including empty Messages) and browser
 /// fields with a real value still try the rewrite.
-enum LiveWriteStrategy: Equatable {
+nonisolated enum LiveWriteStrategy: Equatable {
     case accessibilityRewrite
     case keystrokesOnly
 
@@ -140,89 +153,105 @@ enum LiveWriteStrategy: Equatable {
     }
 
     static func isElectronBundle(_ bundleIdentifier: String) -> Bool {
-        if electronBundleIdentifiers.contains(bundleIdentifier) { return true }
-        return bundleIdentifier.hasPrefix("com.todesktop.")
-            || bundleIdentifier.hasPrefix("notion.")
+        isElectronComposer(bundleIdentifier) || isElectronEditor(bundleIdentifier)
     }
 
-    static let electronBundleIdentifiers: Set<String> = [
+    /// Chat / note composers that reset the caret to the start of the block
+    /// after a keystroke burst. Cmd+↓ (end of document) puts it back.
+    static func isElectronComposer(_ bundleIdentifier: String) -> Bool {
+        if electronComposers.contains(bundleIdentifier) { return true }
+        return bundleIdentifier.hasPrefix("notion.")
+    }
+
+    /// Code / markdown editors. The caret stays where we left it, and
+    /// end-of-document would be the wrong place, so no caret restore.
+    static func isElectronEditor(_ bundleIdentifier: String) -> Bool {
+        if electronEditors.contains(bundleIdentifier) { return true }
+        return bundleIdentifier.hasPrefix("com.todesktop.")
+    }
+
+    static let electronComposers: Set<String> = [
         "notion.id",
         "com.notion.Notion",
         "com.tinyspeck.slackmacgap",
         "com.superhuman.electron",
+        "com.hnc.Discord",
+    ]
+
+    static let electronEditors: Set<String> = [
         "com.microsoft.VSCode",
         "com.microsoft.VSCodeInsiders",
-        "com.hnc.Discord",
         "md.obsidian",
     ]
+
+    static var electronBundleIdentifiers: Set<String> {
+        electronComposers.union(electronEditors)
+    }
+}
+
+/// How to put the caret back before typing the next delta.
+nonisolated enum CaretMove: Equatable, Sendable {
+    /// Cmd+→. End of the *visual line*: wrong once the take wraps, kept only
+    /// so the test fake can reproduce the old mid-paragraph jump.
+    case endOfLine
+    /// Cmd+↓. End of the block / document. What Slack and Notion need after
+    /// they reset the caret following a keystroke burst.
+    case endOfDocument
 }
 
 /// After the first keystroke burst, Notion / Slack often reset the caret to
 /// the start of the block. Later suffixes then insert in front of the first
-/// words (`This is` ends up at the end). Move to the end of the line before
-/// typing the next delta — only once we have already typed.
-enum CaretRestore: Equatable {
-    static func shouldMoveToEndOfLine(alreadyTyped: Bool) -> Bool {
-        alreadyTyped
-    }
-
-    /// Right-arrows from `caret` to `expected`. Zero when the caret is already
-    /// at or past the end of what we typed.
-    static func rightArrows(caret: Int, expected: Int) -> Int {
-        max(0, expected - caret)
+/// words (`This is` ends up at the end). Move to the end of the document
+/// before typing the next delta — only once we have already typed, and only
+/// in composers where end-of-document is where our text is.
+nonisolated enum CaretRestore: Equatable {
+    static func move(forBundle bundleIdentifier: String?, hasTyped: Bool) -> CaretMove? {
+        guard hasTyped, let bundleIdentifier else { return nil }
+        guard LiveWriteStrategy.isElectronComposer(bundleIdentifier) else { return nil }
+        return .endOfDocument
     }
 }
 
-/// HID plan for composers where AX set is a no-op.
-/// Apple Speech and Whisper both replace a volatile phrase, then continue.
-/// If the new snapshot is just a prefix of what we typed, hold. If it
-/// diverges after a shared prefix, revise only that tail. A total rewrite
-/// is held so we do not delete the take.
-enum KeystrokeDelta: Equatable {
+/// Append-only plan for composers where AX set is a no-op. Only committed
+/// (stable) words are typed; the revisable tail stays in the HUD. Nothing
+/// is ever deleted mid-take, so a drifted caret can never eat the take.
+nonisolated enum AppendPlan: Equatable {
+    enum HoldReason: Equatable {
+        case unchanged
+        /// The stable text no longer starts with what we typed (engine
+        /// revised a committed word). Wait for a snapshot we can extend.
+        case stableDiverged
+    }
+
+    case append(String)
+    case hold(HoldReason)
+
+    /// Exact, case-sensitive prefix check on UTF-16 units.
+    static func plan(typed: String, stable: String) -> AppendPlan {
+        if stable == typed { return .hold(.unchanged) }
+        guard stable.hasPrefix(typed) else { return .hold(.stableDiverged) }
+        let typedNS = typed as NSString
+        let stableNS = stable as NSString
+        guard stableNS.length > typedNS.length else { return .hold(.unchanged) }
+        return .append(stableNS.substring(from: typedNS.length))
+    }
+}
+
+/// HID plan used by cancel-revert. Counts are grapheme clusters, because
+/// one Backspace deletes one grapheme, not one UTF-16 unit.
+nonisolated enum KeystrokeDelta: Equatable {
     case none
     case type(String)
     case delete(Int)
-    case revise(delete: Int, type: String)
-
-    static func livePlan(previous: String, next: String) -> KeystrokeDelta {
-        if previous == next { return .none }
-        let previousNS = previous as NSString
-        let nextNS = next as NSString
-        let shared = commonPrefixLength(previousNS, nextNS)
-        if shared == previousNS.length {
-            return nextNS.length > previousNS.length
-                ? .type(nextNS.substring(from: shared))
-                : .none
-        }
-        if shared == nextNS.length || shared == 0 { return .none }
-        // "Hello there" → "Hi" shares "H" but is a new hypothesis, not a
-        // tail edit. Hold so we do not delete the take at a drifted caret.
-        if nextNS.length * 2 < previousNS.length { return .none }
-        return .revise(
-            delete: previousNS.length - shared,
-            type: nextNS.substring(from: shared))
-    }
 
     static func revertPlan(previous: String) -> KeystrokeDelta {
-        let count = (previous as NSString).length
+        let count = previous.count
         return count == 0 ? .none : .delete(count)
-    }
-
-    static func commonPrefixLength(_ previous: NSString, _ next: NSString) -> Int {
-        let limit = min(previous.length, next.length)
-        var index = 0
-        while index < limit {
-            let left = previous.substring(with: NSRange(location: index, length: 1))
-            let right = next.substring(with: NSRange(location: index, length: 1))
-            if left.caseInsensitiveCompare(right) != .orderedSame { break }
-            index += 1
-        }
-        return index
     }
 }
 
 /// `CGEventKeyboardSetUnicodeString` silently truncates; post in 20-unit chunks.
-enum UnicodeTyping {
+nonisolated enum UnicodeTyping {
     static let maxEventLength = 20
 
     static func chunks(_ text: String) -> [String] {

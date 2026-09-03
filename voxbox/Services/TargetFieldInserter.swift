@@ -1,6 +1,5 @@
 import ApplicationServices
 import AppKit
-import CoreGraphics
 import Foundation
 
 /// The other app we should write into. System-wide focus often points at
@@ -39,121 +38,455 @@ enum DictationTarget {
         enableManualAccessibility(for: pid)
         app.activate()
     }
+
+    static var bundleIdentifier: String? {
+        guard let pid = processIdentifier else { return nil }
+        return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+    }
+
+    /// The destination still owns the keyboard. Typing into anything else
+    /// would put the take in the wrong app.
+    static var isFrontmost: Bool {
+        guard let pid = processIdentifier else { return false }
+        return NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+    }
 }
 
-/// Writes live dictation into another app’s focused AppKit field by replacing
-/// only the span we inserted. Falls back to “not writable” so the HUD + paste
-/// path can take over.
-final class TargetFieldInserter: @unchecked Sendable {
-    private var element: AXUIElement?
+/// What one snapshot write did to the field.
+nonisolated enum LiveWriteOutcome: Equatable {
+    enum Kind: Equatable {
+        case axReplace
+        case append
+    }
+
+    case wrote(Kind, chars: Int)
+    case held(AppendPlan.HoldReason)
+    /// Field or focus changed under us; no further writes this take.
+    case frozen(LiveFreezeReason)
+    case notBound
+}
+
+nonisolated enum LiveFreezeReason: Equatable {
+    /// The span no longer reads back as what we wrote.
+    case drift
+    /// AX set stopped landing after we had already written.
+    case axRefused
+    /// Destination app lost the keyboard.
+    case notFrontmost
+}
+
+/// Where the transcript ended up at the end of a take.
+nonisolated enum LiveDelivery: Equatable {
+    /// Nothing of ours is in the field; the normal paste path delivers.
+    case notWritten
+    /// The field verifiably holds the cleaned transcript.
+    case inField
+    /// Keystroke target: the field holds the spoken words; the cleaned
+    /// transcript differs and is on the clipboard.
+    case rawInField
+    /// Keystroke target: the field holds part of the take (stable words up
+    /// to a revision we could not extend); full transcript on the clipboard.
+    case partialInField
+    /// Something of ours may be in the field but we cannot verify or fix it;
+    /// transcript on the clipboard, no paste.
+    case unverified
+}
+
+/// How live words reach the user during the take.
+nonisolated enum LiveDeliveryMode: Equatable {
+    case none
+    /// AX rewrite: stable and revisable words both land in the field.
+    case fullText
+    /// Keystrokes: only stable words land; the revisable tail is HUD-only.
+    case stableOnly
+}
+
+nonisolated struct LiveWriteInput: Equatable {
+    var fullText: String
+    var stable: String
+
+    init(_ snapshot: LiveTranscriptSnapshot) {
+        fullText = snapshot.fullText
+        stable = snapshot.stable
+    }
+
+    init(fullText: String, stable: String) {
+        self.fullText = fullText
+        self.stable = stable
+    }
+}
+
+/// Writes live dictation into another app’s focused field. Pure state
+/// machine over a `FieldWriter`; production binds an `AXFieldWriter` in
+/// `begin()`, tests call `bind(...)` with a fake.
+///
+/// Two strategies, fixed at bind:
+/// - `.accessibilityRewrite`: replace our span with the full snapshot each
+///   time, verified by read-back. Any drift freezes the take.
+/// - `.keystrokesOnly`: append only the newly committed (stable) words.
+///   Nothing is ever deleted mid-take.
+final class TargetFieldInserter {
+    private(set) var writer: FieldWriter?
+    private(set) var strategy: LiveWriteStrategy = .accessibilityRewrite
+    private(set) var bundleIdentifier: String?
+    private var isTargetFrontmost: () -> Bool = { true }
+
     private var spanStart: Int?
     private var spanLength = 0
-    private var delivered = ""
-    private var usedKeystrokes = false
-    private var axRefused = false
-    private var keystrokesOnly = false
+    /// The text we believe is in the field.
+    private(set) var delivered = ""
+    private(set) var hasTyped = false
+    private(set) var frozen: LiveFreezeReason?
 
-    var isActive: Bool { element != nil && spanStart != nil }
+    var isActive: Bool { writer != nil && spanStart != nil }
+
+    var deliveryMode: LiveDeliveryMode {
+        guard isActive, frozen == nil else { return .none }
+        return strategy == .keystrokesOnly ? .stableOnly : .fullText
+    }
+
+    // MARK: - Bind
 
     /// Bind to the focused field in the remembered destination app.
     @discardableResult
-    func begin() -> Bool {
+    func begin() async -> Bool {
         reset()
         guard AXIsProcessTrusted() else {
-            AppLogger.info("Live field bind skipped: Accessibility is off", category: AppLogger.transcription)
+            log("bind skipped: Accessibility is off")
             return false
         }
         if DictationTarget.processIdentifier == nil {
             DictationTarget.rememberFrontmostIfNeeded()
         }
         DictationTarget.revealForFieldBind()
-        guard let focused = resolveFocusedElement() ?? resolveFocusedElementAfterChromeWakes() else {
-            AppLogger.info("Live field bind skipped: no focused element", category: AppLogger.transcription)
+        var focused = resolveFocusedElement()
+        if focused == nil {
+            focused = await resolveFocusedElementAfterChromeWakes()
+        }
+        guard let focused else {
+            log("bind skipped: no focused element")
             return false
         }
         guard let writable = resolveWritableElement(from: focused) else {
             let role = stringAttribute(focused, kAXRoleAttribute as CFString) ?? "unknown"
-            AppLogger.info(
-                "Live field bind skipped: focused role \(role) is not writable",
-                category: AppLogger.transcription)
+            log("bind skipped: focused role \(role) is not writable")
             return false
         }
         if isSecure(writable) {
-            AppLogger.info("Live field bind skipped: secure field", category: AppLogger.transcription)
+            log("bind skipped: secure field")
             return false
         }
 
-        let value = stringValue(of: writable) ?? ""
-        let caret = selectedRange(of: writable)
-            ?? CFRange(location: (value as NSString).length, length: 0)
-        element = writable
-        spanStart = caret.location
-        spanLength = 0
-        if LiveWriteStrategy.choose(
+        let axWriter = AXFieldWriter(element: writable)
+        let value = axWriter.readValue() ?? ""
+        let caret = axWriter.readSelection() ?? CFRange(location: (value as NSString).length, length: 0)
+        let bundle = DictationTarget.bundleIdentifier
+        let chosen = LiveWriteStrategy.choose(
             hasWebMarkers: hasWebMarkers(writable),
             axValue: value,
-            bundleIdentifier: destinationBundleIdentifier()
-        ) == .keystrokesOnly {
-            keystrokesOnly = true
-            axRefused = true
-            AppLogger.info(
-                "Live field bind will type; AX rewrite is a no-op on this composer",
-                category: AppLogger.transcription)
-        }
+            bundleIdentifier: bundle)
+        bind(
+            writer: axWriter,
+            strategy: chosen,
+            bundleIdentifier: bundle,
+            spanStart: caret.location,
+            isTargetFrontmost: { DictationTarget.isFrontmost })
+        log(
+            "bind strategy=\(chosen) spanStart=\(caret.location) valueLen=\((value as NSString).length) "
+                + "bundle=\(bundle ?? "?") caretRestore=\(String(describing: CaretRestore.move(forBundle: bundle, hasTyped: true)))"
+        )
         return true
     }
 
-    /// Replace our span with `text`. Returns false if the field refused.
-    @discardableResult
-    func update(_ text: String) -> Bool {
-        guard element != nil, spanStart != nil else { return false }
-        if text == delivered, !text.isEmpty { return true }
-        if !usedKeystrokes, !axRefused, writeViaAccessibility(text) {
-            delivered = text
-            return true
-        }
-        if !usedKeystrokes, !axRefused {
-            axRefused = true
-            // Do not re-select. Queued AXSelectedTextRange writes jump the
-            // caret to the start; the next suffix then inserts in front of
-            // the first words.
-            settleEditor()
-        }
-        return writeViaKeystrokes(text)
-    }
-
-    /// True only when the bound field’s span reads back as `text`.
-    func containsOurSpan(_ text: String) -> Bool {
-        guard let element, let start = spanStart else { return false }
-        guard let current = stringValue(of: element) else { return false }
-        return FieldSpan.region(current, start: start, length: spanLength) == text
-    }
-
-    func revert() {
-        if usedKeystrokes {
-            perform(KeystrokeDelta.revertPlan(previous: delivered))
-        } else if isActive {
-            _ = writeViaAccessibility("")
-        }
+    /// Bind to an already-resolved writer. Used by `begin()` and by tests.
+    func bind(
+        writer: FieldWriter,
+        strategy: LiveWriteStrategy,
+        bundleIdentifier: String?,
+        spanStart: Int,
+        isTargetFrontmost: @escaping () -> Bool = { true }
+    ) {
         reset()
+        self.writer = writer
+        self.strategy = strategy
+        self.bundleIdentifier = bundleIdentifier
+        self.spanStart = spanStart
+        self.isTargetFrontmost = isTargetFrontmost
     }
 
     func reset() {
-        element = nil
+        writer = nil
+        strategy = .accessibilityRewrite
+        bundleIdentifier = nil
+        isTargetFrontmost = { true }
         spanStart = nil
         spanLength = 0
         delivered = ""
-        usedKeystrokes = false
-        axRefused = false
-        keystrokesOnly = false
+        hasTyped = false
+        frozen = nil
+    }
+
+    // MARK: - Streaming writes
+
+    @discardableResult
+    func update(_ input: LiveWriteInput) -> LiveWriteOutcome {
+        guard let writer, let start = spanStart else { return .notBound }
+        if let frozen { return .frozen(frozen) }
+
+        switch strategy {
+        case .accessibilityRewrite:
+            return updateViaAccessibility(input, writer: writer, start: start)
+        case .keystrokesOnly:
+            return appendStable(input.stable, writer: writer)
+        }
+    }
+
+    private func updateViaAccessibility(
+        _ input: LiveWriteInput, writer: FieldWriter, start: Int
+    ) -> LiveWriteOutcome {
+        let text = input.fullText
+        if text == delivered { return .held(.unchanged) }
+        guard text.isEmpty == false else { return .held(.unchanged) }
+
+        guard let before = writer.readValue() else {
+            return freeze(.drift, detail: "value unreadable")
+        }
+        guard FieldSpan.region(before, start: start, length: spanLength) == delivered else {
+            return freeze(
+                .drift,
+                detail: "expected=\((delivered as NSString).length) found=\(FieldSpan.region(before, start: start, length: spanLength).map { ($0 as NSString).length } ?? -1)"
+            )
+        }
+
+        if writeViaAccessibility(text, writer: writer, start: start) {
+            delivered = text
+            log("write ax span=\(start)+\(spanLength) ok")
+            return .wrote(.axReplace, chars: (text as NSString).length)
+        }
+
+        // Nothing of ours is in the field yet, and the field is unchanged:
+        // this composer ignores AX sets (Chromium). Type instead, once.
+        if delivered.isEmpty, !hasTyped, writer.readValue() == before {
+            strategy = .keystrokesOnly
+            log("write ax refused before first write; switching to keystrokes")
+            return appendStable(input.stable, writer: writer)
+        }
+        return freeze(.axRefused, detail: "delivered=\((delivered as NSString).length)")
+    }
+
+    private func appendStable(_ stable: String, writer: FieldWriter) -> LiveWriteOutcome {
+        switch AppendPlan.plan(typed: delivered, stable: stable) {
+        case .hold(let reason):
+            if reason == .stableDiverged {
+                log("hold reason=stableDiverged typed=\((delivered as NSString).length) stable=\((stable as NSString).length)")
+            }
+            return .held(reason)
+        case .append(let tail):
+            guard isTargetFrontmost() else {
+                log("hold reason=notFrontmost")
+                return .held(.stableDiverged)
+            }
+            typeTail(tail, writer: writer)
+            delivered = stable
+            log("append typed=\((delivered as NSString).length) tail=\((tail as NSString).length)")
+            return .wrote(.append, chars: (tail as NSString).length)
+        }
+    }
+
+    private func typeTail(_ tail: String, writer: FieldWriter) {
+        if let move = CaretRestore.move(forBundle: bundleIdentifier, hasTyped: hasTyped) {
+            writer.moveCaret(move)
+            writer.settle()
+        }
+        writer.type(tail)
+        hasTyped = true
+        spanLength = (delivered as NSString).length + (tail as NSString).length
+        writer.settle()
+    }
+
+    // MARK: - Finish
+
+    /// Put the final transcript in place. `raw` is what the engine heard;
+    /// `cleaned` is what should end up in the field.
+    func finalize(raw: String, cleaned: String) -> LiveDelivery {
+        guard let writer, let start = spanStart else { return .notWritten }
+        defer { reset() }
+
+        if let frozen {
+            let result: LiveDelivery = delivered.isEmpty && !hasTyped ? .notWritten : .unverified
+            log("finalize frozen=\(frozen) result=\(result)")
+            return result
+        }
+
+        switch strategy {
+        case .accessibilityRewrite:
+            return finalizeViaAccessibility(cleaned, writer: writer, start: start)
+        case .keystrokesOnly:
+            return finalizeViaKeystrokes(raw: raw, cleaned: cleaned, writer: writer)
+        }
+    }
+
+    private func finalizeViaAccessibility(
+        _ cleaned: String, writer: FieldWriter, start: Int
+    ) -> LiveDelivery {
+        if !delivered.isEmpty {
+            guard let current = writer.readValue(),
+                FieldSpan.region(current, start: start, length: spanLength) == delivered
+            else {
+                log("finalize ax drift result=unverified")
+                return .unverified
+            }
+        }
+        if cleaned == delivered {
+            log("finalize ax unchanged result=inField")
+            return .inField
+        }
+        if writeViaAccessibility(cleaned, writer: writer, start: start) {
+            log("finalize ax replaced \((delivered as NSString).length)->\((cleaned as NSString).length) result=inField")
+            return .inField
+        }
+        if delivered.isEmpty {
+            log("finalize ax first write refused result=notWritten")
+            return .notWritten
+        }
+        if writeViaAccessibility("", writer: writer, start: start) {
+            log("finalize ax replace failed; span cleared result=notWritten")
+            return .notWritten
+        }
+        log("finalize ax replace and clear failed result=unverified")
+        return .unverified
+    }
+
+    private func finalizeViaKeystrokes(
+        raw: String, cleaned: String, writer: FieldWriter
+    ) -> LiveDelivery {
+        guard hasTyped, !delivered.isEmpty else {
+            log("finalize keys nothing typed result=notWritten")
+            return .notWritten
+        }
+        guard isTargetFrontmost() else {
+            log("finalize keys target not frontmost result=unverified")
+            return .unverified
+        }
+
+        // First bring the field up to the complete spoken transcript.
+        var completedRaw = false
+        switch AppendPlan.plan(typed: delivered, stable: raw) {
+        case .append(let tail):
+            typeTail(tail, writer: writer)
+            delivered = raw
+            completedRaw = true
+        case .hold(.unchanged):
+            completedRaw = true
+        case .hold(.stableDiverged):
+            completedRaw = false
+        }
+
+        if cleaned == delivered {
+            log("finalize keys cleaned==typed result=inField")
+            return .inField
+        }
+        if cleaned.hasPrefix(delivered) {
+            let tail = (cleaned as NSString).substring(from: (delivered as NSString).length)
+            typeTail(tail, writer: writer)
+            delivered = cleaned
+            log("finalize keys typed cleaned tail=\((tail as NSString).length) result=inField")
+            return .inField
+        }
+        let result: LiveDelivery = completedRaw ? .rawInField : .partialInField
+        log(
+            "finalize keys typed=\((delivered as NSString).length) raw=\((raw as NSString).length) "
+                + "cleaned=\((cleaned as NSString).length) result=\(result)")
+        return result
+    }
+
+    /// Remove what we wrote (cancelled take).
+    func revert() {
+        defer { reset() }
+        guard let writer, let start = spanStart else { return }
+        switch strategy {
+        case .accessibilityRewrite:
+            guard !delivered.isEmpty, frozen == nil else { return }
+            if let current = writer.readValue(),
+                FieldSpan.region(current, start: start, length: spanLength) == delivered
+            {
+                let ok = writeViaAccessibility("", writer: writer, start: start)
+                log("revert ax ok=\(ok)")
+            } else {
+                log("revert ax skipped: drift")
+            }
+        case .keystrokesOnly:
+            guard hasTyped, !delivered.isEmpty, isTargetFrontmost() else { return }
+            if case .delete(let count) = KeystrokeDelta.revertPlan(previous: delivered) {
+                if let move = CaretRestore.move(forBundle: bundleIdentifier, hasTyped: true) {
+                    writer.moveCaret(move)
+                    writer.settle()
+                }
+                writer.deleteBackward(count: count)
+                log("revert keys backspaces=\(count)")
+            }
+        }
+    }
+
+    // MARK: - AX replace
+
+    private func writeViaAccessibility(_ text: String, writer: FieldWriter, start: Int) -> Bool {
+        // Messages reports AXSelectedText unsettable; a set can still return
+        // success without changing the field. Skip that path when the runtime
+        // contract says it is not writable.
+        if writer.isSelectedTextSettable(),
+            replaceViaSelectedText(text, writer: writer, start: start)
+        {
+            return true
+        }
+        return replaceViaValue(text, writer: writer, start: start)
+    }
+
+    private func replaceViaSelectedText(_ text: String, writer: FieldWriter, start: Int) -> Bool {
+        let span = CFRange(location: start, length: spanLength)
+        guard writer.setSelection(span) else { return false }
+        guard writer.setSelectedText(text) else { return false }
+        let newLength = (text as NSString).length
+        _ = writer.setSelection(CFRange(location: start + newLength, length: 0))
+        guard regionReads(text, writer: writer, start: start, length: newLength) else { return false }
+        spanLength = newLength
+        return true
+    }
+
+    private func replaceViaValue(_ text: String, writer: FieldWriter, start: Int) -> Bool {
+        guard let current = writer.readValue() else { return false }
+        let spliced = FieldSpan.splice(
+            existing: current, start: start, length: spanLength, replacement: text)
+        guard writer.setValue(spliced.value) else { return false }
+        _ = writer.setSelection(CFRange(location: start + spliced.newLength, length: 0))
+        guard regionReads(text, writer: writer, start: start, length: spliced.newLength) else {
+            return false
+        }
+        spanLength = spliced.newLength
+        return true
+    }
+
+    private func regionReads(_ text: String, writer: FieldWriter, start: Int, length: Int) -> Bool {
+        guard let current = writer.readValue() else { return false }
+        return FieldSpan.region(current, start: start, length: length) == text
+    }
+
+    private func freeze(_ reason: LiveFreezeReason, detail: String) -> LiveWriteOutcome {
+        frozen = reason
+        log("write frozen reason=\(reason) \(detail)")
+        return .frozen(reason)
+    }
+
+    private func log(_ message: String) {
+        AppLogger.debug("live field \(message)", category: AppLogger.transcription)
     }
 
     // MARK: - Resolve
 
     /// Chromium builds the AX tree a beat after `AXManualAccessibility` + activate.
-    private func resolveFocusedElementAfterChromeWakes() -> AXUIElement? {
+    private func resolveFocusedElementAfterChromeWakes() async -> AXUIElement? {
         for _ in 0..<6 {
-            _ = CFRunLoopRunInMode(.defaultMode, 0.05, false)
+            try? await Task.sleep(for: .milliseconds(50))
             if let focused = resolveFocusedElement() { return focused }
         }
         return nil
@@ -198,131 +531,8 @@ final class TargetFieldInserter: @unchecked Sendable {
         {
             return true
         }
-        return stringValue(of: element) != nil && selectedRange(of: element) != nil
-    }
-
-    // MARK: - Write strategies
-
-    private func writeViaAccessibility(_ text: String) -> Bool {
-        guard let element, let start = spanStart else { return false }
-        // Messages reports AXSelectedText unsettable; a set can still return
-        // success without changing the field. Skip that path when the runtime
-        // contract says it is not writable.
-        if isAttributeSettable(element, kAXSelectedTextAttribute as CFString),
-            replaceViaSelectedText(text, on: element, start: start),
-            containsOurSpan(text)
-        {
-            return true
-        }
-        if replaceViaValue(text, on: element, start: start), containsOurSpan(text) {
-            return true
-        }
-        return false
-    }
-
-    /// Chromium reports AX sets as success and leaves the composer unchanged.
-    /// Unicode key events insert. Do not activate or re-select — that jumps
-    /// the caret to the start and the next suffix replaces the whole take.
-    /// Notion / Slack also reset the caret after the first burst; move to
-    /// the end of the line before typing the next delta.
-    private func writeViaKeystrokes(_ text: String) -> Bool {
-        guard !text.isEmpty else { return false }
-        restoreKeystrokeCaretIfNeeded()
-        switch KeystrokeDelta.livePlan(previous: delivered, next: text) {
-        case .none:
-            return !delivered.isEmpty
-        case .type(let suffix):
-            return applyKeystrokes(type: suffix, delivered: text)
-        case .delete:
-            return !delivered.isEmpty
-        case .revise(let count, let suffix):
-            typeDelete(times: count)
-            return applyKeystrokes(type: suffix, delivered: text)
-        }
-    }
-
-    private func restoreKeystrokeCaretIfNeeded() {
-        guard keystrokesOnly, CaretRestore.shouldMoveToEndOfLine(alreadyTyped: usedKeystrokes)
-        else { return }
-        moveToEndOfLine()
-        settleEditor()
-    }
-
-    private func applyKeystrokes(type suffix: String, delivered next: String) -> Bool {
-        if !usedKeystrokes {
-            AppLogger.info(
-                "Live field write used keystrokes",
-                category: AppLogger.transcription)
-        }
-        typeUnicode(suffix)
-        delivered = next
-        usedKeystrokes = true
-        spanLength = (next as NSString).length
-        settleEditor()
-        return true
-    }
-
-    private func perform(_ delta: KeystrokeDelta) {
-        switch delta {
-        case .none:
-            return
-        case .type(let suffix):
-            typeUnicode(suffix)
-        case .delete(let count):
-            typeDelete(times: count)
-        case .revise(let count, let suffix):
-            typeDelete(times: count)
-            typeUnicode(suffix)
-        }
-    }
-
-    private func typeUnicode(_ text: String) {
-        guard !text.isEmpty else { return }
-        let source = CGEventSource(stateID: .hidSystemState)
-        for chunk in UnicodeTyping.chunks(text) {
-            var unichars = Array(chunk.utf16)
-            guard let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
-                let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
-            else { continue }
-            down.keyboardSetUnicodeString(stringLength: unichars.count, unicodeString: &unichars)
-            up.keyboardSetUnicodeString(stringLength: unichars.count, unicodeString: &unichars)
-            down.post(tap: .cghidEventTap)
-            up.post(tap: .cghidEventTap)
-        }
-    }
-
-    private func typeDelete(times: Int) {
-        guard times > 0 else { return }
-        let source = CGEventSource(stateID: .hidSystemState)
-        for _ in 0..<times {
-            guard let down = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true),
-                let up = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false)
-            else { continue }
-            down.post(tap: .cghidEventTap)
-            up.post(tap: .cghidEventTap)
-        }
-    }
-
-    /// Notion / Slack treat this as end of the current block. Safer than
-    /// `AXSelectedTextRange`, which jumps the caret to the start.
-    private func moveToEndOfLine() {
-        let source = CGEventSource(stateID: .hidSystemState)
-        guard let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: true),
-            let rightDown = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: true),
-            let rightUp = CGEvent(keyboardEventSource: source, virtualKey: 0x7C, keyDown: false),
-            let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: false)
-        else { return }
-        cmdDown.flags = .maskCommand
-        rightDown.flags = .maskCommand
-        rightUp.flags = .maskCommand
-        cmdDown.post(tap: .cghidEventTap)
-        rightDown.post(tap: .cghidEventTap)
-        rightUp.post(tap: .cghidEventTap)
-        cmdUp.post(tap: .cghidEventTap)
-    }
-
-    private func settleEditor() {
-        _ = CFRunLoopRunInMode(.defaultMode, 0.02, false)
+        let probe = AXFieldWriter(element: element)
+        return probe.readValue() != nil && probe.readSelection() != nil
     }
 
     private func hasWebMarkers(_ element: AXUIElement) -> Bool {
@@ -332,38 +542,6 @@ final class TargetFieldInserter: @unchecked Sendable {
         else { return false }
         return names.contains("AXStartTextMarker") || names.contains("AXDOMIdentifier")
     }
-
-    private func destinationBundleIdentifier() -> String? {
-        guard let pid = DictationTarget.processIdentifier else { return nil }
-        return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
-    }
-
-    private func replaceViaSelectedText(_ text: String, on element: AXUIElement, start: Int) -> Bool {
-        let span = CFRange(location: start, length: spanLength)
-        guard setSelectedRange(span, on: element) else { return false }
-        guard setSelectedText(text, on: element) else { return false }
-        let previousLength = spanLength
-        spanLength = (text as NSString).length
-        _ = setSelectedRange(CFRange(location: start + spanLength, length: 0), on: element)
-        if containsOurSpan(text) { return true }
-        spanLength = previousLength
-        return false
-    }
-
-    private func replaceViaValue(_ text: String, on element: AXUIElement, start: Int) -> Bool {
-        guard let current = stringValue(of: element) else { return false }
-        let spliced = FieldSpan.splice(
-            existing: current, start: start, length: spanLength, replacement: text)
-        guard setStringValue(spliced.value, on: element) else { return false }
-        let previousLength = spanLength
-        spanLength = spliced.newLength
-        _ = setSelectedRange(CFRange(location: start + spanLength, length: 0), on: element)
-        if containsOurSpan(text) { return true }
-        spanLength = previousLength
-        return false
-    }
-
-    // MARK: - AX
 
     private func copyElement(_ element: AXUIElement, _ attribute: CFString) -> AXUIElement? {
         var value: CFTypeRef?
@@ -391,47 +569,5 @@ final class TargetFieldInserter: @unchecked Sendable {
     private func isSecure(_ element: AXUIElement) -> Bool {
         stringAttribute(element, kAXSubroleAttribute as CFString)
             == (kAXSecureTextFieldSubrole as String)
-    }
-
-    private func isAttributeSettable(_ element: AXUIElement, _ attribute: CFString) -> Bool {
-        var settable: DarwinBoolean = false
-        let error = AXUIElementIsAttributeSettable(element, attribute, &settable)
-        return error == .success && settable.boolValue
-    }
-
-    private func stringValue(of element: AXUIElement) -> String? {
-        var value: CFTypeRef?
-        let error = AXUIElementCopyAttributeValue(
-            element, kAXValueAttribute as CFString, &value)
-        return AXStringValue.read(error: error, value: value)
-    }
-
-    private func setStringValue(_ text: String, on element: AXUIElement) -> Bool {
-        AXUIElementSetAttributeValue(
-            element, kAXValueAttribute as CFString, text as CFTypeRef) == .success
-    }
-
-    private func setSelectedText(_ text: String, on element: AXUIElement) -> Bool {
-        AXUIElementSetAttributeValue(
-            element, kAXSelectedTextAttribute as CFString, text as CFTypeRef) == .success
-    }
-
-    private func selectedRange(of element: AXUIElement) -> CFRange? {
-        var value: CFTypeRef?
-        let error = AXUIElementCopyAttributeValue(
-            element, kAXSelectedTextRangeAttribute as CFString, &value)
-        guard error == .success, let value else { return nil }
-        var range = CFRange()
-        if AXValueGetValue(value as! AXValue, .cfRange, &range) {
-            return range
-        }
-        return nil
-    }
-
-    private func setSelectedRange(_ range: CFRange, on element: AXUIElement) -> Bool {
-        var mutable = range
-        guard let encoded = AXValueCreate(.cfRange, &mutable) else { return false }
-        return AXUIElementSetAttributeValue(
-            element, kAXSelectedTextRangeAttribute as CFString, encoded) == .success
     }
 }

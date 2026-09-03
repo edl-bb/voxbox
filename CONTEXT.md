@@ -55,6 +55,10 @@ _Avoid_: Streaming model (when meaning the setting)
 Copies only (no live write, no Cmd+V). Stream transcription is live delivery into the destination text area as tokens appear.
 _Avoid_: Auto paste (when meaning clipboard-only copy)
 
+**Stable-only typing**:
+Live delivery into a keystroke-only target: only stable tokens are typed, nothing is deleted mid-take, and the revisable text stays in the HUD. At the end of the take the cleaned transcript replaces the typed text only when the field can be verified; otherwise the typed text stays and the cleaned transcript is copied to the clipboard.
+_Avoid_: Append-only (in user-facing copy); live revise
+
 **Coverage stage**:
 A slice of target apps live delivery is validated against, in order: AppKit text, then browsers, then Electron. Browsers are confirmed. Electron composers (Cursor, Slack, Superhuman) need Chromium `AXManualAccessibility` and a frontmost app to find the focused `AXTextArea`; AX set is a no-op there, so live write types Unicode key events.
 _Avoid_: App coverage (unqualified); future map (when meaning browsers or Electron)

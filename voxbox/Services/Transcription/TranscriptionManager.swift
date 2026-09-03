@@ -135,9 +135,11 @@ class TranscriptionManager {
         engine(for: AIModel.engineKind(for: resolvedVariant)).supportsLiveStreaming
     }
 
+    /// `onUpdate` runs on the main actor in arrival order; engines must not
+    /// hop through their own `Task` before calling it.
     func startLive(
         language: String,
-        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+        onUpdate: @escaping @MainActor (LiveTranscriptSnapshot) -> Void
     ) async throws {
         let variant = resolvedVariant
         guard StreamingMode.modelSupportsLive(variant) else {

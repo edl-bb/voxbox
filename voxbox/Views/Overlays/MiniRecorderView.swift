@@ -302,9 +302,10 @@ struct MiniRecorderView: View {
         displayPhase == .idle ? 18 : 44
     }
 
-    /// Live text stays in the pill only when the destination field cannot be rewritten.
+    /// Live text stays in the pill when the destination field cannot be
+    /// rewritten, or shows just the not-yet-typed tail when we type stable words.
     private var showsLiveHUD: Bool {
-        liveSession.isLive && !liveSession.writingToField && !liveSession.hudText.isEmpty
+        liveSession.isLive && !liveSession.hudText.isEmpty
     }
 
     private var pillCornerRadius: CGFloat { pillHeight / 2 }
@@ -941,8 +942,8 @@ struct MiniRecorderView: View {
 
     private func finishLiveTake(audioURL: URL?) async {
         do {
-            let (text, alreadyInField) = try await liveSession.finish()
-            debugLog("Live take finished (\(text.count) characters, inField: \(alreadyInField))")
+            let (text, delivery) = try await liveSession.finish()
+            debugLog("Live take finished (\(text.count) characters, delivery: \(delivery))")
 
             guard !text.isEmpty else {
                 if let audioURL {
@@ -986,15 +987,19 @@ struct MiniRecorderView: View {
                 return
             }
 
-            if alreadyInField {
+            switch delivery {
+            case .inField:
                 await MainActor.run {
                     isProcessing = false
                     onCancel?()
                 }
-                return
+            case .notWritten:
+                await presentDelivery(await onCommit?(text) ?? fallbackDelivery)
+            case .rawInField, .partialInField, .unverified:
+                // Never paste over text we typed: copy instead and say so.
+                ClipboardService.shared.copy(text: text)
+                await presentDelivery(.liveFallbackCopied(delivery))
             }
-
-            await presentDelivery(await onCommit?(text) ?? fallbackDelivery)
         } catch {
             debugLog("Live finish failed: \(error.localizedDescription)")
             if let audioURL {
@@ -1054,17 +1059,25 @@ struct MiniRecorderView: View {
     /// Quiet dismiss for paste, live write, and intentional clipboard copy.
     /// Keep “No destination…” only when Auto-paste / Streaming wanted a target.
     private func presentDelivery(_ delivery: TranscriptDelivery) async {
-        let showNoDestination = delivery == .copiedToClipboard
+        let message: String?
+        switch delivery {
+        case .copiedToClipboard:
+            message = PillStatusCopy.noDestination
+        case .liveFallbackCopied(let liveDelivery):
+            message = PillStatusCopy.liveFallback(liveDelivery)
+        case .pasted, .copiedOnPurpose, .alreadyInField:
+            message = nil
+        }
         await MainActor.run {
-            if showNoDestination {
-                statusMessage = PillStatusCopy.noDestination
+            if let message {
+                statusMessage = message
                 isProcessing = true
             } else {
                 isProcessing = false
             }
         }
-        if showNoDestination {
-            try? await Task.sleep(nanoseconds: 1_600_000_000)
+        if message != nil {
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
             await MainActor.run {
                 isProcessing = false
                 onCancel?()

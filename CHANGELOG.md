@@ -2,6 +2,15 @@
 
 Changes and release notes for VoxBox.
 
+## [1.3.0] - Unreleased
+- Fixed live streaming text getting stuck or jumping to the middle of the transcript.
+    - Snapshot writes are now serialised and the newest one wins, so a write can never run inside another write.
+    - In apps where accessibility writes are ignored (Slack, Notion, Superhuman, Cursor, web composers), VoxBox now types only committed words and never backspaces mid-take. Words still being revised show in the recorder pill.
+    - Caret restore uses end-of-document instead of end-of-line, which is what caused text to land mid-paragraph once a take wrapped.
+    - At the end of a take the cleaned transcript replaces the live text only when VoxBox can verify it landed. Otherwise the typed text stays and the cleaned transcript goes to the clipboard with a message in the pill. VoxBox no longer pastes over text it already typed.
+    - If the field or focus changes mid-take, live writing stops instead of writing into the wrong place.
+    - WhisperKit streaming updates are delivered in order on one thread and skip updates with no text change.
+
 ## [1.2.0] - 2026-08-30
 - **New Feature**: Choose your Post-processing Model: Post-processing defaults to the build-in Apple Intelligence model, but now you can choose from 4 other LLMs to clean up your transcripts. Choose from Apple Intelligence, Llama 3.2 1B/3B, Qwen 3 1.7B/4B
 - **New feature**: Custom LLM cleanup rulesets
