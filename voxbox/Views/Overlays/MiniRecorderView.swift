@@ -973,6 +973,7 @@ struct MiniRecorderView: View {
                 ?? selectedModel
             HistoryService.shared.addItem(
                 transcript: text,
+                rawTranscript: liveSession.lastRawTranscript,
                 duration: duration,
                 audioFileURL: audioURL,
                 modelUsed: modelName,
@@ -1122,7 +1123,9 @@ struct MiniRecorderView: View {
             if !cancelCommit {
                 await MainActor.run { statusMessage = PillStatusCopy.transcribing }
             }
-            let text = try await transcription.transcribe(audioFile: url, language: transcriptionLanguage)
+            let cleaned = try await transcription.transcribeCleaned(
+                audioFile: url, language: transcriptionLanguage)
+            let text = cleaned.text
             debugLog("Transcription finished (\(text.count) characters)")
 
             guard !text.isEmpty else {
@@ -1143,6 +1146,7 @@ struct MiniRecorderView: View {
                 ?? selectedModel
             HistoryService.shared.addItem(
                 transcript: text,
+                rawTranscript: cleaned.raw,
                 duration: duration,
                 audioFileURL: url,
                 modelUsed: modelName,

@@ -134,6 +134,7 @@ final class LiveDictationSession {
             }
         }
         let cleaned = await Self.clean(raw, language: language)
+        lastRawTranscript = raw
 
         // Cancelled while we were waiting on the engine or the cleanup: the
         // field has already been reverted, nothing more to do to it.
@@ -175,18 +176,13 @@ final class LiveDictationSession {
 
     // MARK: - Cleanup chain
 
+    /// Raw engine text of the last finished take, for History.
+    private(set) var lastRawTranscript = ""
+
     private static func clean(_ text: String, language: String) async -> String {
-        var next = text
-        if AustralianEnglishSpelling.isAustralianEnglish(language) {
-            next = AustralianEnglishSpelling.apply(to: next)
-        }
-        next = DictionaryService.apply(to: next)
-        next = AutoEdit.apply(to: next)
-        if TranscriptFormatterService.shouldFormat(next) {
-            NotificationCenter.default.post(name: .transcriptCleanupStarted, object: nil)
-            next = await TranscriptFormatterService.shared.format(next)
-        }
-        return SmartTrailingPunctuation.apply(to: next)
+        let outcome = await TranscriptCleanupPipeline.shared.clean(
+            raw: text, plan: .fromSettings(language: language))
+        return outcome.output
     }
 
     private func log(_ message: String) {

@@ -12,12 +12,17 @@ struct HistoryStatsEntry: Identifiable, Codable, Hashable {
 struct HistoryItem: Identifiable, Codable, Hashable {
     let id: UUID
     let date: Date
+    /// Final text after cleanup: what was pasted.
     let transcript: String
     let duration: TimeInterval
     let audioFileURL: URL?
     let modelUsed: String?
     let transcriptionTime: TimeInterval?
-    
+    /// Engine text before dictionary, Auto Edit and the model, so a ruleset
+    /// can be re-run on what was actually said. Absent for items recorded
+    /// before 1.3.
+    var rawTranscript: String? = nil
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -49,9 +54,19 @@ class HistoryService: ObservableObject {
         loadHistory()
     }
     
-    func addItem(transcript: String, duration: TimeInterval, audioFileURL: URL? = nil, modelUsed: String? = nil, transcriptionTime: TimeInterval? = nil) {
+    func addItem(
+        transcript: String,
+        rawTranscript: String? = nil,
+        duration: TimeInterval,
+        audioFileURL: URL? = nil,
+        modelUsed: String? = nil,
+        transcriptionTime: TimeInterval? = nil
+    ) {
         let normalizedTranscript = WhisperService.normalizedTranscription(from: transcript)
         guard !normalizedTranscript.isEmpty else { return }
+        let normalizedRaw = rawTranscript
+            .map { WhisperService.normalizedTranscription(from: $0) }
+            .flatMap { $0.isEmpty ? nil : $0 }
 
         let timestamp = Date()
         let wordCount = normalizedTranscript.components(separatedBy: .whitespacesAndNewlines)
@@ -65,7 +80,8 @@ class HistoryService: ObservableObject {
             duration: duration,
             audioFileURL: audioFileURL,
             modelUsed: modelUsed,
-            transcriptionTime: transcriptionTime
+            transcriptionTime: transcriptionTime,
+            rawTranscript: normalizedRaw
         )
         let statsEntry = HistoryStatsEntry(
             id: newItem.id,
@@ -110,7 +126,8 @@ class HistoryService: ObservableObject {
             duration: item.duration,
             audioFileURL: item.audioFileURL,
             modelUsed: item.modelUsed,
-            transcriptionTime: item.transcriptionTime
+            transcriptionTime: item.transcriptionTime,
+            rawTranscript: item.rawTranscript
         )
         saveHistory()
     }
@@ -153,7 +170,8 @@ class HistoryService: ObservableObject {
                     duration: item.duration,
                     audioFileURL: nil,
                     modelUsed: item.modelUsed,
-                    transcriptionTime: item.transcriptionTime
+                    transcriptionTime: item.transcriptionTime,
+                    rawTranscript: item.rawTranscript
                 )
                 changed = true
             }
@@ -214,7 +232,8 @@ class HistoryService: ObservableObject {
                     duration: item.duration,
                     audioFileURL: item.audioFileURL,
                     modelUsed: item.modelUsed,
-                    transcriptionTime: item.transcriptionTime
+                    transcriptionTime: item.transcriptionTime,
+                    rawTranscript: item.rawTranscript
                 )
             }
 
