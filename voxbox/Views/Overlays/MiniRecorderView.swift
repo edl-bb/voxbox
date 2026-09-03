@@ -22,7 +22,7 @@ struct MiniRecorderView: View {
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage(TranscriptDeliveryMode.defaultsKey)
     private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
-    @AppStorage("recordingMode") private var recordingMode: Int = 0
+    @AppStorage(RecordingMode.defaultsKey) private var recordingMode: RecordingMode = .hold
     /// Whether we've already shown the one-time accessibility warning (release only).
     @AppStorage("hasShownAccessibilityWarning") private var hasShownAccessibilityWarning = false
     @AppStorage("transcriptionLanguage") private var transcriptionLanguage: String = "auto"
@@ -211,28 +211,19 @@ struct MiniRecorderView: View {
 
     private var modeControl: some View {
         Menu {
-            Button {
-                recordingMode = 0
-            } label: {
-                if recordingMode == 0 {
-                    Label("Hold to talk", systemImage: "checkmark")
-                } else {
-                    Text("Hold to talk")
-                }
-            }
-            Button {
-                recordingMode = 1
-            } label: {
-                if recordingMode == 1 {
-                    Label("Toggle on / off", systemImage: "checkmark")
-                } else {
-                    Text("Toggle on / off")
+            ForEach(RecordingMode.allCases) { mode in
+                Button {
+                    recordingMode = mode
+                } label: {
+                    if recordingMode == mode {
+                        Label(mode.menuTitle, systemImage: "checkmark")
+                    } else {
+                        Text(mode.menuTitle)
+                    }
                 }
             }
         } label: {
-            recorderChipLabel(
-                icon: recordingMode == 0 ? "hand.tap.fill" : "repeat.1",
-                text: recordingMode == 0 ? "Hold" : "Toggle")
+            recorderChipLabel(icon: recordingMode.icon, text: recordingMode.chipLabel)
         }
         .menuIndicator(.hidden)
         .menuStyle(.borderlessButton)

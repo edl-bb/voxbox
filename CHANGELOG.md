@@ -21,6 +21,10 @@ Changes and release notes for VoxBox.
     - Australian English spelling is applied after the model as well as before, so the model cannot re-Americanise.
     - Auto Edit keeps paragraph breaks, never leaves an orphan comma, and only capitalises the word after a filler it removed from the start of a sentence.
     - History keeps the raw transcript alongside the cleaned one, so custom rulesets can be tested against what was actually said.
+- Onboarding now covers the two choices new users tripped on.
+    - A recording step asks whether you want to hold the hotkey while you talk or press it to toggle, with the copy naming your actual hotkey. Skip keeps the default.
+    - A cleanup step runs one dictation through every level (Off, Basic, Light cleanup, Polish, Custom) on your Mac and shows the results side by side, so you choose by reading rather than guessing. Switch between three built-in dictations or paste your own. Custom creates a "My ruleset" and opens the editor after setup.
+    - Progress dots on every step, and Settings › General gains "Replay the setup guide" so you can step through it again with your current choices preselected.
 - Downloadable cleanup models (Llama 3.2, Qwen 3) are parked until macOS 27. In 1.2.0 the picker offered them but every cleanup still ran on Apple Intelligence; the picker now shows only Apple Intelligence and says so. Any saved choice of a downloaded model resolves to Apple Intelligence. They return with macOS 27's native on-device model support.
 
 ## [1.2.0] - 2026-08-30

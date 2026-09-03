@@ -3,14 +3,15 @@ import SwiftUI
 
 struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
-    /// Returning users who lost a TCC grant skip welcome / Globe Key and land
-    /// on the permissions step so auto-paste can be restored.
-    var startAtPermissions: Bool = false
-    @State private var currentPage: Int
+    @AppStorage(OnboardingReplay.requestedKey) private var replayRequested: Bool = false
+    @State private var step: OnboardingStep = .welcome
 
-    init(startAtPermissions: Bool = false) {
-        self.startAtPermissions = startAtPermissions
-        _currentPage = State(initialValue: startAtPermissions ? 2 : 0)
+    /// Replays from Settings keep `hasCompletedOnboarding` true and show an
+    /// exit button; choices are preselected from the current settings.
+    var isReplay: Bool = false
+
+    init(isReplay: Bool = false) {
+        self.isReplay = isReplay
     }
 
     var body: some View {
@@ -19,51 +20,76 @@ struct OnboardingView: View {
                 // Background - Match main app exactly
                 Color.bgApp.ignoresSafeArea()
 
-                // Content ZStack
                 ZStack {
-                    if currentPage == 0 {
-                        WelcomePage(action: {
-                            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 1 }
-                        })
-                        .transition(.opacity)
-                    } else if currentPage == 1 {
-                        GlobeKeyOptimizationPage(action: {
-                            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 2 }
-                        })
-                        .transition(.opacity)
-                    } else if currentPage == 2 {
-                        PermissionsPage(
-                            finishAction: { advanceAfterPermissions() },
-                            skipAction: { advanceAfterPermissions() }
-                        )
-                        .transition(.opacity)
-                    } else {
-                        ModelOnboardingPage(
-                            finishAction: { completeOnboarding() },
-                            skipAction: { completeOnboarding() }
-                        )
-                        .transition(.opacity)
+                    switch step {
+                    case .welcome:
+                        WelcomePage(action: advance)
+                            .transition(.opacity)
+                    case .globeKey:
+                        GlobeKeyOptimizationPage(action: advance)
+                            .transition(.opacity)
+                    case .recordingMode:
+                        RecordingModeOnboardingPage(continueAction: advance, skipAction: advance)
+                            .transition(.opacity)
+                    case .permissions:
+                        PermissionsPage(finishAction: advance, skipAction: advance)
+                            .transition(.opacity)
+                            .onAppear {
+                                // Load the system model now so the cleanup
+                                // step's cards fill in without a cold start.
+                                Task { await TranscriptCleanupPreview.prewarm() }
+                            }
+                    case .cleanup:
+                        CleanupOnboardingPage(continueAction: advance, skipAction: advance)
+                            .transition(.opacity)
+                    case .model:
+                        ModelOnboardingPage(finishAction: completeOnboarding, skipAction: completeOnboarding)
+                            .transition(.opacity)
                     }
                 }
-                .padding(currentPage == 3 ? 16 : 40)
+                .padding(step.contentPadding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                VStack {
+                    HStack {
+                        if step.showsStepDots {
+                            OnboardingStepDots(current: step)
+                        }
+                        Spacer()
+                        if isReplay {
+                            Button(action: completeOnboarding) {
+                                Text("Exit setup")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.textSecondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Capsule().fill(Color.textPrimary.opacity(0.06)))
+                            }
+                            .buttonStyle(.plain)
+                            .keyboardShortcut(.cancelAction)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    Spacer()
+                }
             }
         }
         .frame(minWidth: 600, minHeight: 500)
     }
 
-    /// Returning users who only needed permissions skip the model page.
-    func advanceAfterPermissions() {
-        if startAtPermissions {
+    private func advance() {
+        guard let next = step.next else {
             completeOnboarding()
-        } else {
-            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 3 }
+            return
         }
+        withAnimation(.easeInOut(duration: 0.5)) { step = next }
     }
 
     func completeOnboarding() {
         withAnimation {
             hasCompletedOnboarding = true
+            replayRequested = false
         }
         NotificationCenter.default.post(name: .recorderIdleVisibilityChanged, object: nil)
     }

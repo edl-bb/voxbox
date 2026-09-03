@@ -91,7 +91,7 @@ struct GeneralSettingsTab: View {
     var onOpenModels: (() -> Void)?
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @AppStorage("selectedHotkey") private var selectedHotkey: HotkeyOption = .fn
-    @AppStorage("recordingMode") private var recordingMode: Int = 0  // 0: Hold to record, 1: Toggle
+    @AppStorage(RecordingMode.defaultsKey) private var recordingMode: RecordingMode = .hold
     @AppStorage("restoreClipboardAfterAutoPaste") private var restoreClipboardAfterAutoPaste =
         true
     @AppStorage(TranscriptDeliveryMode.defaultsKey)
@@ -236,18 +236,15 @@ struct GeneralSettingsTab: View {
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
                                 Picker("", selection: $recordingMode) {
-                                    Text("Hold to record").tag(0)
-                                    Text("Toggle").tag(1)
+                                    ForEach(RecordingMode.allCases) { mode in
+                                        Text(mode.settingsTitle).tag(mode)
+                                    }
                                 }
                                 .pickerStyle(.segmented)
                                 .frame(width: 180)
                             }
 
-                            Text(
-                                recordingMode == 0
-                                    ? "Hold the hotkey down to record, release when done."
-                                    : "Press the hotkey to start recording, press again to stop."
-                            )
+                            Text(recordingMode.settingsCaption)
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
                             .padding(.top, 2)
@@ -794,6 +791,20 @@ struct GeneralSettingsTab: View {
                     }
                 }
 
+                // Setup guide
+                SettingsSection {
+                    SettingsSectionHeader(
+                        icon: "sparkles.rectangle.stack",
+                        title: "Setup guide",
+                        subtitle: "The first-run walkthrough"
+                    )
+
+                    SettingsNavigationRow(
+                        title: "Replay the setup guide",
+                        subtitle: "Step through recording mode, permissions, transcript cleanup and models again. Your current choices are kept and preselected.",
+                        action: { OnboardingReplay.request() }
+                    )
+                }
             }
             .padding(24)
         }
