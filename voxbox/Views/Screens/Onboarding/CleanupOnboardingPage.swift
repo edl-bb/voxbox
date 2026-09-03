@@ -20,6 +20,10 @@ struct CleanupOnboardingPage: View {
     private let isAvailable = TranscriptFormatterService.isCleanupAvailable
     private let previewOptions: [CleanupOption] = [.basic, .light, .polish]
 
+    init(action: @escaping () -> Void) {
+        self.action = action
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 12) {

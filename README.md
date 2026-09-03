@@ -42,6 +42,8 @@ Raw speech-to-text gets messy on longer takes: fillers, false starts, missing pu
 
 Instant, non-AI options are also available to strip "um's" and "ahh's" if you want the fastest experience possible.
 
+Not sure which level suits you? Onboarding lets you run a sample dictation through all three built-in levels before choosing, and **AI Models → LLM Instructions → Try it on a sample** does the same later with built-in samples or your own recent transcripts. The ruleset editor has the same panel, so a custom ruleset can be tested before it is saved.
+
 ### Custom on-device LLMs
 
 ![AI Models](branding/model-picker.png)

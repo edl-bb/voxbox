@@ -67,6 +67,12 @@ struct CleanupTryPanel: View {
     @State private var isRunning = false
     @State private var task: Task<Void, Never>?
 
+    init(option: CleanupOption, includeMarkdown: Bool = false, disabledReason: String? = nil) {
+        self.option = option
+        self.includeMarkdown = includeMarkdown
+        self.disabledReason = disabledReason
+    }
+
     private var recent: [CleanupSampleSource] {
         CleanupSampleSource.recent(from: history.items)
     }

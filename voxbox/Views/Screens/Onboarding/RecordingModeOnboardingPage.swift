@@ -7,6 +7,10 @@ struct RecordingModeOnboardingPage: View {
 
     @AppStorage(RecordingMode.defaultsKey) private var recordingModeRaw: Int = RecordingMode.default.rawValue
 
+    init(action: @escaping () -> Void) {
+        self.action = action
+    }
+
     private var hotkeyLabel: String {
         let raw = UserDefaults.standard.string(forKey: HotkeyOption.defaultsKey) ?? ""
         let hotkey = HotkeyOption(rawValue: raw) ?? .default
