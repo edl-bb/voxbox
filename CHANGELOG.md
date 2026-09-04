@@ -6,9 +6,10 @@ Changes and release notes for VoxBox.
 - **New feature**: Cleanup page — levels, instant rules, custom rulesets and a live preview in one place.
 - **New feature**: Test a ruleset before saving, on a sample or a recent transcript.
 - **New feature**: Onboarding now asks for recording mode and shows each cleanup level on a sample. Replay it from Settings.
-- **New feature**: Copy raw transcript from History.
+- **New feature**: History rows get the dashboard's Copy and Play quick actions, plus Copy raw transcript.
 - Improved transcript post-processing: numerals, fewer leftover fillers, misheard-word fixes, punctuation by meaning.
-- Improved live streaming in Slack, Notion, Superhuman, Cursor and web composers: more reliable, words appear sooner, and cleanup edits only the words that changed.
+- Improved live streaming in Chrome, Slack, Notion, Superhuman, Cursor and other web composers: more reliable, words appear sooner, and the end-of-take cleanup edits only the words that changed instead of retyping everything.
+- The recorder pill shows locked words plainly and words still being revised dimmed, beside the live waveform.
 - Fixed the previous clipboard being pasted instead of the transcript.
 - Downloadable cleanup models are parked until macOS 27; cleanup runs on Apple Intelligence.
 
