@@ -11,20 +11,14 @@ struct HistoryDetailView: View {
     /// Live transcript — starts as the stored item's text and updates in place
     /// when a correction is applied, so the fix is visible immediately.
     @State private var displayedTranscript = ""
-    /// Show the engine text instead of the cleaned one (only when History
-    /// kept it, i.e. takes recorded on 1.3 or later).
-    @State private var showRawTranscript = false
 
+    /// The engine text, kept by History for takes recorded on 1.3 or later.
+    /// Offered as a second copy action; the view itself shows the output.
     private var rawTranscript: String? {
         guard let raw = item.rawTranscript?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty,
             raw != item.transcript
         else { return nil }
         return raw
-    }
-
-    private var shownTranscript: String {
-        if showRawTranscript, let rawTranscript { return rawTranscript }
-        return displayedTranscript
     }
 
     var body: some View {
@@ -45,82 +39,47 @@ struct HistoryDetailView: View {
                 
                 // Badges and copy button
                 HStack {
-                    if rawTranscript != nil {
-                        // Before / after: what the engine heard vs what was pasted.
-                        Picker("", selection: $showRawTranscript) {
-                            Text("Cleaned").tag(false)
-                            Text("As spoken").tag(true)
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(width: 180)
-                        .help("Compare the raw transcript with the cleaned one that was pasted")
-                    } else {
-                        // Original badge
-                        Text("Original")
-                            .font(Typography.badge)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.brandAccent)
-                            .foregroundStyle(.white)
-                            .cornerRadius(12)
-                    }
-                    
+                    // Original badge
+                    Text("Original")
+                        .font(Typography.badge)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.brandAccent)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+
                     Spacer()
+
+                    // Copy the processed output (what was pasted).
+                    actionButton("Copy", icon: "doc.on.doc") {
+                        copyToClipboard(text: displayedTranscript)
+                    }
+
+                    // Copy what the speech engine heard, before dictionary
+                    // rules, Auto Edit and cleanup. Only kept from 1.3 on.
+                    if let rawTranscript {
+                        actionButton("Copy raw transcript", icon: "waveform.and.magnifyingglass") {
+                            copyToClipboard(text: rawTranscript)
+                        }
+                        .help("The transcript as the speech engine heard it, before any cleanup")
+                    }
 
                     // Quick dictionary correction: fix a misheard word here,
                     // save it as a rule for all future dictations, and get the
                     // corrected transcript back on the clipboard.
-                    Button(action: { showCorrectionSheet = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "character.book.closed")
-                                .font(.system(size: 11))
-                            Text("Add Correction")
-                                .font(Typography.labelMedium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.brandAccent)
-                        .foregroundStyle(.white)
-                        .cornerRadius(12)
+                    actionButton("Add Correction", icon: "character.book.closed") {
+                        showCorrectionSheet = true
                     }
-                    .buttonStyle(.plain)
                     .help("Fix a misheard word, remember it in the Dictionary, and recopy this transcript")
-
-                    // Copy button
-                    Button(action: {
-                        copyToClipboard(text: shownTranscript)
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 11))
-                            Text("Copy")
-                                .font(Typography.labelMedium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.brandAccent)
-                        .foregroundStyle(.white)
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
                 }
 
                 Divider()
 
-                // Transcript
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(shownTranscript)
-                        .font(Typography.bodyMedium)
-                        .textSelection(.enabled)
-                        .animation(nil, value: showRawTranscript)
-                    if showRawTranscript, rawTranscript != nil {
-                        Text("What the speech engine heard, before dictionary rules, Auto Edit and cleanup.")
-                            .font(Typography.captionSmall)
-                            .foregroundStyle(Color.textMuted)
-                    }
-                }
-                .padding(.vertical, 8)
+                // Transcript: always the processed output.
+                Text(displayedTranscript)
+                    .font(Typography.bodyMedium)
+                    .textSelection(.enabled)
+                    .padding(.vertical, 8)
                 
                 Divider()
                 
@@ -296,6 +255,24 @@ struct HistoryDetailView: View {
         }
     }
     
+    /// The header's pill buttons share one look.
+    private func actionButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                Text(title)
+                    .font(Typography.labelMedium)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.brandAccent)
+            .foregroundStyle(.white)
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func copyToClipboard(text: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()

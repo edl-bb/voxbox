@@ -12,8 +12,8 @@ Changes and release notes for VoxBox.
     - Choose hold-to-talk or toggle up front, with the copy naming your hotkey.
     - See one dictation cleaned at every level and pick by reading the results.
     - Progress dots on each step, and Settings → General → "Replay the setup guide".
-- **New feature**: History shows the raw transcript
-    - A Cleaned / As spoken switch on transcripts recorded from 1.3 on.
+- **New feature**: Copy the raw transcript from History
+    - Transcripts recorded from 1.3 on keep what the speech engine heard; a "Copy raw transcript" button sits next to Copy.
 - Cleanup quality
     - Light cleanup and Polish now reliably drop fillers and repeats, and write spoken numbers as numerals ($12,500, 20%, 2pm).
     - Polish fixes misheard words (there → their, peak → peek) and re-punctuates from meaning rather than from pauses in speech.
