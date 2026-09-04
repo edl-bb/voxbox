@@ -159,6 +159,8 @@ struct MainView: View {
             DictionaryView()
         case .statistics:
             StatisticsView()
+        case .cleanup:
+            CleanupPageView()
         case .aiModels:
             AIModelsView()
         case .settings:
@@ -166,7 +168,8 @@ struct MainView: View {
                 onOpenDictionary: { selection = .dictionary },
                 onOpenModels: {
                     selection = .aiModels
-                }
+                },
+                onOpenCleanup: { selection = .cleanup }
             )
         case .none:
             DashboardView(selection: $selection)

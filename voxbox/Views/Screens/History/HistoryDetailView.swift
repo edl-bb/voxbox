@@ -12,6 +12,15 @@ struct HistoryDetailView: View {
     /// when a correction is applied, so the fix is visible immediately.
     @State private var displayedTranscript = ""
 
+    /// The engine text, kept by History for takes recorded on 1.3 or later.
+    /// Offered as a second copy action; the view itself shows the output.
+    private var rawTranscript: String? {
+        guard let raw = item.rawTranscript?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty,
+            raw != item.transcript
+        else { return nil }
+        return raw
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -38,50 +47,35 @@ struct HistoryDetailView: View {
                         .background(Color.brandAccent)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
-                    
+
                     Spacer()
+
+                    // Copy the processed output (what was pasted).
+                    actionButton("Copy", icon: "doc.on.doc") {
+                        copyToClipboard(text: displayedTranscript)
+                    }
+
+                    // Copy what the speech engine heard, before dictionary
+                    // rules, Auto Edit and cleanup. Only kept from 1.3 on.
+                    if let rawTranscript {
+                        actionButton("Copy raw transcript", icon: "waveform.and.magnifyingglass") {
+                            copyToClipboard(text: rawTranscript)
+                        }
+                        .help("The transcript as the speech engine heard it, before any cleanup")
+                    }
 
                     // Quick dictionary correction: fix a misheard word here,
                     // save it as a rule for all future dictations, and get the
                     // corrected transcript back on the clipboard.
-                    Button(action: { showCorrectionSheet = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "character.book.closed")
-                                .font(.system(size: 11))
-                            Text("Add Correction")
-                                .font(Typography.labelMedium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.brandAccent)
-                        .foregroundStyle(.white)
-                        .cornerRadius(12)
+                    actionButton("Add Correction", icon: "character.book.closed") {
+                        showCorrectionSheet = true
                     }
-                    .buttonStyle(.plain)
                     .help("Fix a misheard word, remember it in the Dictionary, and recopy this transcript")
-
-                    // Copy button
-                    Button(action: {
-                        copyToClipboard(text: displayedTranscript)
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 11))
-                            Text("Copy")
-                                .font(Typography.labelMedium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.brandAccent)
-                        .foregroundStyle(.white)
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
                 }
 
                 Divider()
 
-                // Transcript
+                // Transcript: always the processed output.
                 Text(displayedTranscript)
                     .font(Typography.bodyMedium)
                     .textSelection(.enabled)
@@ -261,6 +255,24 @@ struct HistoryDetailView: View {
         }
     }
     
+    /// The header's pill buttons share one look.
+    private func actionButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                Text(title)
+                    .font(Typography.labelMedium)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.brandAccent)
+            .foregroundStyle(.white)
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func copyToClipboard(text: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()

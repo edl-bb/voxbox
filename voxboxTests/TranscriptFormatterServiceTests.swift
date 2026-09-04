@@ -1,10 +1,11 @@
+import FoundationModels
 import XCTest
 
 @testable import voxbox
 
 final class TranscriptFormatterServiceTests: XCTestCase {
 
-    // MARK: - Change-ratio guardrail
+    // MARK: - Legacy change ratio (reporting only)
 
     func testIdenticalTextScoresZero() {
         XCTAssertEqual(
@@ -15,55 +16,12 @@ final class TranscriptFormatterServiceTests: XCTestCase {
     }
 
     func testFormattingOnlyEditsScoreZero() {
-        // Punctuation, casing and line breaks are invisible to the guardrail.
+        // Punctuation, casing and line breaks are invisible to the ratio.
         XCTAssertEqual(
             TranscriptFormatterService.changeRatio(
                 from: "hello world this is a test",
                 to: "Hello, world!\n\nThis is a test."),
             0)
-    }
-
-    func testFillerRemovalDoesNotConsumeGuardrailBudget() throws {
-        let ratio = TranscriptFormatterService.changeRatio(
-            from: "um so I think uh we should ship the release",
-            to: "so I think we should ship the release")
-        XCTAssertEqual(ratio, 0, accuracy: 0.001)
-        XCTAssertLessThanOrEqual(
-            ratio, try XCTUnwrap(FormattingIntensity.lightCleanup.maximumChangeRatio))
-    }
-
-    func testFalseStartRepeatsDoNotConsumeGuardrailBudget() throws {
-        let ratio = TranscriptFormatterService.changeRatio(
-            from: "I was I was going to send the report tomorrow",
-            to: "I was going to send the report tomorrow")
-        XCTAssertEqual(ratio, 0, accuracy: 0.001)
-        XCTAssertLessThanOrEqual(
-            ratio, try XCTUnwrap(FormattingIntensity.lightCleanup.maximumChangeRatio))
-    }
-
-    func testPolishSizedCleanupStaysInsidePolishBudget() throws {
-        let ratio = TranscriptFormatterService.changeRatio(
-            from: "yeah um so i was i was gonna say we should uh probably just go ahead and ship it you know tomorrow if thats okay",
-            to: "i was going to say we should ship it tomorrow if that is okay")
-        XCTAssertLessThanOrEqual(
-            ratio, try XCTUnwrap(FormattingIntensity.polish.maximumChangeRatio))
-        XCTAssertGreaterThan(
-            ratio, try XCTUnwrap(FormattingIntensity.formatting.maximumChangeRatio))
-    }
-
-    func testFullRewriteIsRejectedAtEveryBuiltInLevel() throws {
-        let ratio = TranscriptFormatterService.changeRatio(
-            from: "please send the report to finance before the meeting tomorrow morning",
-            to: "the quarterly numbers look great and everyone deserves a holiday")
-        for level in FormattingIntensity.builtInCases {
-            XCTAssertGreaterThan(
-                ratio, try XCTUnwrap(level.maximumChangeRatio),
-                "\(level) must reject a rewrite")
-        }
-    }
-
-    func testCustomLevelHasNoGuardrailBudget() {
-        XCTAssertNil(FormattingIntensity.custom.maximumChangeRatio)
     }
 
     func testEmptyInputsScoreZero() {
@@ -88,6 +46,18 @@ final class TranscriptFormatterServiceTests: XCTestCase {
             try XCTUnwrap(FormattingIntensity.polish.maximumChangeRatio))
     }
 
+    func testCustomLevelHasNoGuardrailBudget() {
+        XCTAssertNil(FormattingIntensity.custom.maximumChangeRatio)
+        XCTAssertNil(FormattingIntensity.custom.budget)
+    }
+
+    func testStepDownLadders() {
+        XCTAssertEqual(FormattingIntensity.polish.stepDownLadder, [.polish, .lightCleanup, .formatting])
+        XCTAssertEqual(FormattingIntensity.lightCleanup.stepDownLadder, [.lightCleanup, .formatting])
+        XCTAssertEqual(FormattingIntensity.formatting.stepDownLadder, [.formatting])
+        XCTAssertEqual(FormattingIntensity.custom.stepDownLadder, [.custom])
+    }
+
     func testDefaultIntensityIsLightCleanup() {
         UserDefaults.standard.removeObject(forKey: TranscriptFormatterService.intensityKey)
         XCTAssertEqual(TranscriptFormatterService.intensity, .lightCleanup)
@@ -103,59 +73,112 @@ final class TranscriptFormatterServiceTests: XCTestCase {
         XCTAssertTrue(TranscriptFormatterService.isMarkdownFormattingEnabled)
     }
 
-    func testMarkdownStageIncludedOnlyWhenToggleIsOn() {
-        let fragment = FormattingPromptStage.markdownFormatting
-        let outputOnly = FormattingPromptStage.outputTranscriptOnly
-        for level in FormattingIntensity.allCases {
+    // MARK: - Prompt assembly
+
+    func testMarkdownStageOnlyForLightAndPolishWhenToggleIsOn() {
+        let fragment = CleanupPromptSet.compiled.markdown
+        let outputOnly = CleanupPromptSet.compiled.outputOnly
+        for level in [FormattingIntensity.lightCleanup, .polish] {
             let on = level.instructions(includeMarkdownFormatting: true)
             let off = level.instructions(includeMarkdownFormatting: false)
             XCTAssertTrue(on.contains(fragment), "\(level) on must include the markdown stage")
             XCTAssertFalse(off.contains(fragment), "\(level) off must omit the markdown stage")
-            XCTAssertTrue(on.contains(outputOnly), "\(level) on must include the output-only stage")
-            XCTAssertTrue(off.contains(outputOnly), "\(level) off must include the output-only stage")
+            XCTAssertTrue(on.contains(outputOnly))
+            XCTAssertTrue(off.contains(outputOnly))
         }
+        for level in [FormattingIntensity.formatting, .custom] {
+            XCTAssertFalse(
+                level.instructions(includeMarkdownFormatting: true).contains(fragment),
+                "\(level) is told to change no word, so it never gets the markdown stage")
+        }
+    }
+
+    func testEveryBuiltInLevelCarriesRoleStyleAndOutputOnly() {
+        let set = CleanupPromptSet.compiled
+        for level in FormattingIntensity.builtInCases {
+            let stages = level.instructionStages(includeMarkdownFormatting: false)
+            XCTAssertEqual(stages.first, set.role)
+            XCTAssertTrue(stages.contains(set.style))
+            XCTAssertEqual(stages.last, set.outputOnly)
+            XCTAssertFalse(stages.contains(set.australianSpelling), "AU stage only for en-AU")
+        }
+    }
+
+    func testAustralianSpellingStageOnlyForEnAU() {
+        let set = CleanupPromptSet.compiled
+        XCTAssertTrue(
+            FormattingIntensity.lightCleanup.instructionStages(includeMarkdownFormatting: false, language: "en-AU")
+                .contains(set.australianSpelling))
+        XCTAssertFalse(
+            FormattingIntensity.lightCleanup.instructionStages(includeMarkdownFormatting: false, language: "en")
+                .contains(set.australianSpelling))
     }
 
     func testPolishPromptWithoutMarkdownKeepsTheRest() {
         let polish = FormattingIntensity.polish.instructions(includeMarkdownFormatting: false)
-        XCTAssertTrue(polish.contains("phonetically similar"))
-        XCTAssertTrue(polish.contains("polish the delivery, never the message."))
-        XCTAssertFalse(polish.contains("markdown formatting"))
+        XCTAssertTrue(polish.contains("misheard words"))
+        XCTAssertTrue(polish.contains("Do NOT add ideas"))
+        XCTAssertTrue(polish.contains("numerals"))
+        XCTAssertFalse(polish.contains("Markdown"))
     }
 
     func testFormattingRequestPutsMarkdownInInstructionsNotInput() {
         let transcript =
             "You need to update the control gate for the next release tomorrow morning"
-        let fragment = FormattingPromptStage.markdownFormatting
+        let fragment = CleanupPromptSet.compiled.markdown
 
-        for level in FormattingIntensity.allCases {
+        for level in [FormattingIntensity.lightCleanup, .polish] {
             let on = TranscriptFormatterService.request(
-                for: transcript,
-                intensity: level,
-                includeMarkdownFormatting: true)
-            XCTAssertTrue(
-                on.instructions.contains(fragment),
-                "\(level) instructions must include the markdown stage")
-            XCTAssertFalse(
-                on.input.contains(fragment),
-                "\(level) input must not include the markdown stage")
+                for: transcript, intensity: level, includeMarkdownFormatting: true)
+            XCTAssertTrue(on.instructions.contains(fragment))
+            XCTAssertFalse(on.input.contains(fragment))
             XCTAssertEqual(on.input, transcript)
             XCTAssertFalse(on.instructionStages.contains(transcript))
 
             let off = TranscriptFormatterService.request(
-                for: transcript,
-                intensity: level,
-                includeMarkdownFormatting: false)
+                for: transcript, intensity: level, includeMarkdownFormatting: false)
             XCTAssertFalse(off.instructions.contains(fragment))
             XCTAssertEqual(off.input, transcript)
         }
     }
 
+    func testUserPromptWrapsTranscriptAndRepeatsTheRule() {
+        let transcript = "please send the report to finance tomorrow morning"
+        for level in FormattingIntensity.builtInCases {
+            let request = TranscriptFormatterService.request(
+                for: transcript, intensity: level, includeMarkdownFormatting: false)
+            XCTAssertTrue(request.userPrompt.contains("DICTATION:\n" + transcript), "\(level)")
+            XCTAssertTrue(request.userPrompt.contains("REMEMBER:"), "\(level) repeats its rule")
+            XCTAssertEqual(request.input, transcript, "input stays the bare dictation")
+            XCTAssertEqual(request.intensity, level)
+            XCTAssertEqual(request.temperature, 0)
+            XCTAssertEqual(request.budget, level.budget)
+        }
+    }
+
+    func testOutputOnlyStageIsAlwaysInInstructionsNotInput() {
+        let transcript =
+            "You need to update the control gate for the next release tomorrow morning"
+        let fragment = CleanupPromptSet.compiled.outputOnly
+
+        for level in FormattingIntensity.allCases {
+            for includeMarkdown in [true, false] {
+                let request = TranscriptFormatterService.request(
+                    for: transcript, intensity: level, includeMarkdownFormatting: includeMarkdown)
+                XCTAssertTrue(request.instructions.contains(fragment), "\(level)")
+                XCTAssertFalse(request.input.contains(fragment), "\(level)")
+                XCTAssertTrue(request.instructionStages.contains(fragment))
+                XCTAssertEqual(request.input, transcript)
+            }
+        }
+    }
+
+    // MARK: - Preamble shim
+
     func testStripModelPreambleDropsLeakedMarkdownInstructions() {
         let dictation =
             "You need to update the control gate for the next release tomorrow morning"
-        let leaked =
-            FormattingPromptStage.markdownFormatting + "\n\n" + dictation
+        let leaked = CleanupPromptSet.compiled.markdown + "\n\n" + dictation
         XCTAssertEqual(TranscriptFormatterService.stripModelPreamble(leaked), dictation)
         XCTAssertEqual(TranscriptFormatterService.stripModelPreamble(dictation), dictation)
     }
@@ -185,26 +208,19 @@ final class TranscriptFormatterServiceTests: XCTestCase {
         XCTAssertEqual(TranscriptFormatterService.stripModelPreamble(other), other)
     }
 
-    func testOutputOnlyStageIsAlwaysInInstructionsNotInput() {
-        let transcript =
-            "You need to update the control gate for the next release tomorrow morning"
-        let fragment = FormattingPromptStage.outputTranscriptOnly
+    // MARK: - Engine options
 
-        for level in FormattingIntensity.allCases {
-            for includeMarkdown in [true, false] {
-                let request = TranscriptFormatterService.request(
-                    for: transcript,
-                    intensity: level,
-                    includeMarkdownFormatting: includeMarkdown)
-                XCTAssertTrue(
-                    request.instructions.contains(fragment),
-                    "\(level) instructions must include the output-only stage")
-                XCTAssertFalse(
-                    request.input.contains(fragment),
-                    "\(level) input must not include the output-only stage")
-                XCTAssertTrue(request.instructionStages.contains(fragment))
-                XCTAssertEqual(request.input, transcript)
-            }
-        }
+    func testBuiltInLevelsUseGreedySamplingAndCustomKeepsTemperature() {
+        let deterministic = TranscriptFormatterService.request(
+            for: "text", intensity: .lightCleanup, includeMarkdownFormatting: false)
+        XCTAssertNil(
+            AppleIntelligenceCleanupEngine.generationOptions(for: deterministic).temperature,
+            "temperature 0 requests greedy sampling, not a temperature")
+
+        let warm = TranscriptFormatterService.request(
+            for: "text",
+            ruleset: CustomCleanupRuleset(name: "Warm", instructions: "Rewrite.", temperature: 0.7))
+        XCTAssertEqual(
+            AppleIntelligenceCleanupEngine.generationOptions(for: warm).temperature, 0.7)
     }
 }

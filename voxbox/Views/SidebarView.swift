@@ -166,6 +166,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case history = "History"
     case dictionary = "Dictionary"
     case statistics = "Statistics"
+    case cleanup = "Cleanup"
     case aiModels = "AI Models"
     case settings = "Settings"
 
@@ -178,6 +179,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .history: return "doc.text"
         case .dictionary: return "character.book.closed"
         case .statistics: return "chart.bar"
+        case .cleanup: return "sparkles"
         case .aiModels: return "cpu"
         case .settings: return "gearshape"
         }

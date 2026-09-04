@@ -13,10 +13,23 @@ struct PostProcessingModelsView: View {
                 Text("Post-processing models")
                     .font(Typography.sectionTitle)
                     .foregroundStyle(Color.textPrimary)
-                Text("The model that cleans up transcripts after transcription. Apple Intelligence is built in, or download a model to run the cleanup with instead.")
-                    .font(Typography.ui(13))
-                    .foregroundStyle(Color.textMuted)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    PostProcessingModel.downloadableModelsEnabled
+                        ? "The model that cleans up transcripts after transcription. Apple Intelligence is built in, or download a model to run the cleanup with instead."
+                        : "The model that cleans up transcripts after transcription. Apple Intelligence is built into macOS and runs entirely on your Mac."
+                )
+                .font(Typography.ui(13))
+                .foregroundStyle(Color.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !PostProcessingModel.downloadableModelsEnabled {
+                Label(
+                    "Downloadable models such as Llama and Qwen are coming with macOS 27's native on-device model support.",
+                    systemImage: "clock"
+                )
+                .font(Typography.captionSmall)
+                .foregroundStyle(Color.textMuted)
             }
 
             if !formatWithOnDeviceAI {
@@ -29,7 +42,7 @@ struct PostProcessingModelsView: View {
             }
 
             VStack(spacing: 10) {
-                ForEach(PostProcessingModel.catalog) { model in
+                ForEach(PostProcessingModel.offered) { model in
                     PostProcessingModelRow(model: model, manager: manager)
                 }
             }

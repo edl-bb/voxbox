@@ -97,6 +97,38 @@ final class HistoryServiceTests: XCTestCase {
         XCTAssertEqual(service.totalDuration(), durationBeforeClear)
     }
 
+    func testRawTranscriptIsStoredAlongsideTheCleanedText() throws {
+        service.addItem(
+            transcript: "So I think we should ship.",
+            rawTranscript: "um so I think uh we should ship",
+            duration: 3.0)
+
+        let item = try XCTUnwrap(service.items.first)
+        XCTAssertEqual(item.transcript, "So I think we should ship.")
+        XCTAssertEqual(item.rawTranscript, "um so I think uh we should ship")
+
+        // Round-trip in memory: the shared UserDefaults store is also written
+        // by other test processes when the suite runs in parallel.
+        let decoded = try JSONDecoder().decode(HistoryItem.self, from: JSONEncoder().encode(item))
+        XCTAssertEqual(decoded.rawTranscript, "um so I think uh we should ship")
+    }
+
+    func testBlankRawTranscriptIsStoredAsNil() throws {
+        service.addItem(transcript: "Hello", rawTranscript: "   ", duration: 1.0)
+        XCTAssertNil(try XCTUnwrap(service.items.first).rawTranscript)
+    }
+
+    func testItemsRecordedBefore1_3DecodeWithoutARawTranscript() throws {
+        let legacy = """
+            [{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","date":0,"transcript":"Old item","duration":1.5}]
+            """
+        let decoded = try JSONDecoder().decode([HistoryItem].self, from: Data(legacy.utf8))
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].transcript, "Old item")
+        XCTAssertNil(decoded[0].rawTranscript)
+        XCTAssertNil(decoded[0].modelUsed)
+    }
+
     func testStatsPersistenceUsesSeparateStore() {
         service.addItem(transcript: "Persistent stats entry", duration: 5.0)
 
