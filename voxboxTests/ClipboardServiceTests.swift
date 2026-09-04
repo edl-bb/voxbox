@@ -3,7 +3,34 @@ import Cocoa
 @testable import voxbox
 
 final class ClipboardServiceTests: XCTestCase {
-    
+    /// These tests use the real system pasteboard. Save the user's clipboard
+    /// before each test and put it back afterwards, so running the suite on
+    /// a developer's Mac does not leave `https://example.com/original` behind.
+    private var savedItems: [[NSPasteboard.PasteboardType: Data]] = []
+
+    override func setUp() {
+        super.setUp()
+        savedItems = (NSPasteboard.general.pasteboardItems ?? []).map { item in
+            var dataByType: [NSPasteboard.PasteboardType: Data] = [:]
+            for type in item.types {
+                if let data = item.data(forType: type) { dataByType[type] = data }
+            }
+            return dataByType
+        }
+    }
+
+    override func tearDown() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        let items = savedItems.map { dataByType in
+            let item = NSPasteboardItem()
+            for (type, data) in dataByType { item.setData(data, forType: type) }
+            return item
+        }
+        if !items.isEmpty { pasteboard.writeObjects(items) }
+        super.tearDown()
+    }
+
     func testCopy() {
         let text = "Copied Text Check"
         ClipboardService.shared.copy(text: text)

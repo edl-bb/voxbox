@@ -24,6 +24,13 @@ enum Typography {
     
     // MARK: - Display Headlines (Serif - editorial feel)
     
+    // Onboarding: the first-run walkthrough uses the same serif as the
+    // dashboard at hero sizes, and Source Sans for everything else.
+    static let onboardingHero = Font.system(size: 48, weight: .regular, design: .serif)
+    static let onboardingTitle = Font.system(size: 40, weight: .regular, design: .serif)
+    static let onboardingTagline = Font.system(size: 16, weight: .regular, design: .serif)
+    static let onboardingCardTitle = Font.system(size: 16, weight: .medium, design: .serif)
+
     static let displayLarge = Font.system(size: 32, weight: .medium, design: .serif)
     static let displayMedium = Font.system(size: 26, weight: .medium, design: .serif)
     static let displaySmall = Font.system(size: 22, weight: .medium, design: .serif)

@@ -55,6 +55,10 @@ _Avoid_: Streaming model (when meaning the setting)
 Copies only (no live write, no Cmd+V). Stream transcription is live delivery into the destination text area as tokens appear.
 _Avoid_: Auto paste (when meaning clipboard-only copy)
 
+**Stable-only typing**:
+Live delivery into a keystroke-only target: only stable tokens are typed, nothing is deleted mid-take, and the revisable text stays in the HUD. At the end of the take VoxBox removes exactly what it typed and pastes the cleaned transcript. Only when the destination is no longer frontmost does the typed text stay and the cleaned transcript go to the clipboard.
+_Avoid_: Append-only (in user-facing copy); live revise
+
 **Coverage stage**:
 A slice of target apps live delivery is validated against, in order: AppKit text, then browsers, then Electron. Browsers are confirmed. Electron composers (Cursor, Slack, Superhuman) need Chromium `AXManualAccessibility` and a frontmost app to find the focused `AXTextArea`; AX set is a no-op there, so live write types Unicode key events.
 _Avoid_: App coverage (unqualified); future map (when meaning browsers or Electron)
@@ -98,8 +102,20 @@ Keeping the speaker's message when wording may change. The Polish contract.
 _Avoid_: Fidelity (unqualified); wording-faithful
 
 **Guardrail**:
-The change-ratio budget that discards on-device cleanup if the edit is too heavy, leaving the pre-model transcript.
-_Avoid_: Guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
+The asymmetric edit budget that vetoes a model pass when it changed too much. Fillers, false starts and repeats are free; grammar and near-spelling fixes cost half; other wording changes cost one. Each level has a cost ceiling, an absolute free-edit floor for short takes, and a retention floor against summaries. Takes of a dozen content words or fewer are not governed by the budget at all. Emails, URLs and numbers must survive at any length. Takes too short for the model still get the instant filler and numeral pass at Light and Polish.
+_Avoid_: Change ratio (the 1.2.0 symmetric measure); guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
+
+**Step-down**:
+What happens after a veto: Polish → Light cleanup → Basic → raw, one rung per attempt, so a heavy Polish pass lands as Light rather than as the raw transcript. Previews and the ruleset test panel run a single rung.
+_Avoid_: Fallback (when meaning the engine retry on Apple Intelligence); retry
+
+**Post-pass**:
+Deterministic repairs to model output before the guardrail: preamble and refusal strip, punctuation and whitespace tidy outside emails and URLs, casing repair against the dictation, sentence-initial capitals.
+_Avoid_: Tidy (unqualified); formatting
+
+**Preview**:
+Running text through the same cleanup pipeline a take uses, without the enabled gate or minimum word count. Onboarding, the ruleset test panel and the eval harness all preview.
+_Avoid_: Dry run; simulate; test cleanup (in user-facing copy)
 
 **DEBUG tuner**:
 A development-only in-app editor for cleanup instructions and guardrail budgets. Release builds use the compiled values.

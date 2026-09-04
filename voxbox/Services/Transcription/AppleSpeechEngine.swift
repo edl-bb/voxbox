@@ -204,7 +204,7 @@ class AppleSpeechEngine: SpeechToTextEngine {
 
     func startLive(
         language: String,
-        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+        onUpdate: @escaping @MainActor (LiveTranscriptSnapshot) -> Void
     ) async throws {
         cancelLive()
         guard await AppleSpeechCatalog.isInstalled(language: language) else {
@@ -225,7 +225,7 @@ class AppleSpeechEngine: SpeechToTextEngine {
         liveTap.input = continuation
         try await analyzer.start(inputSequence: stream)
 
-        liveResultsTask = Task { [weak self] in
+        liveResultsTask = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
                 try await self.collectLive(from: module, onUpdate: onUpdate)
@@ -246,7 +246,9 @@ class AppleSpeechEngine: SpeechToTextEngine {
             try await analyzer.finalizeAndFinishThroughEndOfInput()
         }
         _ = await liveResultsTask?.value
-        let text = (liveStable + liveRevisable)
+        // Same seam rule as the HUD and the typed text, so the raw transcript
+        // extends what is already in the field instead of gluing words.
+        let text = LiveTranscriptSnapshot(stable: liveStable, revisable: liveRevisable).fullText
             .trimmingCharacters(in: .whitespacesAndNewlines)
         teardownLive()
         return text
@@ -273,7 +275,7 @@ class AppleSpeechEngine: SpeechToTextEngine {
 
     private func collectLive(
         from module: AppleSpeechModule,
-        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+        onUpdate: @escaping @MainActor (LiveTranscriptSnapshot) -> Void
     ) async throws {
         switch module {
         case .speech(let transcriber):
@@ -290,10 +292,12 @@ class AppleSpeechEngine: SpeechToTextEngine {
     private func applyLiveResult(
         _ text: String,
         isFinal: Bool,
-        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
+        onUpdate: @escaping @MainActor (LiveTranscriptSnapshot) -> Void
     ) {
         if isFinal {
-            liveStable += text
+            // Same seam rule as `fullText`, so the stable text stays a
+            // prefix of what the field already shows.
+            liveStable = LiveTranscriptSnapshot.join(liveStable, text)
             liveRevisable = ""
         } else if !liveStable.isEmpty, text.hasPrefix(liveStable) {
             liveRevisable = String(text.dropFirst(liveStable.count))

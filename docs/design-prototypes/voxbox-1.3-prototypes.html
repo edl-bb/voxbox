@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoxBox 1.3 · design prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Source+Sans+3:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f2ed; --paper-2:#ece9e2; --card:#ffffff; --line:#e3dfd6; --line-2:#d2cdc2;
+    --ink:#161616; --ink-2:#5f5b55; --ink-3:#9a958c; --navy:#243056; --navy-soft:#e8ecf7;
+    --ok:#2f7a4d; --warn:#b2761a; --warn-soft:#fbf1df; --del:#b23a3a; --del-soft:#fbe4e4; --add:#1f6f4a; --add-soft:#e2f3ea;
+    --pill:#151515; --pill-2:#232323; --pill-text:#f5f5f5; --pill-dim:#a5a5a5;
+    --serif:"Fraunces","Iowan Old Style",Georgia,serif; --sans:"Source Sans 3","Helvetica Neue",sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+    --r:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 32px 96px}
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:48px;animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+  .eyebrow{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  h1{font-family:var(--serif);font-weight:400;font-size:clamp(34px,4.6vw,56px);line-height:1.02;letter-spacing:-.02em;margin:10px 0 0;font-variation-settings:"opsz" 144}
+  h1 em{font-style:italic;font-weight:300;color:var(--ink-2)}
+  .lede{max-width:520px;color:var(--ink-2);font-size:16px}
+  nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:6px;padding:10px 0 14px;margin:0 -4px 36px;background:linear-gradient(var(--paper) 78%,transparent)}
+  nav.tabs button{font:inherit;font-weight:600;font-size:13px;letter-spacing:.01em;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;transition:all .18s}
+  nav.tabs button:hover{border-color:var(--line-2);color:var(--ink)}
+  nav.tabs button[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  nav.tabs .k{font-family:var(--mono);font-size:11px;opacity:.6;margin-right:8px}
+  section.proto{display:none;animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+  section.proto.on{display:block}
+  .proto-head{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:end;margin-bottom:28px}
+  .proto-head h2{font-family:var(--serif);font-weight:400;font-size:34px;letter-spacing:-.015em;margin:8px 0 10px;line-height:1.08}
+  .proto-head p{margin:0;color:var(--ink-2)}
+  .why{border-left:2px solid var(--navy);padding:6px 0 6px 16px;color:var(--ink-2);font-size:14px}
+  .why b{color:var(--ink);font-weight:600}
+  .stage{background:var(--paper-2);border:1px solid var(--line);border-radius:24px;padding:40px;position:relative;overflow:hidden}
+  .stage::after{content:"";position:absolute;inset:auto -10% -40% -10%;height:60%;background:radial-gradient(60% 60% at 50% 50%,rgba(36,48,86,.08),transparent 70%);pointer-events:none}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 0 rgba(0,0,0,.02),0 10px 30px -18px rgba(20,20,20,.25)}
+  .caption{margin-top:18px;font-size:13px;color:var(--ink-3);display:flex;gap:18px;flex-wrap:wrap}
+  .caption span::before{content:"— ";color:var(--line-2)}
+  .row{display:flex;align-items:center;gap:10px}
+  .tag{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+  .btn{font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:12px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);cursor:pointer;transition:transform .12s,box-shadow .12s}
+  .btn:hover{box-shadow:0 8px 20px -14px rgba(0,0,0,.5);transform:translateY(-1px)}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
+  .btn.sm{padding:6px 10px;font-size:12px;border-radius:9px}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  /* ---------- A · recorder pill ---------- */
+  .pillstage{display:grid;grid-template-columns:1fr 300px;gap:32px;align-items:start}
+  .desk{position:relative;min-height:420px;border-radius:18px;background:
+      linear-gradient(180deg,#fbfaf7,#f0ede6);border:1px solid var(--line);overflow:hidden}
+  .desk .doc{position:absolute;inset:26px 26px 90px;background:#fff;border-radius:12px;border:1px solid var(--line);padding:28px 32px;font-size:14.5px;color:var(--ink-2);line-height:1.7}
+  .desk .doc .typed{color:var(--ink)}
+  .desk .doc .caret{display:inline-block;width:1.5px;height:1.05em;background:var(--navy);vertical-align:-3px;margin-left:1px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .pill{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);min-width:320px;max-width:560px;background:var(--pill);color:var(--pill-text);border-radius:22px;padding:12px 14px 12px 12px;display:flex;align-items:center;gap:12px;box-shadow:0 18px 40px -16px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);transition:all .35s cubic-bezier(.2,.7,.2,1)}
+  .pill .orb{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--pill-2);flex:none;position:relative}
+  .pill .orb::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15)}
+  .pill[data-state="listening"] .orb::after{border-color:rgba(255,255,255,.35);animation:pulse 1.6s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(.9);opacity:1}100%{transform:scale(1.35);opacity:0}}
+  .bars{display:flex;gap:2px;align-items:center;height:16px}
+  .bars i{display:block;width:2.5px;background:#fff;border-radius:2px;height:4px;animation:bar 1s ease-in-out infinite}
+  .bars i:nth-child(2){animation-delay:.1s}.bars i:nth-child(3){animation-delay:.2s}.bars i:nth-child(4){animation-delay:.3s}.bars i:nth-child(5){animation-delay:.15s}
+  @keyframes bar{0%,100%{height:4px}50%{height:14px}}
+  .pill[data-state="idle"] .bars i,.pill[data-state="finishing"] .bars i,.pill[data-state="done"] .bars i{animation:none;height:3px;opacity:.5}
+  .pill .live{flex:1;min-width:0;font-size:14px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--sans)}
+  .pill .live .stable{color:var(--pill-text)}
+  .pill .live .revisable{color:var(--pill-dim);font-style:italic;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);background-size:200% 100%;animation:shimmer 1.8s linear infinite;border-radius:4px;padding:0 2px}
+  @keyframes shimmer{to{background-position:-200% 0}}
+  .pill .live .status{color:var(--pill-dim)}
+  .pill .live .status b{color:var(--pill-text);font-weight:600}
+  .pill .chips{display:flex;gap:6px;flex:none}
+  .chip{font-size:11px;font-weight:600;letter-spacing:.02em;padding:5px 9px;border-radius:999px;background:var(--pill-2);color:var(--pill-dim);display:flex;align-items:center;gap:5px}
+  .chip svg{width:11px;height:11px}
+  .chip.mode{color:var(--pill-text)}
+  .ring{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:spin .9s linear infinite;flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .pill .check{width:20px;height:20px;border-radius:50%;background:var(--ok);display:grid;place-items:center;flex:none}
+  .pill .check svg{width:12px;height:12px}
+  .pill[data-state="done"]{background:#1d2a1f}
+  .states{display:flex;flex-direction:column;gap:8px}
+  .states button{text-align:left;font:inherit;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:grid;gap:2px}
+  .states button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+  .states button b{font-weight:600;font-size:13.5px}
+  .states button span{font-size:12.5px;color:var(--ink-2)}
+  .legend{margin-top:16px;padding:14px;border-radius:12px;background:var(--card);border:1px dashed var(--line-2);font-size:12.5px;color:var(--ink-2)}
+  .legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+
+  /* ---------- B · cleanup page ---------- */
+  .page{display:grid;grid-template-columns:220px 1fr;min-height:560px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+  .side{background:#f1efeb;padding:26px 14px;border-right:1px solid var(--line)}
+  .side .brand{display:flex;gap:10px;align-items:center;padding:0 10px 22px;font-weight:600;font-size:15px}
+  .side .brand i{width:26px;height:26px;border-radius:7px;background:#111;display:grid;place-items:center}
+  .side .brand i svg{width:14px;height:14px}
+  .side a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:9px;text-decoration:none;font-size:14px;color:var(--ink-2)}
+  .side a.on{background:var(--navy-soft);color:var(--ink);font-weight:600}
+  .side a svg{width:15px;height:15px;opacity:.75}
+  .main{padding:30px 34px}
+  .main h3{font-family:var(--serif);font-weight:400;font-size:30px;letter-spacing:-.015em;margin:0}
+  .strip{display:flex;gap:14px;align-items:center;margin:14px 0 26px;padding:12px 16px;border-radius:14px;border:1px solid var(--line);background:#faf9f6}
+  .strip .dot{width:30px;height:30px;border-radius:50%;background:var(--navy-soft);display:grid;place-items:center;color:var(--navy)}
+  .strip .dot svg{width:14px;height:14px}
+  .strip .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .strip .v{font-weight:600;font-size:14px}
+  .strip .s{color:var(--ink-3);font-size:12px;margin-left:auto}
+  .two{display:grid;grid-template-columns:1fr 1.1fr;gap:22px;align-items:start}
+  .levels{display:grid;gap:8px}
+  .lvl{display:grid;grid-template-columns:18px 1fr auto;gap:12px;align-items:start;padding:12px 14px;border-radius:12px;border:1px solid var(--line);cursor:pointer;transition:all .15s}
+  .lvl:hover{border-color:var(--line-2)}
+  .lvl.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+  .lvl .rad{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);margin-top:3px;position:relative}
+  .lvl.on .rad{border-color:var(--ink)}
+  .lvl.on .rad::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--ink)}
+  .lvl b{display:block;font-family:var(--serif);font-weight:500;font-size:16px;letter-spacing:-.01em}
+  .lvl span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  .lvl .meta{font-size:11px;color:var(--ink-3);font-family:var(--mono);margin-top:4px;white-space:nowrap}
+  .toggles{margin-top:14px;display:grid;gap:10px;padding:14px;border-radius:12px;background:#faf9f6;border:1px solid var(--line)}
+  .tg{display:flex;justify-content:space-between;align-items:center;font-size:13.5px}
+  .tg small{display:block;color:var(--ink-3);font-size:12px}
+  .sw2{width:34px;height:20px;border-radius:999px;background:var(--line-2);position:relative;flex:none}
+  .sw2.on{background:var(--ink)}
+  .sw2::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+  .sw2.on::after{left:16px}
+  .preview{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .preview .ph{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line);background:#faf9f6}
+  .preview .ph .tag{color:var(--ink-2)}
+  .preview .sel{font-size:12px;font-weight:600;color:var(--ink-2);display:flex;gap:6px;align-items:center}
+  .preview .body{padding:16px 18px;display:grid;gap:14px}
+  .said{font-size:13px;color:var(--ink-3);line-height:1.6;font-style:italic}
+  .said em{font-style:normal;color:var(--ink-2)}
+  .out{font-size:15px;line-height:1.6;color:var(--ink);padding:14px 16px;border-radius:12px;background:var(--paper);border:1px solid var(--line);position:relative}
+  .out::before{content:"Light cleanup";position:absolute;top:-9px;left:12px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--ink-3);background:var(--paper);padding:0 6px}
+  .foot{display:flex;gap:14px;font-size:12px;color:var(--ink-3);font-family:var(--mono)}
+  .foot .ok{color:var(--ok)}
+  .rules{margin-top:22px;border-top:1px solid var(--line);padding-top:18px;display:none}
+  .rules.on{display:block}
+  .rule{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-top:8px}
+  .rule .rad{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--line-2)}
+  .rule.on .rad{border-color:var(--navy);background:radial-gradient(var(--navy) 45%,transparent 50%)}
+  .rule b{font-size:13.5px;font-weight:600}
+  .rule span{font-size:12px;color:var(--ink-3);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .rule .btn{margin-left:auto}
+
+  /* ---------- C · onboarding ---------- */
+  .ob{width:min(100%,900px);margin:0 auto;aspect-ratio:6/5;min-height:540px;background:var(--paper);border-radius:18px;border:1px solid var(--line);position:relative;padding:22px 56px 40px;display:grid;grid-template-rows:auto 1fr auto;gap:14px}
+  .ob .dots{display:flex;gap:7px}
+  .ob .dots i{width:7px;height:7px;border-radius:999px;background:rgba(0,0,0,.14)}
+  .ob .dots i.on{width:22px;background:var(--ink)}
+  .ob .center{display:grid;place-content:center;text-align:center;gap:6px}
+  .ob h4{font-family:var(--serif);font-weight:400;font-size:40px;letter-spacing:-.02em;margin:4px 0 8px;line-height:1.05;font-variation-settings:"opsz" 144}
+  .ob .sub{max-width:460px;margin:0 auto;color:var(--ink-2);font-size:15px}
+  .cards{display:flex;gap:18px;justify-content:center;margin-top:28px}
+  .ocard{width:230px;text-align:left;padding:18px;border-radius:20px;background:var(--card);border:1px solid var(--line);display:grid;gap:8px;position:relative;transition:transform .2s,box-shadow .2s;cursor:pointer}
+  .ocard:hover{transform:translateY(-3px);box-shadow:0 22px 40px -28px rgba(0,0,0,.4)}
+  .ocard.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),0 22px 40px -28px rgba(0,0,0,.35)}
+  .ocard .ic{width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.05);display:grid;place-items:center}
+  .ocard .ic svg{width:18px;height:18px}
+  .ocard b{font-family:var(--serif);font-weight:500;font-size:17px;letter-spacing:-.01em;margin-top:6px}
+  .ocard span{font-size:12.5px;color:var(--ink-2)}
+  .ocard .ck{position:absolute;top:16px;right:16px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line-2)}
+  .ocard.on .ck{background:var(--ink);border-color:var(--ink)}
+  .ocard.on .ck::after{content:"";position:absolute;left:5px;top:2px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .ob .tip{font-size:12.5px;color:var(--ink-3);margin-top:16px}
+  .ob .foot{justify-content:center;flex-direction:column;align-items:center;gap:10px;font-family:var(--sans)}
+  .ob .go{font:inherit;font-weight:600;font-size:15px;padding:12px 26px;border-radius:12px;background:var(--ink);color:#fff;border:0;display:flex;gap:10px;align-items:center;box-shadow:0 10px 24px -14px rgba(0,0,0,.6)}
+  .ob .exit{position:absolute;top:18px;right:20px;font-size:12px;font-weight:600;color:var(--ink-2);background:rgba(0,0,0,.05);padding:6px 10px;border-radius:999px}
+
+  /* ---------- D · last take ---------- */
+  .dash{display:grid;grid-template-columns:1.2fr .8fr;gap:22px}
+  .take{padding:22px 24px}
+  .take .hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .take h3{font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:-.015em;margin:0}
+  .take .meta{font-size:12.5px;color:var(--ink-3)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:#faf9f6}
+  .seg button{font:inherit;font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;border:0;background:transparent;color:var(--ink-2);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .diff{margin-top:14px;font-size:16px;line-height:1.8;font-family:var(--serif);font-weight:400;letter-spacing:-.005em}
+  .diff del{color:var(--del);text-decoration:line-through;text-decoration-thickness:1px;background:var(--del-soft);border-radius:4px;padding:0 3px;opacity:.9;transition:all .25s}
+  .diff ins{color:var(--add);text-decoration:none;background:var(--add-soft);border-radius:4px;padding:0 3px;transition:all .25s}
+  .diff.clean del{display:none}
+  .diff.clean ins{background:transparent;color:inherit}
+  .diff.raw ins{display:none}
+  .diff.raw del{text-decoration:none;background:transparent;color:inherit}
+  .stats{display:flex;gap:18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+  .stats b{font-family:var(--serif);font-size:20px;font-weight:500;margin-right:5px;color:var(--ink)}
+  .acts{display:flex;gap:8px;margin-top:16px}
+  .mini{padding:18px 20px;display:grid;gap:12px;align-content:start}
+  .mini .tag{margin-bottom:-4px}
+  .kv{display:flex;justify-content:space-between;font-size:13.5px;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .kv:last-child{border:0}
+  .kv span{color:var(--ink-3)}
+  .kv b{font-weight:600}
+  .ladder{display:flex;gap:6px;align-items:center;font-size:12px;font-family:var(--mono)}
+  .ladder i{padding:3px 8px;border-radius:6px;border:1px solid var(--line)}
+  .ladder i.hit{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ladder i.x{color:var(--del);border-color:var(--del-soft);background:var(--del-soft)}
+  footer.note{margin-top:64px;color:var(--ink-3);font-size:13px;border-top:1px solid var(--line);padding-top:18px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">VoxBox 1.3 · four directions</div>
+      <h1>Prototypes, <em>not pixels yet.</em></h1>
+    </div>
+    <p class="lede">Each tab is one idea taken far enough to judge. They share the current dashboard's voice: warm paper, serif headlines, ink and navy. Pick what earns a SwiftUI pass; the rest stays here.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-t="a"><span class="k">A</span>Recorder pill, live text</button>
+    <button role="tab" aria-selected="false" data-t="b"><span class="k">B</span>One Cleanup page</button>
+    <button role="tab" aria-selected="false" data-t="c"><span class="k">C</span>Onboarding type refresh</button>
+    <button role="tab" aria-selected="false" data-t="d"><span class="k">D</span>Last take, before / after</button>
+  </nav>
+
+  <!-- A -->
+  <section class="proto on" id="a">
+    <div class="proto-head">
+      <div>
+        <div class="eyebrow">A</div>
+        <h2>The pill says what it knows, and what it's still deciding.</h2>
+        <p>Committed words in white, revisable tail in dimmed italic. In apps VoxBox can only type into, the tail lives here and never in the document. The finish states name the cleanup level and the time.</p>
+      </div>
+      <div class="why"><b>Why:</b> the 1.3 streaming fix made stable-only typing the rule for Slack, Notion and web composers. The HUD is now load-bearing; today it's a plain string.</div>
+    </div>
+    <div class="stage">
+      <div class="pillstage">
+        <div class="desk">
+          <div class="doc" id="doc">Hi Jack, just following up on the thing we talked about yesterday. <span class="typed" id="typed"></span><span class="caret"></span></div>
+          <div class="pill" id="pill" data-state="listening">
+            <div class="orb"><div class="bars"><i></i><i></i><i></i><i></i><i></i></div></div>
+            <div class="live" id="live"><span class="stable">Can you send the updated deck to Sam by</span> <span class="revisable">like Thursday and put the</span></div>
+            <div class="chips"><div class="chip mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 13V5a2 2 0 1 1 4 0v6"/><path d="M12 11V9a2 2 0 1 1 4 0v3"/><path d="M16 12a2 2 0 1 1 4 0v3a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7L4 14a2 2 0 0 1 3.2-2.4L8 13"/></svg>Hold</div><div class="chip">Light</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="tag" style="margin-bottom:10px">States</div>
+          <div class="states" id="states">
+            <button data-s="idle"><b>Idle</b><span>Hotkey hint, mode and level chips only.</span></button>
+            <button data-s="listening" aria-pressed="true"><b>Listening</b><span>Stable text bright, revisable tail dim and shimmering.</span></button>
+            <button data-s="finishing"><b>Finishing</b><span>“Cleaning up · Light” with a ring. Field is frozen.</span></button>
+            <button data-s="done"><b>Delivered</b><span>“Pasted · Light cleanup · 1.2 s”, then fades.</span></button>
+            <button data-s="clip"><b>Clipboard fallback</b><span>Destination changed: “Copied. Field changed while you spoke.”</span></button>
+          </div>
+          <div class="legend"><span class="sw" style="background:#f5f5f5;border:1px solid #ccc"></span>stable, already typed &nbsp;&nbsp; <span class="sw" style="background:#a5a5a5"></span>revisable, HUD only</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>Pill width follows the text, capped at 560 pt.</span><span>Level chip reads from Settings; tapping it opens the same menu as the mode chip.</span><span>Green tint on Delivered is the only colour the pill ever shows.</span></div>
+  </section>
+
+  <!-- B -->
+  <section class="proto" id="b">
+    <div class="proto-head">
+      <div>
+        <div class="eyebrow">B</div>
+        <h2>One page called Cleanup. Levels on the left, proof on the right.</h2>
+        <p>Merges Settings › Transcript Cleanup and AI Models › LLM Instructions. Choose a level and the preview re-runs on a sample or your last take. Custom expands to the ruleset list with an inline Test button. The model strip is honest: Apple Intelligence, on this Mac.</p>
+      </div>
+      <div class="why"><b>Why:</b> the same toggle currently lives in two places, rulesets live in a third, and there was no way to see a level before living with it. Onboarding now has the comparison; the page should too.</div>
+    </div>
+    <div class="stage">
+      <div class="page">
+        <aside class="side">
+          <div class="brand"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M6 9v6M10 5v14M14 8v8M18 10v4"/></svg></i>VoxBox</div>
+          <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h2l2-6 3 12 3-9 2 3h4"/></svg>Transcribe Audio</a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6"/></svg>History</a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 16l4-8 4 8M9.5 13h5"/></svg>Dictionary</a>
+          <a href="#" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>Cleanup</a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>Models</a>
+          <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Settings</a>
+        </aside>
+        <div class="main">
+          <h3>Cleanup</h3>
+          <div class="strip">
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>
+            <div><div class="t">Cleaning up with</div><div class="v">Apple Intelligence · on this Mac</div></div>
+            <div class="s">Other on-device models arrive with macOS 27</div>
+          </div>
+          <div class="two">
+            <div>
+              <div class="levels" id="levels">
+                <div class="lvl" data-l="off"><div class="rad"></div><div><b>Off</b><span>Paste exactly what the engine heard.</span></div><div class="meta">0 ms</div></div>
+                <div class="lvl" data-l="basic"><div class="rad"></div><div><b>Basic</b><span>Capitals, punctuation, paragraph breaks. Never a word.</span></div><div class="meta">~0.9 s</div></div>
+                <div class="lvl on" data-l="light"><div class="rad"></div><div><b>Light cleanup</b><span>Drops ums, false starts, repeats. Fixes obvious grammar.</span></div><div class="meta">~1.2 s</div></div>
+                <div class="lvl" data-l="polish"><div class="rad"></div><div><b>Polish</b><span>Smooths choppy dictation into fluent sentences.</span></div><div class="meta">~1.6 s</div></div>
+                <div class="lvl" data-l="custom"><div class="rad"></div><div><b>Custom</b><span>Your own instructions, sent verbatim, no guardrail.</span></div><div class="meta">2 rulesets</div></div>
+              </div>
+              <div class="toggles">
+                <div class="tg"><div>Markdown formatting<small>Lists and bold where the dictation asks for them. Light and Polish only.</small></div><div class="sw2 on"></div></div>
+                <div class="tg"><div>Auto Edit<small>Instant, no model: strip um, uh, er before anything else.</small></div><div class="sw2 on"></div></div>
+              </div>
+              <div class="rules" id="rules">
+                <div class="tag">Your rulesets</div>
+                <div class="rule on"><div class="rad"></div><div><b>Meeting notes</b></div><span>Turn the dictation into bullet points grouped by topic…</span><button class="btn sm">Test</button><button class="btn sm ghost">Edit</button></div>
+                <div class="rule"><div class="rad"></div><div><b>Slack voice</b></div><span>Keep it casual, lowercase first word ok, no full stop at the end…</span><button class="btn sm">Test</button><button class="btn sm ghost">Edit</button></div>
+              </div>
+            </div>
+            <div class="preview">
+              <div class="ph"><span class="tag">Try it</span><span class="sel">Follow-up message <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></span></div>
+              <div class="body">
+                <div class="said"><em>You said:</em> Um so hi Jack, just following up on, on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by like Thursday…</div>
+                <div class="out" id="out">Hi Jack, just following up on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by Thursday, and put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?</div>
+                <div class="foot"><span>Apple Intelligence</span><span>1.2 s</span><span class="ok">landed at Light</span><span>email + number intact</span></div>
+                <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn sm ghost">Use my last take</button><button class="btn sm">Run again</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>Sidebar loses “AI Models”; transcription models move to “Models”.</span><span>The DEBUG tuner slots under this page in dev builds.</span><span>Timings are per-level medians from the last ten takes.</span></div>
+  </section>
+
+  <!-- C -->
+  <section class="proto" id="c">
+    <div class="proto-head">
+      <div>
+        <div class="eyebrow">C</div>
+        <h2>Onboarding in the dashboard's own type, not <code style="font-family:var(--mono);font-size:.7em">.system</code> fonts.</h2>
+        <p>The recording-mode step as shipped in 1.3, restyled with the Typography scale the rest of the app already uses: optical-size serif at 40, Source Sans body, progress dots, and cards that read as choices rather than features.</p>
+      </div>
+      <div class="why"><b>Why:</b> onboarding is the only screen still using raw system fonts, so the first thing a new user sees is the least VoxBox-looking screen in the app.</div>
+    </div>
+    <div class="stage">
+      <div class="ob">
+        <div class="row" style="justify-content:space-between"><div class="dots"><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="exit">Exit setup</div></div>
+        <div class="center">
+          <div class="eyebrow">Recording</div>
+          <h4>How do you want to talk?</h4>
+          <p class="sub">VoxBox listens while you use the Fn key. Pick the style that suits you. You can switch any time from the recorder pill or Settings.</p>
+          <div class="cards" id="ocards">
+            <div class="ocard on"><div class="ck"></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 13V5a2 2 0 1 1 4 0v6"/><path d="M12 11V9a2 2 0 1 1 4 0v3"/><path d="M16 12a2 2 0 1 1 4 0v3a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7L4 14a2 2 0 0 1 3.2-2.4L8 13"/></svg></div><b>Hold to talk</b><span>Hold Fn while you speak and let go when you're done. Quick and natural for short messages.</span></div>
+            <div class="ocard"><div class="ck"></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div><b>Toggle on and off</b><span>Press Fn once to start and again to stop. Hands-free for longer dictation.</span></div>
+          </div>
+          <div class="tip">Not sure? Hold to talk is the default, and the pill shows a Hold / Toggle switch whenever you record.</div>
+        </div>
+        <div class="foot row"><button class="go">Continue <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><span style="font-size:13px;font-weight:600;color:var(--ink-2)">Skip for now</span></div>
+      </div>
+    </div>
+    <div class="caption"><span>Same layout as the SwiftUI page on the onboarding branch; only type, spacing and card treatment change.</span><span>Applies to Welcome, Globe key and Permissions too.</span></div>
+  </section>
+
+  <!-- D -->
+  <section class="proto" id="d">
+    <div class="proto-head">
+      <div>
+        <div class="eyebrow">D</div>
+        <h2>The dashboard shows the last take, and what cleanup did to it.</h2>
+        <p>History now stores the raw transcript next to the cleaned one, which makes a before/after diff cheap. Removed fillers strike through, added punctuation glows green, and the footer explains the guardrail ladder in one line.</p>
+      </div>
+      <div class="why"><b>Why:</b> trust. Light cleanup went from “sometimes does nothing” to “usually lands”, and the fastest way to earn confidence in an editor is to show its edits.</div>
+    </div>
+    <div class="stage">
+      <div class="dash">
+        <div class="card take">
+          <div class="hd"><h3>Last take</h3><div class="seg" id="seg"><button data-v="raw">What you said</button><button data-v="diff" aria-pressed="true">What changed</button><button data-v="clean">What was pasted</button></div></div>
+          <div class="meta">2 minutes ago · Slack · 71 words · 6.4 s of speech</div>
+          <div class="diff" id="diff"><del>Um so </del><ins>H</ins><del>h</del>i Priya, just following up on<del>, on</del> the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by <del>like </del>Thursday, and<del>, um,</del> put the revised total, I think it was twelve thousand five hundred dollars, into the tracker<ins>.</ins> Also I meant to say, the <del>the </del>second slide still has the old logo so legal should probably see it for <del>there</del><ins>their</ins> review before it goes out.</div>
+          <div class="stats"><div><b>4</b>fillers dropped</div><div><b>2</b>repeats collapsed</div><div><b>1</b>spelling fixed</div><div><b>0</b>words changed otherwise</div></div>
+          <div class="acts"><button class="btn sm">Copy</button><button class="btn sm ghost">Re-run as Polish</button><button class="btn sm ghost">Open in History</button></div>
+        </div>
+        <div class="card mini">
+          <div class="tag">Cleanup</div>
+          <div class="kv"><span>Requested</span><b>Light cleanup</b></div>
+          <div class="kv"><span>Landed</span><b>Light cleanup</b></div>
+          <div class="kv"><span>Model</span><b>Apple Intelligence</b></div>
+          <div class="kv"><span>Time</span><b>1.2 s</b></div>
+          <div class="kv"><span>Guardrail cost</span><b>0.5 of 3 allowed</b></div>
+          <div class="tag" style="margin-top:6px">Ladder</div>
+          <div class="ladder"><i class="hit">Light</i><i>Basic</i><i>raw</i></div>
+          <div class="tag" style="margin-top:6px">A Polish take last week</div>
+          <div class="ladder"><i class="x">Polish</i><i class="hit">Light</i><i>Basic</i><i>raw</i></div>
+          <p style="font-size:12.5px;color:var(--ink-2);margin:0">Polish changed too much, so Light shipped. That's the step-down working, and it's worth showing rather than hiding.</p>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>Diff is word-level, computed from the same alignment the guardrail already runs.</span><span>Segmented control remembers its position.</span><span>Card collapses to a single line when the last take was Off.</span></div>
+  </section>
+
+  <footer class="note"><span>Static HTML, no build step. Fonts load from Google Fonts and fall back to system serif/sans offline.</span><span>docs/design-prototypes/voxbox-1.3-prototypes.html</span></footer>
+</div>
+
+<script>
+  // Tabs
+  const tabs=[...document.querySelectorAll('nav.tabs button')];
+  tabs.forEach(b=>b.addEventListener('click',()=>{
+    tabs.forEach(t=>t.setAttribute('aria-selected',t===b));
+    document.querySelectorAll('section.proto').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+  }));
+
+  // A: pill states
+  const pill=document.getElementById('pill'),live=document.getElementById('live'),typed=document.getElementById('typed');
+  const chipsHTML=pill.querySelector('.chips').outerHTML;
+  const views={
+    idle:{live:'<span class="status">Press <b>Fn</b> to dictate</span>',orb:'bars',typed:''},
+    listening:{live:'<span class="stable">Can you send the updated deck to Sam by</span> <span class="revisable">like Thursday and put the</span>',orb:'bars',typed:'Can you send the updated deck to Sam by'},
+    finishing:{live:'<span class="status">Cleaning up · <b>Light</b></span>',orb:'ring',typed:'Can you send the updated deck to Sam by like Thursday and put the revised total into the tracker.'},
+    done:{live:'<span class="status"><b>Pasted</b> · Light cleanup · 1.2 s</span>',orb:'check',typed:'Can you send the updated deck to Sam by Thursday, and put the revised total into the tracker.'},
+    clip:{live:'<span class="status"><b>Copied.</b> Field changed while you spoke.</span>',orb:'check',typed:'Can you send the updated deck to Sam by'}
+  };
+  document.getElementById('states').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('#states button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    const s=b.dataset.s, v=views[s];
+    pill.dataset.state=s==='clip'?'done':s;
+    const orb=v.orb==='bars'?'<div class="orb"><div class="bars"><i></i><i></i><i></i><i></i><i></i></div></div>':v.orb==='ring'?'<div class="orb"><div class="ring"></div></div>':'<div class="orb"><div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div></div>';
+    pill.innerHTML=orb+'<div class="live" id="live">'+v.live+'</div>'+chipsHTML;
+    typed.textContent=v.typed?(' '+v.typed):'';
+  });
+
+  // B: levels
+  const levels=document.getElementById('levels'),rules=document.getElementById('rules'),out=document.getElementById('out');
+  const outputs={
+    off:'Um so hi Jack, just following up on, on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker.',
+    basic:'Um so hi Jack, just following up on, on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by like Thursday, and, um, put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?',
+    light:'Hi Jack, just following up on the thing we talked about yesterday. Can you send the updated deck to jules@testco.com by Thursday, and put the revised total, I think it was twelve thousand five hundred dollars, into the tracker?',
+    polish:'Hi Jack, following up on what we discussed yesterday. Could you send the updated deck to jules@testco.com by Thursday and add the revised total, twelve thousand five hundred dollars, to the tracker?',
+    custom:'• Send updated deck to jules@testco.com by Thursday\n• Add revised total ($12,500) to the tracker'
+  };
+  const labels={off:'Off',basic:'Basic',light:'Light cleanup',polish:'Polish',custom:'Meeting notes'};
+  levels.addEventListener('click',e=>{
+    const l=e.target.closest('.lvl'); if(!l) return;
+    levels.querySelectorAll('.lvl').forEach(x=>x.classList.toggle('on',x===l));
+    const k=l.dataset.l; rules.classList.toggle('on',k==='custom');
+    out.textContent=outputs[k]; out.style.whiteSpace=k==='custom'?'pre-line':'normal';
+    out.style.setProperty('--lbl',labels[k]);
+    document.styleSheets[0].insertRule?.(`.out::before{content:"${labels[k]}"}`,document.styleSheets[0].cssRules.length);
+  });
+
+  // C: cards
+  document.getElementById('ocards').addEventListener('click',e=>{const c=e.target.closest('.ocard');if(!c)return;document.querySelectorAll('.ocard').forEach(x=>x.classList.toggle('on',x===c));});
+
+  // D: segmented
+  const seg=document.getElementById('seg'),diff=document.getElementById('diff');
+  seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));diff.className='diff '+(b.dataset.v==='diff'?'':b.dataset.v);});
+</script>
+</body>
+</html>

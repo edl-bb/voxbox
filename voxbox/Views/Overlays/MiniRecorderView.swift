@@ -22,7 +22,7 @@ struct MiniRecorderView: View {
     @AppStorage(ModelSelection.defaultsKey) private var selectedModel: String = ModelSelection.none
     @AppStorage(TranscriptDeliveryMode.defaultsKey)
     private var transcriptDeliveryMode: TranscriptDeliveryMode = .autoPaste
-    @AppStorage("recordingMode") private var recordingMode: Int = 0
+    @AppStorage(RecordingMode.defaultsKey) private var recordingMode: RecordingMode = .hold
     /// Whether we've already shown the one-time accessibility warning (release only).
     @AppStorage("hasShownAccessibilityWarning") private var hasShownAccessibilityWarning = false
     @AppStorage("transcriptionLanguage") private var transcriptionLanguage: String = "auto"
@@ -211,28 +211,19 @@ struct MiniRecorderView: View {
 
     private var modeControl: some View {
         Menu {
-            Button {
-                recordingMode = 0
-            } label: {
-                if recordingMode == 0 {
-                    Label("Hold to talk", systemImage: "checkmark")
-                } else {
-                    Text("Hold to talk")
-                }
-            }
-            Button {
-                recordingMode = 1
-            } label: {
-                if recordingMode == 1 {
-                    Label("Toggle on / off", systemImage: "checkmark")
-                } else {
-                    Text("Toggle on / off")
+            ForEach(RecordingMode.allCases) { mode in
+                Button {
+                    recordingMode = mode
+                } label: {
+                    if recordingMode == mode {
+                        Label(mode.menuTitle, systemImage: "checkmark")
+                    } else {
+                        Text(mode.menuTitle)
+                    }
                 }
             }
         } label: {
-            recorderChipLabel(
-                icon: recordingMode == 0 ? "hand.tap.fill" : "repeat.1",
-                text: recordingMode == 0 ? "Hold" : "Toggle")
+            recorderChipLabel(icon: recordingMode.icon, text: recordingMode.chipLabel)
         }
         .menuIndicator(.hidden)
         .menuStyle(.borderlessButton)
@@ -302,9 +293,10 @@ struct MiniRecorderView: View {
         displayPhase == .idle ? 18 : 44
     }
 
-    /// Live text stays in the pill only when the destination field cannot be rewritten.
+    /// Live text stays in the pill when the destination field cannot be
+    /// rewritten, or shows just the not-yet-typed tail when we type stable words.
     private var showsLiveHUD: Bool {
-        liveSession.isLive && !liveSession.writingToField && !liveSession.hudText.isEmpty
+        liveSession.isLive && !liveSession.hudText.isEmpty
     }
 
     private var pillCornerRadius: CGFloat { pillHeight / 2 }
@@ -366,17 +358,19 @@ struct MiniRecorderView: View {
 
             ZStack(alignment: .leading) {
                 if showsLiveHUD {
-                    Text(liveSession.hudText)
-                        .font(Typography.pillLabel)
-                        .foregroundColor(.white.opacity(0.92))
-                        .lineLimit(1)
-                        .truncationMode(.head)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .transition(
-                            .asymmetric(
-                                insertion: .opacity.combined(with: .offset(x: 18)),
-                                removal: .opacity
-                            ))
+                    HStack(spacing: 8) {
+                        // A short slice of the real input level keeps the
+                        // waveform honest while the text has the room.
+                        recordingWaveform
+                            .frame(width: 30)
+                        liveHUDText
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .offset(x: 18)),
+                            removal: .opacity
+                        ))
                 } else {
                     recordingWaveform
                         .transition(
@@ -403,6 +397,21 @@ struct MiniRecorderView: View {
         }
         .padding(.horizontal, 14)
         .transition(.opacity)
+    }
+
+    /// Locked words plain, words the engine may still revise dimmed and
+    /// italic. Truncates from the head so the newest words stay in view.
+    private var liveHUDText: some View {
+        let stable = liveSession.hudStableText
+        let revisable = liveSession.hudRevisableText
+        let joiner = stable.isEmpty || revisable.isEmpty ? "" : " "
+        let locked = Text(stable).foregroundColor(.white.opacity(0.95))
+        let pending = Text(joiner + revisable).italic().foregroundColor(.white.opacity(0.55))
+        return Text("\(locked)\(pending)")
+            .font(Typography.pillLabel)
+            .lineLimit(1)
+            .truncationMode(.head)
+            .animation(.easeOut(duration: 0.12), value: stable)
     }
 
     /// Live render of the microphone input. Calm when silent, peaks on speech.
@@ -941,8 +950,8 @@ struct MiniRecorderView: View {
 
     private func finishLiveTake(audioURL: URL?) async {
         do {
-            let (text, alreadyInField) = try await liveSession.finish()
-            debugLog("Live take finished (\(text.count) characters, inField: \(alreadyInField))")
+            let (text, delivery) = try await liveSession.finish()
+            debugLog("Live take finished (\(text.count) characters, delivery: \(delivery))")
 
             guard !text.isEmpty else {
                 if let audioURL {
@@ -972,6 +981,7 @@ struct MiniRecorderView: View {
                 ?? selectedModel
             HistoryService.shared.addItem(
                 transcript: text,
+                rawTranscript: liveSession.lastRawTranscript,
                 duration: duration,
                 audioFileURL: audioURL,
                 modelUsed: modelName,
@@ -986,15 +996,19 @@ struct MiniRecorderView: View {
                 return
             }
 
-            if alreadyInField {
+            switch delivery {
+            case .inField:
                 await MainActor.run {
                     isProcessing = false
                     onCancel?()
                 }
-                return
+            case .notWritten:
+                await presentDelivery(await onCommit?(text) ?? fallbackDelivery)
+            case .rawInField, .partialInField, .unverified:
+                // Never paste over text we typed: copy instead and say so.
+                ClipboardService.shared.copy(text: text)
+                await presentDelivery(.liveFallbackCopied(delivery))
             }
-
-            await presentDelivery(await onCommit?(text) ?? fallbackDelivery)
         } catch {
             debugLog("Live finish failed: \(error.localizedDescription)")
             if let audioURL {
@@ -1054,17 +1068,25 @@ struct MiniRecorderView: View {
     /// Quiet dismiss for paste, live write, and intentional clipboard copy.
     /// Keep “No destination…” only when Auto-paste / Streaming wanted a target.
     private func presentDelivery(_ delivery: TranscriptDelivery) async {
-        let showNoDestination = delivery == .copiedToClipboard
+        let message: String?
+        switch delivery {
+        case .copiedToClipboard:
+            message = PillStatusCopy.noDestination
+        case .liveFallbackCopied(let liveDelivery):
+            message = PillStatusCopy.liveFallback(liveDelivery)
+        case .pasted, .copiedOnPurpose, .alreadyInField:
+            message = nil
+        }
         await MainActor.run {
-            if showNoDestination {
-                statusMessage = PillStatusCopy.noDestination
+            if let message {
+                statusMessage = message
                 isProcessing = true
             } else {
                 isProcessing = false
             }
         }
-        if showNoDestination {
-            try? await Task.sleep(nanoseconds: 1_600_000_000)
+        if message != nil {
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
             await MainActor.run {
                 isProcessing = false
                 onCancel?()
@@ -1109,7 +1131,9 @@ struct MiniRecorderView: View {
             if !cancelCommit {
                 await MainActor.run { statusMessage = PillStatusCopy.transcribing }
             }
-            let text = try await transcription.transcribe(audioFile: url, language: transcriptionLanguage)
+            let cleaned = try await transcription.transcribeCleaned(
+                audioFile: url, language: transcriptionLanguage)
+            let text = cleaned.text
             debugLog("Transcription finished (\(text.count) characters)")
 
             guard !text.isEmpty else {
@@ -1130,6 +1154,7 @@ struct MiniRecorderView: View {
                 ?? selectedModel
             HistoryService.shared.addItem(
                 transcript: text,
+                rawTranscript: cleaned.raw,
                 duration: duration,
                 audioFileURL: url,
                 modelUsed: modelName,
