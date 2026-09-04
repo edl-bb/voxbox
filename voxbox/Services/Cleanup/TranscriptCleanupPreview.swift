@@ -50,7 +50,7 @@ enum TranscriptCleanupPreview {
     /// preview does not pay the cold-start latency.
     static func prewarm() async {
         guard TranscriptFormatterService.isModelAvailable else { return }
-        let session = LanguageModelSession {
+        let session = LanguageModelSession(model: AppleIntelligenceCleanupEngine.systemModel) {
             CleanupPromptSet.compiled.instructionStages(
                 for: .formatting, includeMarkdown: false, language: "auto")
         }

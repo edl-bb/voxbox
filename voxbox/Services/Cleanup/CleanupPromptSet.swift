@@ -169,8 +169,8 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
         ],
         budgets: [
             .formatting: GuardrailBudget(maxCostRatio: 0.05, minFreeEdits: 1, minRetention: 0.95),
-            .lightCleanup: GuardrailBudget(maxCostRatio: 0.20, minFreeEdits: 3, minRetention: 0.80),
-            .polish: GuardrailBudget(maxCostRatio: 0.50, minFreeEdits: 6, minRetention: 0.65),
+            .lightCleanup: GuardrailBudget(maxCostRatio: 0.20, minFreeEdits: 4, minRetention: 0.80),
+            .polish: GuardrailBudget(maxCostRatio: 0.50, minFreeEdits: 7, minRetention: 0.65),
         ],
         fillerLexicon: .compiled
     )

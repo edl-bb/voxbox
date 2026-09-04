@@ -102,7 +102,7 @@ Keeping the speaker's message when wording may change. The Polish contract.
 _Avoid_: Fidelity (unqualified); wording-faithful
 
 **Guardrail**:
-The asymmetric edit budget that vetoes a model pass when it changed too much. Fillers, false starts and repeats are free; grammar and near-spelling fixes cost half; other wording changes cost one. Each level has a cost ceiling, an absolute free-edit floor for short takes, and a retention floor against summaries. Emails, URLs and numbers must survive.
+The asymmetric edit budget that vetoes a model pass when it changed too much. Fillers, false starts and repeats are free; grammar and near-spelling fixes cost half; other wording changes cost one. Each level has a cost ceiling, an absolute free-edit floor for short takes, and a retention floor against summaries. Takes of a dozen content words or fewer are not governed by the budget at all. Emails, URLs and numbers must survive at any length. Takes too short for the model still get the instant filler and numeral pass at Light and Polish.
 _Avoid_: Change ratio (the 1.2.0 symmetric measure); guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
 
 **Step-down**:

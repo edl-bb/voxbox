@@ -291,7 +291,10 @@ struct CleanupOptionCard: View {
                     } else if choice == .off {
                         Text("As transcribed")
                     }
-                    if outcome.modelRan, outcome.landed == nil {
+                    if let error = outcome.error {
+                        Label(error, systemImage: "xmark.octagon.fill")
+                            .foregroundStyle(Color.accentError)
+                    } else if outcome.modelRan, outcome.landed == nil {
                         Label("Changed too much. VoxBox would keep the original.", systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(Color.accentWarning)
                     }

@@ -38,7 +38,7 @@ final class CleanupGuardrailTests: XCTestCase {
             "the total was twelve thousand five hundred dollars and twenty percent is due friday",
             "The total was $12,500 and 20% is due Friday.", light)
         XCTAssertEqual(result.cost, 0)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     func testContentTokensDropPureFillersAndPhrases() {
@@ -53,7 +53,7 @@ final class CleanupGuardrailTests: XCTestCase {
         let result = evaluate("hello world this is a test", "Hello, world!\n\nThis is a test.", basic)
         XCTAssertEqual(result.cost, 0)
         XCTAssertEqual(result.retention, 1)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     func testDeletingPureFillersIsFree() {
@@ -61,7 +61,7 @@ final class CleanupGuardrailTests: XCTestCase {
             "um so I think uh we should ship the release",
             "So I think we should ship the release.", basic)
         XCTAssertEqual(result.cost, 0)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     func testDeletingFillerPhrasesAndDeletableWordsIsFree() {
@@ -70,7 +70,7 @@ final class CleanupGuardrailTests: XCTestCase {
             "It was really good, it was great.", light)
         XCTAssertEqual(result.cost, 0)
         XCTAssertEqual(result.retention, 1, "words the level was told to drop are not lost content")
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     func testInsertingADeletableWordStillCosts() {
@@ -83,7 +83,7 @@ final class CleanupGuardrailTests: XCTestCase {
             "I was I was going to send the report to finance tomorrow morning",
             "I was going to send the report to finance tomorrow morning.", light)
         XCTAssertEqual(result.cost, 0)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     func testFalseStartWithSharedPrefixIsFree() {
@@ -95,7 +95,7 @@ final class CleanupGuardrailTests: XCTestCase {
     func testExpandingContractionsIsFree() {
         let result = evaluate("I'm gonna send it and we can't wait", "I am going to send it and we cannot wait.", basic)
         XCTAssertEqual(result.cost, 0)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     // MARK: - Half-price edits
@@ -103,7 +103,7 @@ final class CleanupGuardrailTests: XCTestCase {
     func testFunctionWordInsertCostsHalf() {
         let result = evaluate("send report tomorrow please", "Send the report tomorrow, please.", light)
         XCTAssertEqual(result.cost, 0.5)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     func testNearSpellingFixCostsHalf() {
@@ -127,26 +127,57 @@ final class CleanupGuardrailTests: XCTestCase {
     // MARK: - Budgets
 
     func testAbsoluteFloorLetsShortTakesAffordEdits() {
-        // Eight words at Light: 20% is 1.6 edits, but the floor is 3.
-        let input = "please send the quarterly report to finance today"
-        let two = evaluate(input, "Please send the monthly report to marketing today.", light)
+        // Fifteen words at Light: 20% is 3 edits, but the floor is 4.
+        let input = "please send the quarterly report to finance today and copy the whole team on it"
+        let two = evaluate(input, "Please send the monthly report to marketing today and copy the whole team on it.", light)
         XCTAssertEqual(two.cost, 2)
         XCTAssertEqual(two.verdict, .accepted)
 
-        let four = evaluate(input, "Kindly send the monthly report to marketing tonight.", light)
+        let four = evaluate(input, "Kindly send the monthly report to marketing tonight and copy the whole team on it.", light)
         XCTAssertEqual(four.cost, 4)
-        guard case .changeRatioExceeded = four.verdict else {
-            return XCTFail("expected changeRatioExceeded, got \(four.verdict)")
+        XCTAssertEqual(four.verdict, .accepted)
+
+        let five = evaluate(input, "Kindly send the monthly memo to marketing tonight and copy the whole team on it.", light)
+        XCTAssertEqual(five.cost, 5)
+        guard case .changeRatioExceeded = five.verdict else {
+            return XCTFail("expected changeRatioExceeded, got \(five.verdict)")
         }
     }
 
-    func testBasicRejectsASingleWordSwapOnAShortTake() {
-        // Basic's floor is one edit; two content swaps trip it.
+    func testBasicRejectsWordSwapsOnALongerTake() {
+        // Basic's floor is one edit; two content swaps trip it once the take is long enough to be governed.
         let result = evaluate(
-            "please send the report to finance today",
-            "Please send the invoice to marketing today.", basic)
+            "please send the report to finance today and copy the whole team on it before lunch",
+            "Please send the invoice to marketing today and copy the whole team on it before lunch.", basic)
         XCTAssertEqual(result.cost, 2)
         XCTAssertFalse(result.verdict.isAccepted)
+    }
+
+    func testShortTakesAreNotGovernedButStayProtected() {
+        // Six content tokens and a heavy rewrite: no budget applies.
+        let heavy = evaluate("please send me the quarterly report today", "Send the report.", light)
+        XCTAssertEqual(heavy.verdict, .notGoverned)
+        XCTAssertTrue(heavy.verdict.isAccepted)
+
+        // Hard protections still hold on short takes.
+        XCTAssertEqual(
+            evaluate("email jules@testco.com today", "Email jules@test.com today.", light).verdict,
+            .protectedTokenAltered("jules@testco.com"))
+        XCTAssertEqual(evaluate("um so yeah", "   ", light).verdict, .emptyOutput)
+
+        // Thirteen content words and the budget is back.
+        let long = evaluate(
+            "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima mike",
+            "Alpha.", light)
+        XCTAssertFalse(long.verdict.isAccepted)
+    }
+
+    func testSpokenNoiseDetection() {
+        XCTAssertTrue(CleanupGuardrail.containsSpokenNoise("um yes"))
+        XCTAssertTrue(CleanupGuardrail.containsSpokenNoise("so, you know, let's go"))
+        XCTAssertTrue(CleanupGuardrail.containsSpokenNoise("I I think so"))
+        XCTAssertFalse(CleanupGuardrail.containsSpokenNoise("send it to finance today"))
+        XCTAssertFalse(CleanupGuardrail.containsSpokenNoise("roy@example.com"))
     }
 
     func testRetentionFloorVetoesASummaryWhoseDeletionsFitTheBudget() {
@@ -171,8 +202,8 @@ final class CleanupGuardrailTests: XCTestCase {
     func testFullRewriteIsRejectedAtEveryBuiltInLevel() {
         for budget in [basic, light, polish] {
             let result = evaluate(
-                "please send the report to finance before the meeting tomorrow morning",
-                "The quarterly numbers look great and everyone deserves a holiday.", budget)
+                "please send the report to finance before the meeting tomorrow morning and remember to attach the budget spreadsheet",
+                "The quarterly numbers look great and everyone deserves a holiday, so let us celebrate on friday.", budget)
             XCTAssertFalse(result.verdict.isAccepted, "\(budget) must reject a rewrite")
         }
     }
@@ -190,14 +221,14 @@ final class CleanupGuardrailTests: XCTestCase {
         let result = evaluate(
             "send it to Sam.Reilly@northwindlabs.com by thursday",
             "Send it to sam.reilly@northwindlabs.com by Thursday.", basic)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
     }
 
     func testURLMustSurviveAndTrailingPunctuationIsIgnored() {
         let ok = evaluate(
             "the build is up at https://staging.voxbox.app so have a play",
             "The build is up at https://staging.voxbox.app. So have a play.", basic)
-        XCTAssertEqual(ok.verdict, .accepted)
+        XCTAssertTrue(ok.verdict.isAccepted)
 
         let broken = evaluate(
             "the build is up at https://staging.voxbox.app so have a play",
@@ -207,7 +238,7 @@ final class CleanupGuardrailTests: XCTestCase {
 
     func testNumbersCompareWithoutSeparators() {
         let result = evaluate("the total was 12500 dollars", "The total was 12,500 dollars.", basic)
-        XCTAssertEqual(result.verdict, .accepted)
+        XCTAssertTrue(result.verdict.isAccepted)
         XCTAssertEqual(result.cost, 0)
     }
 

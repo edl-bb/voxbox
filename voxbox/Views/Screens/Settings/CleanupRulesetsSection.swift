@@ -189,25 +189,67 @@ private struct RulesetEditorSheet: View {
         CustomCleanupRuleset(id: rulesetID, name: name, instructions: instructions, temperature: temperature)
     }
 
+    private static let sheetWidth: CGFloat = 700
+    private static let horizontalPadding: CGFloat = 32
+
     var body: some View {
-        ScrollView {
-            editor
-                // Fixed content width: a long menu label or transcript can
-                // wrap or truncate, never widen the sheet.
-                .frame(width: 512)
-                .padding(24)
+        VStack(spacing: 0) {
+            // Pinned header: what you are editing stays in view while the
+            // body scrolls.
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("Edit ruleset")
+                    .font(Typography.sectionTitle)
+                    .foregroundStyle(Color.textPrimary)
+                Text(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled ruleset" : name)
+                    .font(Typography.ui(14))
+                    .foregroundStyle(Color.textMuted)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .padding(.horizontal, Self.horizontalPadding)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+
+            Divider()
+
+            ScrollView {
+                editor
+                    // Fixed content width: a long menu label or transcript can
+                    // wrap or truncate, never widen the sheet.
+                    .frame(width: Self.sheetWidth - Self.horizontalPadding * 2)
+                    .padding(.horizontal, Self.horizontalPadding)
+                    .padding(.vertical, 22)
+            }
+
+            Divider()
+
+            // Pinned footer.
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") {
+                    onSave(
+                        CustomCleanupRuleset(
+                            id: rulesetID,
+                            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? "Untitled ruleset" : name,
+                            instructions: instructions,
+                            temperature: temperature))
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, Self.horizontalPadding)
+            .padding(.vertical, 16)
         }
-        .frame(width: 560)
-        .frame(maxHeight: 680)
+        .frame(width: Self.sheetWidth)
+        .frame(minHeight: 560, maxHeight: 800)
         .background(Color.bgApp)
     }
 
     private var editor: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Edit ruleset")
-                .font(Typography.sectionTitle)
-                .foregroundStyle(Color.textPrimary)
-
+        VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("NAME")
                     .font(Typography.uiBold(10)).tracking(1)
@@ -259,7 +301,7 @@ private struct RulesetEditorSheet: View {
 
             DisclosureGroup(isExpanded: $showTestPanel) {
                 RulesetTestPanel(draft: draftRuleset)
-                    .padding(.top, 10)
+                    .padding(.top, 12)
             } label: {
                 HStack(spacing: 8) {
                     Text("TEST THIS RULESET")
@@ -269,23 +311,6 @@ private struct RulesetEditorSheet: View {
                         .font(Typography.captionSmall)
                         .foregroundStyle(Color.textMuted)
                 }
-            }
-
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button("Save") {
-                    onSave(
-                        CustomCleanupRuleset(
-                            id: rulesetID,
-                            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? "Untitled ruleset" : name,
-                            instructions: instructions,
-                            temperature: temperature))
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
             }
         }
     }

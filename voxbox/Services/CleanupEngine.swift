@@ -43,8 +43,16 @@ struct AppleIntelligenceCleanupEngine: CleanupEngine {
         return GenerationOptions(temperature: request.temperature)
     }
 
+    /// Cleanup edits the user's own words, which is exactly what Apple's
+    /// `permissiveContentTransformations` guardrail is for. The default
+    /// guardrail refuses ordinary dictation that merely mentions a sensitive
+    /// word ("look at this pill").
+    static var systemModel: SystemLanguageModel {
+        SystemLanguageModel(guardrails: .permissiveContentTransformations)
+    }
+
     func cleanup(_ request: FormattingRequest) async throws -> String {
-        let session = LanguageModelSession {
+        let session = LanguageModelSession(model: Self.systemModel) {
             request.instructionStages
         }
         do {

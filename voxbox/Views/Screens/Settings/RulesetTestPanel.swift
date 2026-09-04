@@ -135,7 +135,7 @@ struct RulesetTestPanel: View {
                     }
                     .menuStyle(.borderlessButton)
                     // Never let a long transcript widen the sheet.
-                    .frame(maxWidth: 260, alignment: .leading)
+                    .frame(maxWidth: 360, alignment: .leading)
                     .clipped()
                 }
             } else {
@@ -161,7 +161,7 @@ struct RulesetTestPanel: View {
     }
 
     private func historyLabel(_ item: HistoryItem) -> String {
-        "\(item.date.formatted(.relative(presentation: .named))) · \(RulesetTestInput.previewLine(RulesetTestInput.text(for: item).text, maxLength: 40))"
+        "\(item.date.formatted(.relative(presentation: .named))) · \(RulesetTestInput.previewLine(RulesetTestInput.text(for: item).text, maxLength: 48))"
     }
 
     private func menuLabel(_ text: String) -> some View {
@@ -292,7 +292,11 @@ struct RulesetTestPanel: View {
                 Text(option.displayName.uppercased())
                     .font(Typography.uiBold(10)).tracking(1)
                     .foregroundStyle(Color.textMuted)
-                if outcome.modelRan, outcome.landed == nil {
+                if let error = outcome.error {
+                    Label(error, systemImage: "xmark.octagon.fill")
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.accentError)
+                } else if outcome.modelRan, outcome.landed == nil {
                     Label("Changed too much. VoxBox would keep the original.", systemImage: "exclamationmark.triangle.fill")
                         .font(Typography.captionSmall)
                         .foregroundStyle(Color.accentWarning)

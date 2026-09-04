@@ -94,6 +94,25 @@ nonisolated enum ProtectedToken: Equatable, Hashable, Sendable {
 /// before comparing), function words and near-spelling fixes are half
 /// price, and everything else costs one.
 nonisolated enum CleanupGuardrail {
+    /// Takes with this many content tokens or fewer are not governed by the
+    /// edit budget at all; only protected tokens, empty output and refusals
+    /// are checked.
+    static let shortTakeTokens = 12
+
+    /// Pure fillers, filler phrases, or a word repeated back to back: the
+    /// things Light and Polish exist to remove. Decides whether a take too
+    /// short for the model still deserves the instant pass.
+    static func containsSpokenNoise(_ text: String, lexicon: FillerLexicon = .compiled) -> Bool {
+        let words = tokens(text)
+        if words.contains(where: { lexicon.pureTokens.contains($0) }) { return true }
+        for phrase in lexicon.phrases where !phrase.isEmpty && words.count >= phrase.count {
+            for start in 0...(words.count - phrase.count) where Array(words[start..<(start + phrase.count)]) == phrase {
+                return true
+            }
+        }
+        return zip(words, words.dropFirst()).contains { $0 == $1 }
+    }
+
     static let functionWords: Set<String> = [
         "a", "an", "the", "to", "of", "in", "on", "and", "or", "is", "are", "was", "be", "it",
         "that", "at", "for", "with",
@@ -136,10 +155,14 @@ nonisolated enum CleanupGuardrail {
         let retention = a.isEmpty ? 1 : min(1, retained / retainable)
         let ratio = cost / Double(n)
         let allowance = max(Double(budget.minFreeEdits), budget.maxCostRatio * Double(n))
-
         let verdict: GuardrailVerdict
         if let altered = firstAlteredProtectedToken(input: input, output: output) {
             verdict = .protectedTokenAltered(altered.display)
+        } else if a.count <= shortTakeTokens {
+            // A short take has too few words for a ratio to mean anything:
+            // dropping two fillers from six words is not a rewrite. The hard
+            // protections above still apply; the budget does not.
+            verdict = .notGoverned
         } else if cost > allowance {
             verdict = .changeRatioExceeded(ratio: ratio, budget: budget.maxCostRatio)
         } else if retention < budget.minRetention {

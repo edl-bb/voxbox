@@ -38,8 +38,19 @@ final class TranscriptCleanupPipeline {
 
         var outcome: TranscriptCleanupOutcome
         if let reason = Self.skipReason(for: plan, text: modelInput) {
+            // Too short for the model, but Light and Polish still owe the
+            // speaker their ums and numerals: run the instant pass alone.
+            var output = modelInput
+            if let intensity = plan.option.intensity, intensity != .custom,
+                plan.promptSet.stripsFillers(intensity) || plan.promptSet.rendersNumerals(intensity)
+            {
+                output = CleanupPostPass.tidy(
+                    modelInput, reference: modelInput, markdownAllowed: false,
+                    numerals: plan.promptSet.rendersNumerals(intensity),
+                    spokenFillers: plan.promptSet.stripsFillers(intensity))
+            }
             outcome = .withoutModel(
-                rawInput: raw, modelInput: modelInput, output: modelInput, requested: plan.option,
+                rawInput: raw, modelInput: modelInput, output: output, requested: plan.option,
                 reason: reason, durationMs: 0)
         } else {
             outcome = await runModelStage(modelInput, raw: raw, plan: plan)
@@ -67,7 +78,7 @@ final class TranscriptCleanupPipeline {
         if plan.option == .off { return "Cleanup is off." }
         let words = CleanupGuardrail.legacyWords(in: text).count
         if words < plan.minimumWordCount {
-            return "Too short for the model (\(words) words, minimum \(plan.minimumWordCount))."
+            return "Too short for the model (\(words) words, minimum \(plan.minimumWordCount)); instant cleanup only."
         }
         return nil
     }

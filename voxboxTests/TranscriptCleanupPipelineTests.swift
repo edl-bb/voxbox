@@ -146,8 +146,23 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
         let outcome = await pipeline.clean(raw: "hello there priya", plan: .test(.light, minimumWordCount: 8))
 
         XCTAssertTrue(engine.requests.isEmpty)
-        XCTAssertEqual(outcome.output, "hello there priya")
+        XCTAssertEqual(outcome.output, "Hello there priya", "instant pass only: a sentence capital, nothing else")
         XCTAssertTrue(outcome.skippedReason?.contains("Too short") == true)
+    }
+
+    func testShortTakesStillGetTheInstantPassAtLight() async {
+        let engine = ScriptedCleanupEngine { _ in self.lightAnswer }
+        let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
+
+        let light = await pipeline.clean(
+            raw: "um so, you know, I I owe you twenty dollars", plan: .test(.light, minimumWordCount: 12))
+        XCTAssertTrue(engine.requests.isEmpty, "still no model call")
+        XCTAssertEqual(light.output, "So I owe you $20")
+        XCTAssertNil(light.landed)
+        XCTAssertTrue(light.skippedReason?.contains("instant cleanup only") == true)
+
+        let basic = await pipeline.clean(raw: "um so I I owe you twenty dollars", plan: .test(.basic, minimumWordCount: 12))
+        XCTAssertEqual(basic.output, "um so I I owe you twenty dollars", "Basic never edits words")
     }
 
     func testOffSkipsTheModel() async {
