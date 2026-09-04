@@ -305,7 +305,7 @@ final class TargetFieldInserterTests: XCTestCase {
             inserter.finalize(raw: "um hello 👋 there friend", cleaned: "Hello 👋 there, friend.\n\nSecond paragraph."),
             .inField)
         XCTAssertEqual(field.text, "Pre: Hello 👋 there, friend.\n\nSecond paragraph.")
-        XCTAssertTrue(field.ops.contains("selectBackward(16)"), "one per grapheme, selected not deleted: \(field.ops)")
+        XCTAssertTrue(field.ops.contains("setSelection(5,17)"), "the whole typed span, 17 UTF-16 units for 16 graphemes: \(field.ops)")
         XCTAssertTrue(field.ops.contains { $0.hasPrefix("paste(") }, "paragraphs are pasted, never typed")
         XCTAssertFalse(field.ops.contains { $0.hasPrefix("deleteBackward") }, "the field never sits empty")
     }
@@ -320,10 +320,41 @@ final class TargetFieldInserterTests: XCTestCase {
             .inField)
         XCTAssertEqual(field.text, "Hello there, my friend, how are you")
         XCTAssertEqual(field.caret, (field.text as NSString).length, "caret ends after the shared suffix")
+        XCTAssertTrue(field.ops.contains("setSelection(6,15)"), "‘there my friend’ selected by range: \(field.ops)")
+        XCTAssertTrue(field.ops.contains("paste(17)"))
+        XCTAssertTrue(field.ops.contains("moveCaret(by: 12)"))
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("selectBackward") }, "arrows are the fallback only")
+    }
+
+    func testKeystrokeFinalizeFallsBackToArrowSelectionWhenTheRangeIsNotHonoured() {
+        let field = FakeFieldWriter()
+        field.axSetIsNoop = true
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = inserter.update(snapshot("Hello there my friend how are you"))
+        XCTAssertEqual(
+            inserter.finalize(raw: "Hello there my friend how are you", cleaned: "Hello there, my friend, how are you"),
+            .inField)
+        XCTAssertEqual(field.text, "Hello there, my friend, how are you")
         XCTAssertTrue(field.ops.contains("moveCaret(by: -12)"), "steps over ‘ how are you’: \(field.ops)")
         XCTAssertTrue(field.ops.contains("selectBackward(15)"), "‘there my friend’ only: \(field.ops)")
         XCTAssertTrue(field.ops.contains("paste(17)"))
         XCTAssertTrue(field.ops.contains("moveCaret(by: 12)"))
+    }
+
+    func testKeystrokeFinalizeRefusesTheRangeWhenTheFieldTextDoesNotMatch() {
+        // Pre-existing text shifted under us: the range would select the wrong
+        // words, so it must not be trusted.
+        let field = FakeFieldWriter(text: "XX", caret: 2)
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = inserter.update(snapshot("Hello there my friend how are you"))
+        XCTAssertEqual(
+            inserter.finalize(raw: "Hello there my friend how are you", cleaned: "Hello there, my friend, how are you"),
+            .inField)
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("setSelection") && !$0.hasSuffix(",0)") }, "\(field.ops)")
+        XCTAssertTrue(field.ops.contains("selectBackward(15)"))
+        XCTAssertEqual(field.text, "XXHello there, my friend, how are you")
     }
 
     func testKeystrokeFinalizeDeletesWhenCleanupOnlyRemovedWords() {

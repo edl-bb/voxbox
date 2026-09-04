@@ -85,6 +85,13 @@ final class FakeFieldWriter: FieldWriter {
     func deleteBackward(count: Int) {
         ops.append("deleteBackward(\(count))")
         guard count > 0 else { return }
+        var count = count
+        // Like the real key: the first Backspace removes a selection.
+        if selectionLength > 0 {
+            replaceSelection(with: "")
+            count -= 1
+            guard count > 0 else { return }
+        }
         var characters = Array(text)
         // Map the UTF-16 caret to a Character index.
         var utf16 = 0
