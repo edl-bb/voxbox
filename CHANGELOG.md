@@ -3,30 +3,14 @@
 Changes and release notes for VoxBox.
 
 ## [1.3.0] - Unreleased
-- **New feature**: Cleanup page
-    - Cleanup level (Off, Basic, Light cleanup, Polish, Custom), Markdown, instant filler removal, stray-period rule and custom rulesets now live on one sidebar page, with a live preview on a sample or your last take.
-    - Settings → Transcript Cleanup links to it; the LLM Instructions tab has moved out of AI Models.
-- **New feature**: Test a ruleset before saving
-    - The ruleset editor gains "Test this ruleset": run your unsaved instructions over a built-in dictation or a recent transcript, with an optional Basic / Light / Polish comparison.
-- **New feature**: Onboarding covers recording mode and cleanup
-    - Choose hold-to-talk or toggle up front, with the copy naming your hotkey.
-    - See one dictation cleaned at every level and pick by reading the results.
-    - Progress dots on each step, and Settings → General → "Replay the setup guide".
-- **New feature**: Copy the raw transcript from History
-    - Transcripts recorded from 1.3 on keep what the speech engine heard; a "Copy raw transcript" button sits next to Copy.
-- Cleanup quality
-    - Light cleanup and Polish now reliably drop fillers and repeats, and write spoken numbers as numerals ($12,500, 20%, 2pm).
-    - Polish fixes misheard words (there → their, peak → peek) and re-punctuates from meaning rather than from pauses in speech.
-    - The guardrail no longer blocks Light for doing its job: fillers and repeats are free, grammar fixes half price, and takes of a dozen words or fewer are not governed at all. When a level still changes too much, VoxBox steps down a level instead of pasting the raw text.
-    - Ordinary dictation that mentions a sensitive word is no longer declined by Apple Intelligence.
-    - Model output is tidied: leaked labels stripped, doubled punctuation and stray ALL CAPS / Title Case reverted, Australian spelling kept.
-- Live streaming fixes
-    - Text no longer gets stuck or jumps to the middle of the transcript. Writes are serialised, and in apps that ignore accessibility writes (Slack, Notion, Superhuman, Cursor, web composers) VoxBox types only committed words and never backspaces mid-take.
-    - The pill shows locked words plainly and words still being revised dimmed, beside the live waveform.
-    - At the end of a take the cleaned transcript replaces the live text in place; only when the destination is no longer in front does it go to the clipboard.
-    - Typed keys no longer inherit held modifiers, Electron apps are detected from the bundle, and the caret is no longer moved before each burst.
-- Fixed the previous clipboard (for example an image) being pasted instead of the transcript. The clipboard is now restored only once the paste has visibly landed.
-- Downloadable cleanup models (Llama, Qwen) are parked until macOS 27's native model support. Cleanup runs on Apple Intelligence; a saved choice of a downloaded model resolves to it.
+- **New feature**: Cleanup page — levels, instant rules, custom rulesets and a live preview in one place.
+- **New feature**: Test a ruleset before saving, on a sample or a recent transcript.
+- **New feature**: Onboarding now asks for recording mode and shows each cleanup level on a sample. Replay it from Settings.
+- **New feature**: Copy raw transcript from History.
+- Improved transcript post-processing: numerals, fewer leftover fillers, misheard-word fixes, punctuation by meaning.
+- Improved live streaming reliability in Slack, Notion, Superhuman, Cursor and web composers.
+- Fixed the previous clipboard being pasted instead of the transcript.
+- Downloadable cleanup models are parked until macOS 27; cleanup runs on Apple Intelligence.
 
 ## [1.2.0] - 2026-08-30
 - **New Feature**: Choose your Post-processing Model: Post-processing defaults to the build-in Apple Intelligence model, but now you can choose from 4 other LLMs to clean up your transcripts. Choose from Apple Intelligence, Llama 3.2 1B/3B, Qwen 3 1.7B/4B
