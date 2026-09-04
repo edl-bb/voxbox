@@ -305,8 +305,54 @@ final class TargetFieldInserterTests: XCTestCase {
             inserter.finalize(raw: "um hello 👋 there friend", cleaned: "Hello 👋 there, friend.\n\nSecond paragraph."),
             .inField)
         XCTAssertEqual(field.text, "Pre: Hello 👋 there, friend.\n\nSecond paragraph.")
-        XCTAssertTrue(field.ops.contains("deleteBackward(16)"), "one per grapheme: \(field.ops)")
+        XCTAssertTrue(field.ops.contains("selectBackward(16)"), "one per grapheme, selected not deleted: \(field.ops)")
         XCTAssertTrue(field.ops.contains { $0.hasPrefix("paste(") }, "paragraphs are pasted, never typed")
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("deleteBackward") }, "the field never sits empty")
+    }
+
+    func testKeystrokeFinalizeReplacesOnlyTheDivergentWords() {
+        let field = FakeFieldWriter()
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = inserter.update(snapshot("Hello there my friend how are you"))
+        XCTAssertEqual(
+            inserter.finalize(raw: "Hello there my friend how are you", cleaned: "Hello there, my friend, how are you"),
+            .inField)
+        XCTAssertEqual(field.text, "Hello there, my friend, how are you")
+        XCTAssertEqual(field.caret, (field.text as NSString).length, "caret ends after the shared suffix")
+        XCTAssertTrue(field.ops.contains("moveCaret(by: -12)"), "steps over ‘ how are you’: \(field.ops)")
+        XCTAssertTrue(field.ops.contains("selectBackward(15)"), "‘there my friend’ only: \(field.ops)")
+        XCTAssertTrue(field.ops.contains("paste(17)"))
+        XCTAssertTrue(field.ops.contains("moveCaret(by: 12)"))
+    }
+
+    func testKeystrokeFinalizeDeletesWhenCleanupOnlyRemovedWords() {
+        let field = FakeFieldWriter()
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = inserter.update(snapshot("Hello there um my friend"))
+        XCTAssertEqual(
+            inserter.finalize(raw: "Hello there um my friend", cleaned: "Hello there my friend"),
+            .inField)
+        XCTAssertEqual(field.text, "Hello there my friend")
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("paste(") }, "nothing to paste for a pure removal")
+    }
+
+    func testKeystrokeAppendKeepsFlowingAfterAPromotedWordIsRevised() {
+        let field = FakeFieldWriter()
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = inserter.update(snapshot("I want to peak"))
+        XCTAssertEqual(field.text, "I want to peak")
+        // The engine revises the promoted word and adds more.
+        let outcome = inserter.update(snapshot("I want to peek at the quote"))
+        XCTAssertEqual(outcome, .wrote(.append, chars: 13))
+        XCTAssertEqual(field.text, "I want to peak at the quote", "wrong word stays until finish; new words keep coming")
+        XCTAssertFalse(field.ops.contains { $0.hasPrefix("deleteBackward") })
+        XCTAssertEqual(
+            inserter.finalize(raw: "I want to peek at the quote", cleaned: "I want to peek at the quote."),
+            .inField)
+        XCTAssertEqual(field.text, "I want to peek at the quote.")
     }
 
     func testKeystrokeFinalizeToleratesTrailingWhitespaceFromTheLastBurst() {

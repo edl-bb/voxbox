@@ -101,9 +101,40 @@ final class FakeFieldWriter: FieldWriter {
         selectionLength = 0
     }
 
-    func paste(_ pasted: String) {
+    func paste(_ pasted: String, thenMoveCaretBy offset: Int) {
         ops.append("paste(\((pasted as NSString).length))")
         replaceSelection(with: pasted)
+        if offset != 0 { moveCaret(by: offset) }
+    }
+
+    func selectBackward(count: Int) {
+        ops.append("selectBackward(\(count))")
+        guard count > 0 else { return }
+        let before = caretCharacterIndex
+        let start = max(0, before - count)
+        let characters = Array(text)
+        caret = String(characters[0..<start]).utf16.count
+        selectionLength = String(characters[start..<before]).utf16.count
+    }
+
+    func moveCaret(by offset: Int) {
+        ops.append("moveCaret(by: \(offset))")
+        selectionLength = 0
+        let characters = Array(text)
+        let target = min(characters.count, max(0, caretCharacterIndex + offset))
+        caret = String(characters[0..<target]).utf16.count
+    }
+
+    /// The caret as a Character index (ops count graphemes, like the keys).
+    private var caretCharacterIndex: Int {
+        let characters = Array(text)
+        var utf16 = 0
+        var index = 0
+        while index < characters.count, utf16 < caret {
+            utf16 += characters[index].utf16.count
+            index += 1
+        }
+        return index
     }
 
     func moveCaret(_ move: CaretMove) {

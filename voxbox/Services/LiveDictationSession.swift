@@ -64,8 +64,52 @@ final class LiveDictationSession {
     var hudRevisableText: String {
         switch deliveryMode {
         case .fullText: return ""
-        case .stableOnly, .none: return snapshot.revisable
+        case .none: return snapshot.revisable
+        case .stableOnly: return Self.dropping(promotedPrefix, from: snapshot.revisable)
         }
+    }
+
+    // MARK: - Early promotion (keystroke targets)
+
+    /// Revisable text seen during this commit block, oldest first.
+    @ObservationIgnored private var revisableSamples: [StablePromotion.Sample] = []
+    /// Words from the revisable tail already handed to the field.
+    private(set) var promotedPrefix = ""
+
+    /// What the field should hold: the engine's committed text plus the
+    /// words that have sat unchanged long enough to type early.
+    var effectiveStable: String {
+        LiveTranscriptSnapshot.join(snapshot.stable, promotedPrefix)
+    }
+
+    private func trackPromotion(_ next: LiveTranscriptSnapshot, now: Date = Date()) {
+        if next.stable != snapshot.stable {
+            // The engine committed a block; the revisable tail restarts.
+            revisableSamples.removeAll()
+            promotedPrefix = ""
+        }
+        revisableSamples.append(StablePromotion.Sample(time: now, revisable: next.revisable))
+        if revisableSamples.count > 64 { revisableSamples.removeFirst(revisableSamples.count - 64) }
+        guard deliveryMode == .stableOnly else {
+            promotedPrefix = ""
+            return
+        }
+        let candidate = StablePromotion.promotedPrefix(samples: revisableSamples, current: next.revisable, now: now)
+        // Never hand back words already typed; if the engine revised one of
+        // them the inserter's divergence path keeps the take flowing.
+        if candidate.count > promotedPrefix.count || !candidate.hasPrefix(promotedPrefix) {
+            promotedPrefix = candidate
+        }
+    }
+
+    private func resetPromotion() {
+        revisableSamples.removeAll()
+        promotedPrefix = ""
+    }
+
+    nonisolated static func dropping(_ prefix: String, from text: String) -> String {
+        guard !prefix.isEmpty, text.hasPrefix(prefix) else { return text }
+        return String(text.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
     }
 
     // MARK: - Lifecycle
@@ -77,6 +121,7 @@ final class LiveDictationSession {
         seq = 0
         self.language = language
         snapshot = .empty
+        resetPromotion()
         phase = .binding
         pipeline?.resume()
 
@@ -114,6 +159,7 @@ final class LiveDictationSession {
             log("take=\(take) drop reason=\(take == takeID ? "phase:\(phase)" : "staleTake")")
             return
         }
+        trackPromotion(next)
         snapshot = next
         seq += 1
         guard inserter.isActive else { return }
@@ -122,7 +168,9 @@ final class LiveDictationSession {
 
     private func write(_ sequenced: SequencedSnapshot) {
         guard sequenced.take == takeID, phase == .streaming else { return }
-        let input = LiveWriteInput(sequenced.snapshot)
+        // Latest-wins: the promoted prefix belongs to the current snapshot.
+        let stable = sequenced.snapshot == snapshot ? effectiveStable : sequenced.snapshot.stable
+        let input = LiveWriteInput(fullText: sequenced.snapshot.fullText, stable: stable)
         let outcome = inserter.update(input)
         deliveryMode = inserter.deliveryMode
         log(
@@ -172,12 +220,14 @@ final class LiveDictationSession {
         deliveryMode = .none
         phase = .idle
         snapshot = LiveTranscriptSnapshot(stable: cleaned, revisable: "")
+        resetPromotion()
         return (cleaned, delivery)
     }
 
     func cancel() {
         guard phase != .idle || inserter.isActive else {
             snapshot = .empty
+        resetPromotion()
             return
         }
         let take = takeID
@@ -188,6 +238,7 @@ final class LiveDictationSession {
         deliveryMode = .none
         phase = .idle
         snapshot = .empty
+        resetPromotion()
         log("take=\(take) cancel")
     }
 

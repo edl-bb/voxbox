@@ -329,6 +329,18 @@ final class TargetFieldInserter {
         switch AppendPlan.plan(typed: delivered, stable: stable) {
         case .hold(let reason):
             if reason == .stableDiverged {
+                // A promoted word was revised. Keep the words flowing by count;
+                // the finish replace corrects the wrong word.
+                if isTargetFrontmost(),
+                    let words = AppendPlan.tailBeyondTypedWords(typed: delivered, stable: stable)
+                {
+                    let joined = LiveTranscriptSnapshot.join(delivered, words)
+                    let tail = String(joined.dropFirst(delivered.count))
+                    typeTail(tail, writer: writer)
+                    delivered = joined
+                    log("append after divergence typed=\((delivered as NSString).length) tail=\((tail as NSString).length)")
+                    return .wrote(.append, chars: (tail as NSString).length)
+                }
                 log("hold reason=stableDiverged typed=\((delivered as NSString).length) stable=\((stable as NSString).length)")
             }
             return .held(reason)
@@ -447,21 +459,35 @@ final class TargetFieldInserter {
             return .inField
         }
 
-        // Cleanup rewrote the words. We know exactly what we typed, so remove
-        // it (one Backspace per grapheme) and paste the cleaned transcript.
+        // Cleanup rewrote some words. We know exactly what we typed, so edit
+        // the smallest word-aligned span: step over the shared suffix, select
+        // the divergent middle and paste its replacement over the selection.
+        // The field never sits empty, and only the changed words move.
         // Paste, not type: a typed Return sends in chat composers, a pasted
         // paragraph break is a soft break.
-        let typedGraphemes = delivered.count
+        let trailingWhitespace = delivered.count - typedCore.count
+        let plan = KeystrokeReplacePlan.plan(typed: typedCore, cleaned: cleaned)
         if let move = caretRestoreMove(hasTyped: true) {
             writer.moveCaret(move)
             writer.settle()
         }
-        writer.deleteBackward(count: typedGraphemes)
-        writer.settle()
-        writer.paste(cleaned)
+        if trailingWhitespace > 0 {
+            writer.deleteBackward(count: trailingWhitespace)
+        }
+        if plan.suffixGraphemes > 0 {
+            writer.moveCaret(by: -plan.suffixGraphemes)
+        }
+        if plan.replacement.isEmpty {
+            writer.deleteBackward(count: plan.selectGraphemes)
+            if plan.suffixGraphemes > 0 { writer.moveCaret(by: plan.suffixGraphemes) }
+        } else {
+            writer.selectBackward(count: plan.selectGraphemes)
+            writer.paste(plan.replacement, thenMoveCaretBy: plan.suffixGraphemes)
+        }
         delivered = cleaned
         log(
-            "finalize keys replaced typed=\(typedGraphemes) raw=\((raw as NSString).length) "
+            "finalize keys replaced typed=\(typedCore.count) selected=\(plan.selectGraphemes) "
+                + "suffix=\(plan.suffixGraphemes) pasted=\(plan.replacement.count) raw=\((raw as NSString).length) "
                 + "cleaned=\((cleaned as NSString).length) caretMoves=\(caretMovedCount) result=inField",
             persist: true)
         return .inField

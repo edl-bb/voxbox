@@ -23,12 +23,25 @@ protocol FieldWriter: AnyObject {
     func deleteBackward(count: Int)
     /// Put `text` on the clipboard and press Cmd+V. Composers treat pasted
     /// newlines as soft breaks, where a typed Return would send.
-    func paste(_ text: String)
+    /// Paste `text` (replacing any selection), then move the caret `offset`
+    /// graphemes (positive = right). The move is sequenced after the paste
+    /// even when the paste is deferred.
+    func paste(_ text: String, thenMoveCaretBy offset: Int)
+    /// Shift+Left `count` times: selects the last `count` graphemes.
+    func selectBackward(count: Int)
+    /// Left/Right arrow `abs(offset)` times.
+    func moveCaret(by offset: Int)
     func moveCaret(_ move: CaretMove)
     /// Give the destination a beat between a caret move and the next burst.
     /// Never spins the run loop: that is what let the next snapshot re-enter
     /// a half-finished write.
     func settle()
+}
+
+extension FieldWriter {
+    func paste(_ text: String) {
+        paste(text, thenMoveCaretBy: 0)
+    }
 }
 
 /// Production writer over one `AXUIElement`.
@@ -148,11 +161,54 @@ final class AXFieldWriter: FieldWriter {
         }
     }
 
+    func selectBackward(count: Int) {
+        guard count > 0 else { return }
+        keystrokesSinceLastPaste += count
+        let source = CGEventSource(stateID: .hidSystemState)
+        guard let shiftDown = CGEvent(keyboardEventSource: source, virtualKey: 0x38, keyDown: true),
+            let shiftUp = CGEvent(keyboardEventSource: source, virtualKey: 0x38, keyDown: false)
+        else { return }
+        shiftDown.flags = .maskShift
+        shiftUp.flags = []
+        shiftDown.post(tap: .cghidEventTap)
+        for _ in 0..<count {
+            guard let down = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: true),
+                let up = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: false)
+            else { continue }
+            down.flags = .maskShift
+            up.flags = .maskShift
+            down.post(tap: .cghidEventTap)
+            up.post(tap: .cghidEventTap)
+        }
+        shiftUp.post(tap: .cghidEventTap)
+    }
+
+    func moveCaret(by offset: Int) {
+        Self.postArrows(by: offset)
+        keystrokesSinceLastPaste += abs(offset)
+    }
+
+    private static func postArrows(by offset: Int) {
+        guard offset != 0 else { return }
+        let source = CGEventSource(stateID: .hidSystemState)
+        let key: CGKeyCode = offset < 0 ? 0x7B : 0x7C
+        for _ in 0..<abs(offset) {
+            guard let down = CGEvent(keyboardEventSource: source, virtualKey: key, keyDown: true),
+                let up = CGEvent(keyboardEventSource: source, virtualKey: key, keyDown: false)
+            else { continue }
+            down.flags = []
+            up.flags = []
+            down.post(tap: .cghidEventTap)
+            up.post(tap: .cghidEventTap)
+        }
+    }
+
     /// Same clipboard contract as auto-paste: the previous clipboard comes
     /// back after the destination has read ours, when the user has that on.
     /// The text goes on the pasteboard now; Cmd+V waits out the key burst
-    /// that preceded it so the composer is idle when the paste arrives.
-    func paste(_ text: String) {
+    /// that preceded it so the composer is idle when the paste arrives, and
+    /// any caret move requested for after the paste is posted right behind it.
+    func paste(_ text: String, thenMoveCaretBy offset: Int) {
         let restore = UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
         let previous: ClipboardService.ClipboardSnapshot?
         if restore {
@@ -172,6 +228,11 @@ final class AXFieldWriter: FieldWriter {
                 ClipboardService.shared.copy(text: text, concealed: previous != nil)
             }
             ClipboardService.shared.paste()
+            if offset != 0 {
+                // Cmd+V itself is posted on the next main-queue turn; queue the
+                // arrows behind it the same way.
+                DispatchQueue.main.async { Self.postArrows(by: offset) }
+            }
             guard let previous else { return }
             self?.scheduleRestore(previous, pasted: text, attempt: 0)
         }

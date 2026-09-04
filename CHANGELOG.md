@@ -8,7 +8,7 @@ Changes and release notes for VoxBox.
 - **New feature**: Onboarding now asks for recording mode and shows each cleanup level on a sample. Replay it from Settings.
 - **New feature**: Copy raw transcript from History.
 - Improved transcript post-processing: numerals, fewer leftover fillers, misheard-word fixes, punctuation by meaning.
-- Improved live streaming reliability in Slack, Notion, Superhuman, Cursor and web composers.
+- Improved live streaming in Slack, Notion, Superhuman, Cursor and web composers: more reliable, words appear sooner, and cleanup edits only the words that changed.
 - Fixed the previous clipboard being pasted instead of the transcript.
 - Downloadable cleanup models are parked until macOS 27; cleanup runs on Apple Intelligence.
 

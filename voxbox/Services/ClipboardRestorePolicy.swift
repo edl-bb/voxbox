@@ -33,12 +33,14 @@ nonisolated enum ClipboardRestorePolicy {
     static let probeLength = 40
 
     /// How long to wait between a burst of synthetic key events and Cmd+V.
-    /// An Electron composer that is still digesting a few hundred Backspaces
-    /// drops a paste that arrives on top of them (seen in Slack), so the wait
-    /// grows with the burst: 0.25 s floor, 4 ms per key, 1.5 s ceiling.
+    /// An Electron composer still digesting a burst drops a paste that lands
+    /// on top of it (seen in Slack), so the wait grows with the burst. Kept
+    /// short: the finish edit now selects rather than deletes, so a dropped
+    /// paste leaves the text highlighted, not gone. 0.12 s floor, 2 ms per
+    /// key, 0.6 s ceiling.
     static func pasteDelay(afterKeystrokes count: Int) -> TimeInterval {
         guard count > 0 else { return 0 }
-        return min(1.5, 0.25 + Double(count) * 0.004)
+        return min(0.6, 0.12 + Double(count) * 0.002)
     }
 
     enum Decision: Equatable {

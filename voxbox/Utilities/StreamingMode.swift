@@ -248,6 +248,115 @@ nonisolated enum AppendPlan: Equatable {
         guard stableNS.length > typedNS.length else { return .hold(.unchanged) }
         return .append(stableNS.substring(from: typedNS.length))
     }
+
+    /// After the stable text has diverged from what we typed (a promoted word
+    /// was revised), keep the take flowing by typing the words the engine
+    /// has beyond our word count. The wrong word stays until the finish
+    /// replace corrects it; nothing is deleted mid-take.
+    static func tailBeyondTypedWords(typed: String, stable: String) -> String? {
+        let typedWords = typed.split(whereSeparator: \.isWhitespace).count
+        let stableWords = stable.split(whereSeparator: \.isWhitespace)
+        guard stableWords.count > typedWords else { return nil }
+        return stableWords[typedWords...].joined(separator: " ")
+    }
+}
+
+/// Promotes words from the engine's revisable tail to "typed" once they
+/// have sat unchanged for a while. Engines commit in sentence-sized blocks,
+/// which is why live text used to arrive in lumps; they also almost only
+/// revise the last word or two, which is why this is safe enough. A wrong
+/// promotion is corrected by the finish replace.
+nonisolated enum StablePromotion {
+    struct Sample: Equatable, Sendable {
+        var time: Date
+        var revisable: String
+    }
+
+    /// A word must be unchanged for this long.
+    static let window: TimeInterval = 1.0
+    /// The newest words are never promoted, whatever their age.
+    static let holdBackWords = 2
+
+    /// The leading words of `current` that every sample covering the last
+    /// `window` seconds agrees on, minus the last `holdBackWords` words of
+    /// `current`. Empty when the history does not reach back a full window.
+    static func promotedPrefix(
+        samples: [Sample], current: String, now: Date,
+        window: TimeInterval = window, holdBackWords: Int = holdBackWords
+    ) -> String {
+        let cutoff = now.addingTimeInterval(-window)
+        // The newest sample from before the cutoff describes the text during
+        // the gap up to the window; without one we have not watched long enough.
+        guard let anchor = samples.last(where: { $0.time < cutoff }) else { return "" }
+        var agreed = Array(anchor.revisable)
+        for sample in samples where sample.time >= cutoff {
+            let chars = Array(sample.revisable)
+            var index = 0
+            while index < agreed.count, index < chars.count, agreed[index] == chars[index] { index += 1 }
+            agreed.removeSubrange(index...)
+        }
+        let currentChars = Array(current)
+        var index = 0
+        while index < agreed.count, index < currentChars.count, agreed[index] == currentChars[index] { index += 1 }
+        agreed.removeSubrange(index...)
+
+        let agreedText = String(agreed)
+        var words = agreedText.split(whereSeparator: \.isWhitespace).map(String.init)
+        // A prefix that stops mid-word has not proven that word.
+        if let last = agreedText.last, !last.isWhitespace, !words.isEmpty { words.removeLast() }
+        let currentWords = current.split(whereSeparator: \.isWhitespace).count
+        let allowed = min(words.count, currentWords - holdBackWords)
+        guard allowed > 0 else { return "" }
+        return words[..<allowed].joined(separator: " ")
+    }
+}
+
+/// The smallest keystroke edit that turns the typed text into the cleaned
+/// one: step left over the shared suffix, select the divergent middle,
+/// paste its replacement, step back right. Word-aligned so a replacement
+/// never splits a word.
+nonisolated struct KeystrokeReplacePlan: Equatable {
+    /// Graphemes shared at the end; the caret steps left over them first.
+    var suffixGraphemes: Int
+    /// Graphemes to select (Shift+Left) before pasting.
+    var selectGraphemes: Int
+    /// Text pasted over the selection; empty means plain deletion.
+    var replacement: String
+
+    var isNoOp: Bool { selectGraphemes == 0 && replacement.isEmpty }
+
+    static func plan(typed: String, cleaned: String) -> KeystrokeReplacePlan {
+        let t = Array(typed)
+        let c = Array(cleaned)
+
+        var prefix = 0
+        while prefix < t.count, prefix < c.count, t[prefix] == c[prefix] { prefix += 1 }
+        // Back up to a word boundary unless the whole typed text matched.
+        if prefix < t.count {
+            while prefix > 0, !t[prefix - 1].isWhitespace { prefix -= 1 }
+        }
+
+        var suffix = 0
+        while suffix < t.count - prefix, suffix < c.count - prefix, t[t.count - 1 - suffix] == c[c.count - 1 - suffix] {
+            suffix += 1
+        }
+        // The suffix must start at a word boundary in both texts.
+        while suffix > 0, t.count - suffix > prefix,
+            !(t[t.count - suffix - 1].isWhitespace || t[t.count - suffix].isWhitespace)
+        {
+            suffix -= 1
+        }
+        while suffix > 0, c.count - suffix > prefix,
+            !(c[c.count - suffix - 1].isWhitespace || c[c.count - suffix].isWhitespace)
+        {
+            suffix -= 1
+        }
+
+        return KeystrokeReplacePlan(
+            suffixGraphemes: suffix,
+            selectGraphemes: t.count - prefix - suffix,
+            replacement: String(c[prefix..<(c.count - suffix)]))
+    }
 }
 
 /// HID plan used by cancel-revert. Counts are grapheme clusters, because
