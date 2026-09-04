@@ -1,23 +1,15 @@
 import Foundation
 import FoundationModels
 
-/// A backend that can execute one transcript-cleanup request. The pipeline
+/// A backend that can execute one transcript-cleanup request. The formatter
 /// picks an engine per request via `CleanupEngineFactory`, so runtimes can
-/// be added or swapped without touching the cleanup chain.
+/// be added or swapped without touching the cleanup pipeline.
 protocol CleanupEngine {
     /// Whether the engine can run right now (model present, OS support, …).
     var isAvailable: Bool { get }
-    /// Human name for outcomes and previews ("Apple Intelligence").
-    var displayName: String { get }
     /// Runs the request and returns the raw model output (the caller strips
-    /// preambles, tidies, and applies the guardrail).
+    /// preambles and applies the change-ratio guardrail).
     func cleanup(_ request: FormattingRequest) async throws -> String
-}
-
-nonisolated enum CleanupEngineError: Error, Equatable {
-    /// The model's own content filter rejected the request. Stepping down
-    /// will not help: the input is what was rejected.
-    case contentFilter
 }
 
 /// Apple FoundationModels — the ~3B system model that ships with macOS 26.
@@ -27,48 +19,15 @@ struct AppleIntelligenceCleanupEngine: CleanupEngine {
         return false
     }
 
-    var displayName: String {
-        PostProcessingModel.catalog.first { $0.variant == PostProcessingModel.appleSystemVariant }?.name
-            ?? "Apple Intelligence"
-    }
-
-    /// Built-in levels are deterministic: `temperature: 0` alone is not
-    /// documented as greedy, so ask for greedy sampling explicitly. Custom
-    /// rulesets keep their own temperature. Never cap response tokens: a
-    /// cap truncates silently.
-    static func generationOptions(for request: FormattingRequest) -> GenerationOptions {
-        if request.temperature <= 0 {
-            return GenerationOptions(sampling: .greedy)
-        }
-        return GenerationOptions(temperature: request.temperature)
-    }
-
-    /// Cleanup edits the user's own words, which is exactly what Apple's
-    /// `permissiveContentTransformations` guardrail is for. The default
-    /// guardrail refuses ordinary dictation that merely mentions a sensitive
-    /// word ("look at this pill").
-    static var systemModel: SystemLanguageModel {
-        SystemLanguageModel(guardrails: .permissiveContentTransformations)
-    }
-
     func cleanup(_ request: FormattingRequest) async throws -> String {
-        let session = LanguageModelSession(model: Self.systemModel) {
+        let session = LanguageModelSession {
             request.instructionStages
         }
-        do {
-            let response = try await session.respond(
-                to: request.userPrompt,
-                options: Self.generationOptions(for: request)
-            )
-            return response.content
-        } catch let error as LanguageModelSession.GenerationError {
-            switch error {
-            case .guardrailViolation, .refusal:
-                throw CleanupEngineError.contentFilter
-            default:
-                throw error
-            }
-        }
+        let response = try await session.respond(
+            to: request.input,
+            options: GenerationOptions(temperature: request.temperature)
+        )
+        return response.content
     }
 }
 

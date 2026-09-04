@@ -39,57 +39,29 @@ nonisolated enum AppLogger {
 
 // MARK: - Convenience Methods
 nonisolated extension AppLogger {
-    // Debug builds log message text in the clear so `log show` is usable
-    // while developing; release builds keep the system default (private).
-    // Messages carry lengths, counts and states, never transcript text.
-
     /// Log with emoji prefix for better visual scanning
     static func info(_ message: String, category: Logger = AppLogger.service) {
-        #if DEBUG
-            category.info("ℹ️ \(message, privacy: .public)")
-        #else
-            category.info("ℹ️ \(message)")
-        #endif
+        category.info("ℹ️ \(message)")
     }
-
+    
     static func debug(_ message: String, category: Logger = AppLogger.service) {
-        #if DEBUG
-            category.debug("🔍 \(message, privacy: .public)")
-        #else
-            category.debug("🔍 \(message)")
-        #endif
+        category.debug("🔍 \(message)")
     }
-
+    
     static func error(_ message: String, error: Error? = nil, category: Logger = AppLogger.service) {
-        #if DEBUG
-            if let error = error {
-                category.error("❌ \(message, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            } else {
-                category.error("❌ \(message, privacy: .public)")
-            }
-        #else
-            if let error = error {
-                category.error("❌ \(message): \(error.localizedDescription)")
-            } else {
-                category.error("❌ \(message)")
-            }
-        #endif
+        if let error = error {
+            category.error("❌ \(message): \(error.localizedDescription)")
+        } else {
+            category.error("❌ \(message)")
+        }
     }
-
+    
     static func warning(_ message: String, category: Logger = AppLogger.service) {
-        #if DEBUG
-            category.warning("⚠️ \(message, privacy: .public)")
-        #else
-            category.warning("⚠️ \(message)")
-        #endif
+        category.warning("⚠️ \(message)")
     }
-
+    
     static func success(_ message: String, category: Logger = AppLogger.service) {
-        #if DEBUG
-            category.info("✅ \(message, privacy: .public)")
-        #else
-            category.info("✅ \(message)")
-        #endif
+        category.info("✅ \(message)")
     }
 }
 

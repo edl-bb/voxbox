@@ -23,11 +23,7 @@ enum SmartTrailingPunctuation {
 
     /// Apply the heuristic if the user hasn't turned the toggle off.
     static func apply(to text: String) -> String {
-        apply(to: text, enabled: isEnabled)
-    }
-
-    static func apply(to text: String, enabled: Bool) -> String {
-        enabled ? strip(text) : text
+        isEnabled ? strip(text) : text
     }
 
     /// The toggle-independent heuristic. Returns `text` unchanged unless the

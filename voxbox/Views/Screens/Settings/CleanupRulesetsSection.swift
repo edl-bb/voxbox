@@ -1,18 +1,90 @@
 import SwiftUI
 
-/// The custom-ruleset list with New, Edit (sheet) and Delete. Lives on the
-/// Cleanup page under the Custom level.
-struct CustomRulesetManagerView: View {
+/// On-device AI cleanup, as it appears on the AI Models page: the enable
+/// toggle (mirrored from Settings — same key), the effort picker including
+/// Custom, and the custom-ruleset manager. Configuration for custom rulesets
+/// lives here, not in Settings.
+struct TranscriptCleanupAISection: View {
+    @AppStorage(TranscriptFormatterService.enabledKey)
+    private var formatWithOnDeviceAI: Bool = false
+    @AppStorage(TranscriptFormatterService.intensityKey)
+    private var formattingIntensityRaw: Int = FormattingIntensity.lightCleanup.rawValue
+    @AppStorage(TranscriptFormatterService.markdownFormattingKey)
+    private var markdownFormatting: Bool = true
+
     @ObservedObject private var store = CustomRulesetStore.shared
     @State private var editingRuleset: CustomCleanupRuleset?
 
+    private var intensity: FormattingIntensity {
+        FormattingIntensity(rawValue: formattingIntensityRaw) ?? .lightCleanup
+    }
+
     var body: some View {
-        rulesetManager
-            .sheet(item: $editingRuleset) { ruleset in
-                RulesetEditorSheet(ruleset: ruleset) { updated in
-                    store.update(updated)
-                }
+        SettingsSection {
+            SettingsSectionHeader(
+                icon: "sparkles",
+                title: "On-device AI",
+                subtitle: "Clean up transcripts with the selected post-processing model"
+            ) {
+                Toggle("", isOn: $formatWithOnDeviceAI)
+                    .labelsHidden()
+                    .disabled(!TranscriptFormatterService.isCleanupAvailable)
             }
+
+            if !TranscriptFormatterService.isCleanupAvailable {
+                Text("No cleanup model is available on this Mac right now.")
+                    .font(Typography.captionSmall)
+                    .foregroundStyle(Color.textMuted)
+            } else if formatWithOnDeviceAI {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("Effort")
+                            .font(Typography.bodyMedium)
+                            .foregroundStyle(Color.textPrimary)
+                        Spacer()
+                        Picker("", selection: $formattingIntensityRaw) {
+                            ForEach(FormattingIntensity.allCases) { level in
+                                Text(level.displayName).tag(level.rawValue)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
+
+                    Text(intensity.summary)
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if intensity == .custom {
+                        rulesetManager
+                    } else {
+                        HStack {
+                            Text("Markdown formatting")
+                                .font(Typography.bodyMedium)
+                                .foregroundStyle(Color.textPrimary)
+                            Spacer()
+                            Toggle("", isOn: $markdownFormatting)
+                                .labelsHidden()
+                        }
+                        Text("Adds bold, italic, bullet points, and numbered lists where they fit.")
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+                    }
+                }
+                .padding(.top, 2)
+            } else {
+                Text("Off — transcripts get instant rule-based cleanup only.")
+                    .font(Typography.captionSmall)
+                    .foregroundStyle(Color.textMuted)
+            }
+        }
+        .sheet(item: $editingRuleset) { ruleset in
+            RulesetEditorSheet(ruleset: ruleset) { updated in
+                store.update(updated)
+            }
+        }
     }
 
     // MARK: - Ruleset manager
@@ -170,7 +242,6 @@ private struct RulesetEditorSheet: View {
     @State private var name: String
     @State private var instructions: String
     @State private var temperature: Double
-    @State private var showTestPanel = false
 
     private let rulesetID: UUID
     private let onSave: (CustomCleanupRuleset) -> Void
@@ -183,73 +254,12 @@ private struct RulesetEditorSheet: View {
         _temperature = State(initialValue: ruleset.temperature)
     }
 
-    /// The ruleset as it stands in the sheet, saved or not. The test panel
-    /// always runs this, so what you read is what Save would store.
-    private var draftRuleset: CustomCleanupRuleset {
-        CustomCleanupRuleset(id: rulesetID, name: name, instructions: instructions, temperature: temperature)
-    }
-
-    private static let sheetWidth: CGFloat = 700
-    private static let horizontalPadding: CGFloat = 32
-
     var body: some View {
-        VStack(spacing: 0) {
-            // Pinned header: what you are editing stays in view while the
-            // body scrolls.
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text("Edit ruleset")
-                    .font(Typography.sectionTitle)
-                    .foregroundStyle(Color.textPrimary)
-                Text(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled ruleset" : name)
-                    .font(Typography.ui(14))
-                    .foregroundStyle(Color.textMuted)
-                    .lineLimit(1)
-                Spacer()
-            }
-            .padding(.horizontal, Self.horizontalPadding)
-            .padding(.top, 24)
-            .padding(.bottom, 16)
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Edit ruleset")
+                .font(Typography.sectionTitle)
+                .foregroundStyle(Color.textPrimary)
 
-            Divider()
-
-            ScrollView {
-                editor
-                    // Fixed content width: a long menu label or transcript can
-                    // wrap or truncate, never widen the sheet.
-                    .frame(width: Self.sheetWidth - Self.horizontalPadding * 2)
-                    .padding(.horizontal, Self.horizontalPadding)
-                    .padding(.vertical, 22)
-            }
-
-            Divider()
-
-            // Pinned footer.
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button("Save") {
-                    onSave(
-                        CustomCleanupRuleset(
-                            id: rulesetID,
-                            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? "Untitled ruleset" : name,
-                            instructions: instructions,
-                            temperature: temperature))
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-            .padding(.horizontal, Self.horizontalPadding)
-            .padding(.vertical, 16)
-        }
-        .frame(width: Self.sheetWidth)
-        .frame(minHeight: 560, maxHeight: 800)
-        .background(Color.bgApp)
-    }
-
-    private var editor: some View {
-        VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("NAME")
                     .font(Typography.uiBold(10)).tracking(1)
@@ -299,25 +309,31 @@ private struct RulesetEditorSheet: View {
                     .foregroundStyle(Color.textMuted)
             }
 
-            DisclosureGroup(isExpanded: $showTestPanel) {
-                RulesetTestPanel(draft: draftRuleset)
-                    .padding(.top, 12)
-            } label: {
-                HStack(spacing: 8) {
-                    Text("TEST THIS RULESET")
-                        .font(Typography.uiBold(10)).tracking(1)
-                        .foregroundStyle(Color.textMuted)
-                    Text("Uses your unsaved edits")
-                        .font(Typography.captionSmall)
-                        .foregroundStyle(Color.textMuted)
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") {
+                    onSave(
+                        CustomCleanupRuleset(
+                            id: rulesetID,
+                            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? "Untitled ruleset" : name,
+                            instructions: instructions,
+                            temperature: temperature))
+                    dismiss()
                 }
+                .keyboardShortcut(.defaultAction)
             }
         }
+        .padding(24)
+        .frame(width: 520)
+        .background(Color.bgApp)
     }
 }
 
 #Preview {
-    CustomRulesetManagerView()
+    TranscriptCleanupAISection()
         .padding()
         .frame(width: 700)
         .background(Color.bgApp)

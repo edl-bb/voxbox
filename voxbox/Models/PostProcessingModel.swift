@@ -40,17 +40,6 @@ struct PostProcessingModel: Identifiable, Equatable, Sendable {
 
     static let appleSystemVariant = "apple-intelligence"
 
-    /// Downloadable MLX models are parked until macOS 27's native
-    /// `LanguageModel` support lands (see docs/byo-llm-post-processing.md).
-    /// While false, the picker shows only Apple Intelligence and any stored
-    /// `.mlx` selection resolves to it.
-    static let downloadableModelsEnabled = false
-
-    /// What the picker offers right now.
-    static var offered: [PostProcessingModel] {
-        downloadableModelsEnabled ? catalog : catalog.filter { $0.kind == .appleSystem }
-    }
-
     /// Curated catalog: the zero-download system model first, then small
     /// instruction-followers suited to transcript cleanup (see
     /// docs/byo-llm-post-processing.md for the selection rationale).

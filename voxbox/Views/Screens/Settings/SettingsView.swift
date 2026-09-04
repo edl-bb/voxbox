@@ -5,7 +5,6 @@ import SwiftUI
 struct SettingsView: View {
     var onOpenDictionary: (() -> Void)?
     var onOpenModels: (() -> Void)?
-    var onOpenCleanup: (() -> Void)?
     @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
@@ -35,8 +34,7 @@ struct SettingsView: View {
             // Tab content
             switch selectedTab {
             case .general:
-                GeneralSettingsTab(
-                    onOpenDictionary: onOpenDictionary, onOpenModels: onOpenModels, onOpenCleanup: onOpenCleanup)
+                GeneralSettingsTab(onOpenDictionary: onOpenDictionary, onOpenModels: onOpenModels)
             case .audio:
                 AudioSettingsTab()
             case .permissions:
@@ -91,10 +89,9 @@ struct SettingsTabButton: View {
 struct GeneralSettingsTab: View {
     var onOpenDictionary: (() -> Void)?
     var onOpenModels: (() -> Void)?
-    var onOpenCleanup: (() -> Void)?
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @AppStorage("selectedHotkey") private var selectedHotkey: HotkeyOption = .fn
-    @AppStorage(RecordingMode.defaultsKey) private var recordingMode: RecordingMode = .hold
+    @AppStorage("recordingMode") private var recordingMode: Int = 0  // 0: Hold to record, 1: Toggle
     @AppStorage("restoreClipboardAfterAutoPaste") private var restoreClipboardAfterAutoPaste =
         true
     @AppStorage(TranscriptDeliveryMode.defaultsKey)
@@ -239,15 +236,18 @@ struct GeneralSettingsTab: View {
                                     .foregroundStyle(Color.textPrimary)
                                 Spacer()
                                 Picker("", selection: $recordingMode) {
-                                    ForEach(RecordingMode.allCases) { mode in
-                                        Text(mode.settingsTitle).tag(mode)
-                                    }
+                                    Text("Hold to record").tag(0)
+                                    Text("Toggle").tag(1)
                                 }
                                 .pickerStyle(.segmented)
                                 .frame(width: 180)
                             }
 
-                            Text(recordingMode.settingsCaption)
+                            Text(
+                                recordingMode == 0
+                                    ? "Hold the hotkey down to record, release when done."
+                                    : "Press the hotkey to start recording, press again to stop."
+                            )
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
                             .padding(.top, 2)
@@ -476,29 +476,132 @@ struct GeneralSettingsTab: View {
                     SettingsSectionHeader(
                         icon: "wand.and.stars",
                         title: "Transcript Cleanup",
-                        subtitle: "What happens to a transcript before it is pasted"
+                        subtitle: "Instant rules, then optional on-device AI"
                     )
 
-                    SettingsNavigationRow(
-                        title: "Cleanup levels, rulesets and preview",
-                        subtitle: "Choose Off, Basic, Light cleanup, Polish or your own rules, switch instant filler removal on or off, and try each level on a sample. Lives on the Cleanup page.",
-                        action: { onOpenCleanup?() }
-                    )
-                    .disabled(onOpenCleanup == nil)
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Text("Remove filler words")
+                                .font(Typography.bodyMedium)
+                                .foregroundStyle(Color.textPrimary)
+                            Spacer()
+                            Toggle("", isOn: $enableAutoEdit)
+                                .labelsHidden()
+                        }
 
-                    Divider()
+                        Text("Strips um, uh, and similar fillers. Instant — no AI.")
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
 
-                    SettingsNavigationRow(
-                        title: "Custom replacements & snippets",
-                        subtitle: "Say “my email” to insert your address. Always on, every model.",
-                        action: { onOpenDictionary?() }
-                    )
-                    .disabled(onOpenDictionary == nil)
+                        HStack {
+                            Text("Strip stray period")
+                                .font(Typography.bodyMedium)
+                                .foregroundStyle(Color.textPrimary)
+                            Spacer()
+                            Toggle("", isOn: $smartTrailingPunctuation)
+                                .labelsHidden()
+                        }
+
+                        Text(
+                            "If you dictate only an email, URL, number, or single word, drops the extra period the model adds. Sentences are left alone."
+                        )
+                        .font(Typography.captionSmall)
+                        .foregroundStyle(Color.textMuted)
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.textMuted)
+                                    Text("On-device AI")
+                                        .font(Typography.bodyMedium)
+                                        .foregroundStyle(Color.textPrimary)
+                                }
+                                Spacer()
+                                Toggle("", isOn: $formatWithOnDeviceAI)
+                                    .labelsHidden()
+                                    .disabled(!TranscriptFormatterService.isCleanupAvailable)
+                            }
+                            Text(
+                                "Uses a local MacOS LLM to process the transcript. Can also improve structure and add formatting. Takes longer to process than the default settings."
+                            )
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textMuted)
+
+                            if !TranscriptFormatterService.isCleanupAvailable {
+                                Text(
+                                    "No cleanup model is available on this Mac right now."
+                                )
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+                            } else if formatWithOnDeviceAI {
+                                HStack {
+                                    Text("Effort")
+                                        .font(Typography.bodyMedium)
+                                        .foregroundStyle(Color.textPrimary)
+                                    Spacer()
+                                    Picker("", selection: $formattingIntensityRaw) {
+                                        ForEach(FormattingIntensity.allCases) { level in
+                                            Text(level.displayName).tag(level.rawValue)
+                                        }
+                                    }
+                                    .pickerStyle(.segmented)
+                                    .labelsHidden()
+                                    .frame(minWidth: 300)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                }
+
+                                Text(
+                                    (FormattingIntensity(rawValue: formattingIntensityRaw)
+                                        ?? .lightCleanup).summary
+                                )
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.textMuted)
+
+                                if FormattingIntensity(rawValue: formattingIntensityRaw) == .custom {
+                                    SettingsNavigationRow(
+                                        title: "Manage custom rulesets",
+                                        subtitle: "Create up to 5 of your own instruction sets, each with its own temperature. Lives in AI Models.",
+                                        action: {
+                                            DashboardRoute.pendingAIModelsTab = .instructions
+                                            onOpenModels?()
+                                        }
+                                    )
+                                    .disabled(onOpenModels == nil)
+                                } else {
+                                    HStack {
+                                        Text("Markdown formatting")
+                                            .font(Typography.bodyMedium)
+                                            .foregroundStyle(Color.textPrimary)
+                                        Spacer()
+                                        Toggle("", isOn: $markdownFormatting)
+                                            .labelsHidden()
+                                    }
+
+                                    Text(
+                                        "Adds bold, italic, bullet points, and numbered lists where they fit."
+                                    )
+                                    .font(Typography.captionSmall)
+                                    .foregroundStyle(Color.textMuted)
+                                }
+                            }
+
+                            
+                        }
+
+                        Divider()
+
+                        SettingsNavigationRow(
+                            title: "Custom replacements & snippets",
+                            subtitle: "Say “my email” to insert your address. Always on, every model.",
+                            action: { onOpenDictionary?() }
+                        )
+                        .disabled(onOpenDictionary == nil)
+                    }
                 }
-
-                #if DEBUG
-                    TranscriptCleanupDebugSection()
-                #endif
 
                 // Spoken Language
                 SettingsSection {
@@ -687,20 +790,6 @@ struct GeneralSettingsTab: View {
                     }
                 }
 
-                // Setup guide
-                SettingsSection {
-                    SettingsSectionHeader(
-                        icon: "sparkles.rectangle.stack",
-                        title: "Setup guide",
-                        subtitle: "The first-run walkthrough"
-                    )
-
-                    SettingsNavigationRow(
-                        title: "Replay the setup guide",
-                        subtitle: "Step through recording mode, permissions, transcript cleanup and models again. Your current choices are kept and preselected.",
-                        action: { OnboardingReplay.request() }
-                    )
-                }
             }
             .padding(24)
         }

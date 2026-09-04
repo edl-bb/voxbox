@@ -24,8 +24,6 @@ extension Notification.Name {
     /// Posted when on-device AI cleanup is about to run, so the pill can
     /// switch from “Transcribing…” to “Tidying up…”.
     static let transcriptCleanupStarted = Notification.Name("transcriptCleanupStarted")
-    /// Posted with a `TranscriptCleanupOutcome` as `object` after a real take.
-    static let transcriptCleanupFinished = Notification.Name("transcriptCleanupFinished")
     /// Posted after the copy-last-transcript shortcut writes the clipboard.
     static let lastTranscriptCopied = Notification.Name("lastTranscriptCopied")
     /// Posted when the shortcut fired but history has no transcript yet.

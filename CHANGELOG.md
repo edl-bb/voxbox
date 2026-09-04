@@ -2,23 +2,6 @@
 
 Changes and release notes for VoxBox.
 
-## [1.3.0] - 2026.09.04
-- **New feature**: Added a Cleanup page where you can customise how the transcript post-processing is handled
-    - See live results using template transcripts or your latest recording to validate your cleanup preference.
-    - Includes a new way to write, manage and test your custom prompts.
-
-- **Improvements**:
-    - Improved onboarding flow: now includes additional settings like toggle/hold to record and cleanup preferences.
-    - Improved live stream reliability and cleanup for live streamed text.
-    - Enhancements to the recording pill.
-    - Light cleanup and Polish enhancements to handle numbers, homophones and miss-heard words and other grammar improvements.
-    - Added quick action buttons to transcription history
-    - You can now re-run the on-boarding workflow from the settings page if you want to!
-
-- **Fixes**:
-    - Removed custom LLMs temporarily, as this wasn't working correctly, will re-introduce with MacOS27 as there is better native support.
-    - Fixed an issue where items on the clipboard were being send instead of the transcript.
-
 ## [1.2.0] - 2026-08-30
 - **New Feature**: Choose your Post-processing Model: Post-processing defaults to the build-in Apple Intelligence model, but now you can choose from 4 other LLMs to clean up your transcripts. Choose from Apple Intelligence, Llama 3.2 1B/3B, Qwen 3 1.7B/4B
 - **New feature**: Custom LLM cleanup rulesets

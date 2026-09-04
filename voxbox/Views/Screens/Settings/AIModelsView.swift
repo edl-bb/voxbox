@@ -37,6 +37,8 @@ struct AIModelsView: View {
                         TranscriptionModelsTab()
                     case .postProcessing:
                         PostProcessingModelsView()
+                    case .instructions:
+                        LLMInstructionsTab()
                     }
                 }
                 .frame(maxWidth: 940, alignment: .leading)
@@ -59,6 +61,7 @@ struct AIModelsView: View {
 enum AIModelsTab: String, CaseIterable, Identifiable {
     case transcription = "Transcription models"
     case postProcessing = "Post-processing models"
+    case instructions = "LLM Instructions"
 
     var id: String { rawValue }
 
@@ -66,6 +69,7 @@ enum AIModelsTab: String, CaseIterable, Identifiable {
         switch self {
         case .transcription: return "waveform"
         case .postProcessing: return "sparkles"
+        case .instructions: return "text.quote"
         }
     }
 }
@@ -260,6 +264,25 @@ private struct TranscriptionModelsTab: View {
             if StreamingMode.disableIfIncompatible(with: variant) {
                 transcriptDeliveryMode = .autoPaste
             }
+        }
+    }
+}
+
+// MARK: - LLM Instructions tab
+
+private struct LLMInstructionsTab: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("LLM Instructions")
+                    .font(Typography.sectionTitle)
+                    .foregroundStyle(Color.textPrimary)
+                Text("How the cleanup model edits your transcripts — pick a built-in effort level or write your own rulesets.")
+                    .font(Typography.ui(13))
+                    .foregroundStyle(Color.textMuted)
+            }
+
+            TranscriptCleanupAISection()
         }
     }
 }

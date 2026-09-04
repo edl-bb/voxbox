@@ -461,10 +461,28 @@ struct StatBlock: View {
 struct RecentTranscriptionRow: View {
     let item: HistoryItem
     @State private var isHovered = false
+    @State private var showCopySuccess = false
+    @ObservedObject private var audioPlayer = AudioPlayerService.shared
 
     var wordCount: Int {
         item.transcript.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
             .count
+    }
+
+    private var isPlayingThisItem: Bool {
+        audioPlayer.isPlaying && audioPlayer.currentAudioURL == item.audioFileURL
+    }
+
+    private func togglePlayback() {
+        guard let url = item.audioFileURL else { return }
+        if isPlayingThisItem {
+            audioPlayer.stop()
+            return
+        }
+        if audioPlayer.currentAudioURL != url {
+            audioPlayer.loadAudio(from: url)
+        }
+        audioPlayer.play()
     }
 
     var body: some View {
@@ -516,8 +534,47 @@ struct RecentTranscriptionRow: View {
 
                     Spacer()
 
-                    TranscriptQuickActions(item: item)
-                        .opacity(isHovered ? 1 : 0.5)
+                    // Quick actions
+                    HStack(spacing: 8) {
+                        // Copy button
+                        Button(action: copyToClipboard) {
+                            HStack(spacing: 4) {
+                                Image(systemName: showCopySuccess ? "checkmark" : "doc.on.doc")
+                                    .font(.system(size: 11))
+                                Text(showCopySuccess ? "Copied" : "Copy")
+                                    .font(Typography.captionSmall)
+                            }
+                            .foregroundStyle(
+                                showCopySuccess ? Color.accentSuccess : Color.textSecondary
+                            )
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.bgHover)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.plain)
+
+                        // Play audio button (if available)
+                        if item.audioFileURL != nil {
+                            Button(action: togglePlayback) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: isPlayingThisItem ? "stop.fill" : "play.fill")
+                                        .font(.system(size: 11))
+                                    Text(isPlayingThisItem ? "Stop" : "Play")
+                                        .font(Typography.captionSmall)
+                                }
+                                .foregroundStyle(
+                                    isPlayingThisItem ? Color.brandAccent : Color.textSecondary
+                                )
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color.bgHover)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .opacity(isHovered ? 1 : 0.5)
                 }
             }
         }
@@ -533,6 +590,22 @@ struct RecentTranscriptionRow: View {
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.15)) {
                 isHovered = hovering
+            }
+        }
+    }
+
+    private func copyToClipboard() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(item.transcript, forType: .string)
+
+        withAnimation {
+            showCopySuccess = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                showCopySuccess = false
             }
         }
     }

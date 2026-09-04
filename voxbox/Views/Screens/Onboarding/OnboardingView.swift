@@ -3,15 +3,14 @@ import SwiftUI
 
 struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
-    @AppStorage(OnboardingReplay.requestedKey) private var replayRequested: Bool = false
-    @State private var step: OnboardingStep = .welcome
+    /// Returning users who lost a TCC grant skip welcome / Globe Key and land
+    /// on the permissions step so auto-paste can be restored.
+    var startAtPermissions: Bool = false
+    @State private var currentPage: Int
 
-    /// Replays from Settings keep `hasCompletedOnboarding` true and show an
-    /// exit button; choices are preselected from the current settings.
-    var isReplay: Bool = false
-
-    init(isReplay: Bool = false) {
-        self.isReplay = isReplay
+    init(startAtPermissions: Bool = false) {
+        self.startAtPermissions = startAtPermissions
+        _currentPage = State(initialValue: startAtPermissions ? 2 : 0)
     }
 
     var body: some View {
@@ -20,83 +19,51 @@ struct OnboardingView: View {
                 // Background - Match main app exactly
                 Color.bgApp.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // Progress and Exit live in their own row so no page has
-                    // to leave room for them.
-                    HStack {
-                        if step.showsStepDots {
-                            OnboardingStepDots(current: step)
-                        }
-                        Spacer()
-                        if isReplay {
-                            Button(action: completeOnboarding) {
-                                Text("Exit setup")
-                                    .font(Typography.labelSmall)
-                                    .foregroundStyle(Color.textSecondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Capsule().fill(Color.textPrimary.opacity(0.06)))
-                            }
-                            .buttonStyle(.plain)
-                            .keyboardShortcut(.cancelAction)
-                        }
+                // Content ZStack
+                ZStack {
+                    if currentPage == 0 {
+                        WelcomePage(action: {
+                            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 1 }
+                        })
+                        .transition(.opacity)
+                    } else if currentPage == 1 {
+                        GlobeKeyOptimizationPage(action: {
+                            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 2 }
+                        })
+                        .transition(.opacity)
+                    } else if currentPage == 2 {
+                        PermissionsPage(
+                            finishAction: { advanceAfterPermissions() },
+                            skipAction: { advanceAfterPermissions() }
+                        )
+                        .transition(.opacity)
+                    } else {
+                        ModelOnboardingPage(
+                            finishAction: { completeOnboarding() },
+                            skipAction: { completeOnboarding() }
+                        )
+                        .transition(.opacity)
                     }
-                    .frame(height: 28)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 14)
-
-                    pageContent
-                        .padding(step.contentPadding)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .padding(currentPage == 3 ? 16 : 40)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 600, minHeight: 500)
     }
 
-    @ViewBuilder
-    private var pageContent: some View {
-                ZStack {
-                    switch step {
-                    case .welcome:
-                        WelcomePage(action: advance)
-                            .transition(.opacity)
-                    case .globeKey:
-                        GlobeKeyOptimizationPage(action: advance)
-                            .transition(.opacity)
-                    case .recordingMode:
-                        RecordingModeOnboardingPage(continueAction: advance, skipAction: advance)
-                            .transition(.opacity)
-                    case .permissions:
-                        PermissionsPage(finishAction: advance, skipAction: advance)
-                            .transition(.opacity)
-                            .onAppear {
-                                // Load the system model now so the cleanup
-                                // step's cards fill in without a cold start.
-                                Task { await TranscriptCleanupPreview.prewarm() }
-                            }
-                    case .cleanup:
-                        CleanupOnboardingPage(continueAction: advance, skipAction: advance)
-                            .transition(.opacity)
-                    case .model:
-                        ModelOnboardingPage(finishAction: completeOnboarding, skipAction: completeOnboarding)
-                            .transition(.opacity)
-                    }
-                }
-    }
-
-    private func advance() {
-        guard let next = step.next else {
+    /// Returning users who only needed permissions skip the model page.
+    func advanceAfterPermissions() {
+        if startAtPermissions {
             completeOnboarding()
-            return
+        } else {
+            withAnimation(.easeInOut(duration: 0.5)) { currentPage = 3 }
         }
-        withAnimation(.easeInOut(duration: 0.5)) { step = next }
     }
 
     func completeOnboarding() {
         withAnimation {
             hasCompletedOnboarding = true
-            replayRequested = false
         }
         NotificationCenter.default.post(name: .recorderIdleVisibilityChanged, object: nil)
     }
@@ -118,23 +85,23 @@ struct WelcomePage: View {
 
             VStack(spacing: 14) {
                 Text("Welcome to")
-                    .font(Typography.labelLarge)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.textSecondary)
                     .textCase(.uppercase)
                     .tracking(2.5)
 
                 Text("VoxBox")
-                    .font(Typography.onboardingHero)
+                    .font(.system(size: 48, weight: .regular, design: .serif))
                     .foregroundStyle(Color.textPrimary)
                     .tracking(-0.5)
 
                 HStack(spacing: 0) {
                     Text("Voice to text, powered by AI.")
-                        .font(Typography.bodyLarge)
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundStyle(Color.textSecondary)
 
                     Text(" Private. Fast. Offline.")
-                        .font(Typography.onboardingTagline)
+                        .font(.system(size: 16, weight: .regular, design: .serif))
                         .italic()
                         .foregroundStyle(Color.textSecondary)
                 }
@@ -172,7 +139,7 @@ struct GetStartedButton: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Text("Get Started")
-                    .font(Typography.titleLarge)
+                    .font(.system(size: 15, weight: .medium))
                 Image(systemName: "arrow.right")
                     .font(.system(size: 12, weight: .medium))
                     .offset(x: isHovered ? 3 : 0)
@@ -216,17 +183,17 @@ struct PermissionsPage: View {
 
             VStack(spacing: 16) {
                 Text("QUICK SETUP")
-                    .font(Typography.captionBold)
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.textSecondary)
                     .textCase(.uppercase)
                     .tracking(2)
 
                 Text("Permissions")
-                    .font(Typography.onboardingTitle)
+                    .font(.system(size: 40, weight: .regular, design: .serif))
                     .foregroundStyle(Color.textPrimary)
 
                 Text("Grant these permissions to unlock the full experience.")
-                    .font(Typography.bodyLarge)
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(Color.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 380)
@@ -269,7 +236,7 @@ struct PermissionsPage: View {
                         skipAction()
                     }) {
                         Text("Skip for now")
-                            .font(Typography.labelMedium)
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.textSecondary)
                     }
                     .buttonStyle(.plain)
@@ -402,7 +369,7 @@ struct FeatureCard: View {
 
             // Title in serif
             Text(title)
-                .font(Typography.onboardingCardTitle)
+                .font(.system(size: 16, weight: .medium, design: .serif))
                 .foregroundStyle(Color.textPrimary)
 
             Spacer()
@@ -410,7 +377,7 @@ struct FeatureCard: View {
 
             // Description
             Text(description)
-                .font(Typography.caption)
+                .font(.system(size: 12, weight: .regular))
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -472,11 +439,11 @@ struct OnboardingPermissionRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(Typography.labelLarge)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.textPrimary)
 
                 Text(description)
-                    .font(Typography.caption)
+                    .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.textSecondary)
             }
 
@@ -489,7 +456,7 @@ struct OnboardingPermissionRow: View {
             } else {
                 Button(action: action) {
                     Text("Allow")
-                        .font(Typography.labelMedium)
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.bgApp)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -528,7 +495,7 @@ struct ContinueButton: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Text("Continue")
-                    .font(Typography.titleLarge)
+                    .font(.system(size: 15, weight: .medium))
                 Image(systemName: isEnabled ? "arrow.right" : "lock.fill")
                     .font(.system(size: isEnabled ? 12 : 10, weight: .medium))
                     .offset(x: (isHovered && isEnabled) ? 3 : 0)
@@ -569,19 +536,19 @@ struct GlobeKeyOptimizationPage: View {
 
             VStack(spacing: 16) {
                 Text("OPTIMIZE WORKFLOW")
-                    .font(Typography.captionBold)
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.textSecondary)
                     .textCase(.uppercase)
                     .tracking(2)
 
                 Text("The Globe Key")
-                    .font(Typography.onboardingTitle)
+                    .font(.system(size: 40, weight: .regular, design: .serif))
                     .foregroundStyle(Color.textPrimary)
 
                 Text(
                     "By default, macOS uses the \u{1F310} key to show the Emoji Picker, which interrupts VoxBox.\n\nPlease open Keyboard Settings and change **\"Press \u{1F310} key to\"** to **\"Do Nothing\"**."
                 )
-                .font(Typography.bodyLarge)
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 420)
@@ -594,7 +561,7 @@ struct GlobeKeyOptimizationPage: View {
                         Image(systemName: "switch.2")
                         Text("Open Keyboard Settings")
                     }
-                    .font(Typography.labelLarge)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.bgApp)
                     .frame(width: 260, height: 44)
                     .background(
@@ -637,12 +604,12 @@ struct ModelOnboardingPage: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Choose a model")
-                    .font(Typography.displayMedium)
+                    .font(.system(size: 28, weight: .regular, design: .serif))
                     .foregroundStyle(Color.textPrimary)
                 Text(
                     "Apple Speech is the built-in starter — you can dictate once its system assets are ready. Download Parakeet or Whisper later if you want; you can change this in AI Models."
                 )
-                .font(Typography.bodyMedium)
+                .font(.system(size: 14))
                 .foregroundStyle(Color.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -661,7 +628,7 @@ struct ModelOnboardingPage: View {
 
                 Button(action: skipAction) {
                     Text("I’ll choose later")
-                        .font(Typography.labelMedium)
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.textSecondary)
                 }
                 .buttonStyle(.plain)
