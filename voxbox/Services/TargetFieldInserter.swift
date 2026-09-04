@@ -396,7 +396,7 @@ final class TargetFieldInserter {
         case .accessibilityRewrite:
             return finalizeViaAccessibility(cleaned, writer: writer, start: start)
         case .keystrokesOnly:
-            return finalizeViaKeystrokes(raw: raw, cleaned: cleaned, writer: writer, start: start)
+            return finalizeViaKeystrokes(raw: raw, cleaned: cleaned, writer: writer)
         }
     }
 
@@ -432,7 +432,7 @@ final class TargetFieldInserter {
     }
 
     private func finalizeViaKeystrokes(
-        raw: String, cleaned: String, writer: FieldWriter, start: Int
+        raw: String, cleaned: String, writer: FieldWriter
     ) -> LiveDelivery {
         guard hasTyped, !delivered.isEmpty else {
             log("finalize keys nothing typed result=notWritten", persist: true)
@@ -475,65 +475,29 @@ final class TargetFieldInserter {
             writer.deleteBackward(count: trailingWhitespace)
         }
 
-        // Preferred: select the span by accessibility range. Chromium honours
-        // selection-range sets even where it ignores text sets, and a range is
-        // immune to the key-event races that made Shift+Left land late. Only
-        // trusted when the field reads back the exact words we mean to
-        // replace; otherwise fall back to arrows.
-        let prefixGraphemes = typedCore.count - plan.selectGraphemes - plan.suffixGraphemes
-        let prefixText = String(typedCore.prefix(prefixGraphemes))
-        let middleText = String(typedCore.dropFirst(prefixGraphemes).prefix(plan.selectGraphemes))
-        let middleRange = CFRange(
-            location: start + (prefixText as NSString).length, length: (middleText as NSString).length)
-        let selectedByRange = plan.selectGraphemes > 0 && selectByRange(middleRange, expecting: middleText, writer: writer)
-
-        if selectedByRange {
-            if plan.replacement.isEmpty {
-                writer.deleteBackward(count: 1)  // one Backspace removes the selection
-                _ = writer.setSelection(CFRange(location: start + (cleaned as NSString).length, length: 0))
-            } else {
-                writer.paste(plan.replacement, thenMoveCaretBy: plan.suffixGraphemes)
-            }
+        // Deterministic edit: no selection of any kind. Chromium treats an
+        // AX selection-range set as a caret jump (and reports the range back
+        // regardless), and a Shift+Left selection can collapse before a
+        // deferred paste arrives; both put the replacement in the wrong
+        // place. Backspace over the divergent words is unambiguous, and the
+        // caret steps over the shared suffix and back so only those words
+        // move.
+        if plan.suffixGraphemes > 0 {
+            writer.moveCaret(by: -plan.suffixGraphemes)
+        }
+        writer.deleteBackward(count: plan.selectGraphemes)
+        if plan.replacement.isEmpty {
+            if plan.suffixGraphemes > 0 { writer.moveCaret(by: plan.suffixGraphemes) }
         } else {
-            if plan.suffixGraphemes > 0 {
-                writer.moveCaret(by: -plan.suffixGraphemes)
-            }
-            if plan.replacement.isEmpty {
-                writer.deleteBackward(count: plan.selectGraphemes)
-                if plan.suffixGraphemes > 0 { writer.moveCaret(by: plan.suffixGraphemes) }
-            } else {
-                writer.selectBackward(count: plan.selectGraphemes)
-                writer.paste(plan.replacement, thenMoveCaretBy: plan.suffixGraphemes)
-            }
+            writer.paste(plan.replacement, thenMoveCaretBy: plan.suffixGraphemes)
         }
         delivered = cleaned
         log(
-            "finalize keys replaced typed=\(typedCore.count) selected=\(plan.selectGraphemes) "
-                + "via=\(selectedByRange ? "axRange" : "arrows") suffix=\(plan.suffixGraphemes) "
-                + "pasted=\(plan.replacement.count) raw=\((raw as NSString).length) "
+            "finalize keys replaced typed=\(typedCore.count) deleted=\(plan.selectGraphemes) "
+                + "suffix=\(plan.suffixGraphemes) pasted=\(plan.replacement.count) raw=\((raw as NSString).length) "
                 + "cleaned=\((cleaned as NSString).length) caretMoves=\(caretMovedCount) result=inField",
             persist: true)
         return .inField
-    }
-
-    /// Sets the selection to `range` and confirms both the range and the
-    /// text under it read back as expected.
-    private func selectByRange(_ range: CFRange, expecting text: String, writer: FieldWriter) -> Bool {
-        guard let value = writer.readValue(), !value.isEmpty else { return false }
-        let ns = value as NSString
-        guard range.location >= 0, range.location + range.length <= ns.length,
-            ns.substring(with: NSRange(location: range.location, length: range.length)) == text
-        else {
-            log("finalize ax-range skipped: field text does not match at \(range.location)+\(range.length)")
-            return false
-        }
-        guard writer.setSelection(range), let read = writer.readSelection(),
-            read.location == range.location, read.length == range.length
-        else {
-            log("finalize ax-range skipped: selection set not honoured")
-            return false
-        }
-        return true
     }
 
     /// Remove what we wrote (cancelled take).

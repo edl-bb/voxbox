@@ -27,8 +27,6 @@ protocol FieldWriter: AnyObject {
     /// graphemes (positive = right). The move is sequenced after the paste
     /// even when the paste is deferred.
     func paste(_ text: String, thenMoveCaretBy offset: Int)
-    /// Shift+Left `count` times: selects the last `count` graphemes.
-    func selectBackward(count: Int)
     /// Left/Right arrow `abs(offset)` times.
     func moveCaret(by offset: Int)
     func moveCaret(_ move: CaretMove)
@@ -159,28 +157,6 @@ final class AXFieldWriter: FieldWriter {
             down.post(tap: .cghidEventTap)
             up.post(tap: .cghidEventTap)
         }
-    }
-
-    func selectBackward(count: Int) {
-        guard count > 0 else { return }
-        keystrokesSinceLastPaste += count
-        let source = CGEventSource(stateID: .hidSystemState)
-        guard let shiftDown = CGEvent(keyboardEventSource: source, virtualKey: 0x38, keyDown: true),
-            let shiftUp = CGEvent(keyboardEventSource: source, virtualKey: 0x38, keyDown: false)
-        else { return }
-        shiftDown.flags = .maskShift
-        shiftUp.flags = []
-        shiftDown.post(tap: .cghidEventTap)
-        for _ in 0..<count {
-            guard let down = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: true),
-                let up = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: false)
-            else { continue }
-            down.flags = .maskShift
-            up.flags = .maskShift
-            down.post(tap: .cghidEventTap)
-            up.post(tap: .cghidEventTap)
-        }
-        shiftUp.post(tap: .cghidEventTap)
     }
 
     func moveCaret(by offset: Int) {

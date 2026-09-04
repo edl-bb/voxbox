@@ -114,16 +114,6 @@ final class FakeFieldWriter: FieldWriter {
         if offset != 0 { moveCaret(by: offset) }
     }
 
-    func selectBackward(count: Int) {
-        ops.append("selectBackward(\(count))")
-        guard count > 0 else { return }
-        let before = caretCharacterIndex
-        let start = max(0, before - count)
-        let characters = Array(text)
-        caret = String(characters[0..<start]).utf16.count
-        selectionLength = String(characters[start..<before]).utf16.count
-    }
-
     func moveCaret(by offset: Int) {
         ops.append("moveCaret(by: \(offset))")
         selectionLength = 0
