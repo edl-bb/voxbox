@@ -162,6 +162,29 @@ final class CleanupPostPassTests: XCTestCase {
         XCTAssertEqual(CleanupPostPass.tidy(text, reference: text, markdownAllowed: false), text)
     }
 
+    // MARK: - Pause fragments
+
+    func testPauseFragmentsFoldOntoThePreviousSentence() {
+        XCTAssertEqual(
+            CleanupPostPass.joinPauseFragments(
+                "People talk in faster sections and slower sections. And the pauses land anywhere. But the meaning is continuous. Which is the point."),
+            "People talk in faster sections and slower sections, and the pauses land anywhere, but the meaning is continuous, which is the point.")
+        XCTAssertEqual(
+            CleanupPostPass.joinPauseFragments("Is that right? And then we ship. So that needs work."),
+            "Is that right? And then we ship. So that needs work.", "questions and 'So' are left alone")
+        XCTAssertEqual(
+            CleanupPostPass.joinPauseFragments("Version 2.0. And done.\n\nAnd a new paragraph."),
+            "Version 2.0. And done.\n\nAnd a new paragraph.", "digits, short words and paragraph starts are not joined")
+        XCTAssertEqual(
+            CleanupPostPass.tidy("It was late. And we left.", reference: "", markdownAllowed: false, joinFragments: true),
+            "It was late, and we left.")
+        XCTAssertEqual(
+            CleanupPostPass.tidy("It was late. And we left.", reference: "", markdownAllowed: false),
+            "It was late. And we left.", "only when asked (Polish)")
+        XCTAssertTrue(CleanupPromptSet.compiled.joinsPauseFragments(.polish))
+        XCTAssertFalse(CleanupPromptSet.compiled.joinsPauseFragments(.lightCleanup))
+    }
+
     // MARK: - Preamble
 
     func testStripsLabelsWrappersTrailersAndQuotes() {

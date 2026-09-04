@@ -47,7 +47,8 @@ final class TranscriptCleanupPipeline {
                 output = CleanupPostPass.tidy(
                     modelInput, reference: modelInput, markdownAllowed: false,
                     numerals: plan.promptSet.rendersNumerals(intensity),
-                    spokenFillers: plan.promptSet.stripsFillers(intensity))
+                    spokenFillers: plan.promptSet.stripsFillers(intensity),
+                    joinFragments: plan.promptSet.joinsPauseFragments(intensity))
             }
             outcome = .withoutModel(
                 rawInput: raw, modelInput: modelInput, output: output, requested: plan.option,
@@ -135,7 +136,8 @@ final class TranscriptCleanupPipeline {
             let tidy = CleanupPostPass.tidyWithDiagnostics(
                 stripped, reference: input, markdownAllowed: markdownAllowed,
                 numerals: plan.promptSet.rendersNumerals(intensity),
-                spokenFillers: plan.promptSet.stripsFillers(intensity))
+                spokenFillers: plan.promptSet.stripsFillers(intensity),
+                joinFragments: plan.promptSet.joinsPauseFragments(intensity))
 
             let evaluation: GuardrailEvaluation?
             let verdict: GuardrailVerdict

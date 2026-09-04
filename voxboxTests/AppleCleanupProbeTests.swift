@@ -26,6 +26,18 @@ final class AppleCleanupProbeTests: XCTestCase {
         XCTAssertEqual(outcome.landed, .lightCleanup)
     }
 
+    /// Pause-led punctuation from the speech engine; Polish should
+    /// re-punctuate from the meaning.
+    func testPolishRepunctuatesPauseFragments() async {
+        let text = "I think it's still making too many assumptions about where the punctuation should be. Based on what comes out of the transcript model. There are things like full stops that get added. If there's a pause from the speaker. That is a mistake. And realistically the model should just consider all of the text together. And think about how the phrasing fits. Because people always talk in faster sections and slower sections."
+        for option in [CleanupOption.light, .polish] {
+            let outcome = await TranscriptCleanupPreview.preview(
+                text: text, option: option, includeMarkdown: false, autoEdit: false, allowStepDown: false, promptSet: .compiled)
+            print("=== pause fragments · \(option.displayName) · landed=\(outcome.landed?.displayName ?? "raw") · error=\(outcome.error ?? "none")")
+            print("OUT: \(outcome.output)")
+        }
+    }
+
     func testProbeEveryLevelOnTheSamples() async {
         for sample in CleanupSampleTranscripts.allCases {
             for option in [CleanupOption.basic, .light, .polish] {

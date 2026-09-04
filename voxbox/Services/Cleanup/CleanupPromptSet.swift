@@ -57,6 +57,13 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
         intensity == .lightCleanup || intensity == .polish
     }
 
+    /// Polish alone joins pause fragments deterministically ("…sections. And
+    /// the pauses…" → "…sections, and the pauses…"); Light keeps the
+    /// speaker's sentence breaks unless the model changes them.
+    func joinsPauseFragments(_ intensity: FormattingIntensity) -> Bool {
+        intensity == .polish
+    }
+
     func instructionStages(
         for intensity: FormattingIntensity,
         includeMarkdown: Bool,
@@ -124,8 +131,12 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
             2. Replace misheard words with the word the speaker meant, judged by sound and context: \
             "there review" → "their review", "peak at the quote" → "peek at the quote", "your \
             welcome" → "you're welcome", "gonna" → "going to".
-            3. Turn choppy or run-on phrasing into fluent, complete sentences with correct \
-            punctuation, keeping the speaker's meaning, vocabulary and tone. Do not make it formal.
+            3. Re-punctuate from the meaning, not from the pauses. The dictation's full stops, \
+            commas and capitals mark where the speaker breathed, so treat them as suggestions only. \
+            Read the whole passage, then join fragments into complete sentences (a full stop before \
+            "and", "but", "because", "which" or "so" is usually a pause, not a sentence end), split \
+            run-ons, and fix grammar so it reads as one considered piece of writing. Keep the \
+            speaker's meaning, vocabulary and tone. Do not make it formal.
             4. Write numbers as numerals, including money, percentages and times: "twelve thousand \
             five hundred dollars" becomes $12,500, "twenty percent" becomes 20%, "two pm" becomes 2pm. \
             Never change a value.
@@ -140,8 +151,10 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
         style: """
             Write in sentence case: capitalise only the first word of each sentence, the word I, and \
             proper nouns. Do NOT use title case, ALL CAPS, or headings. Use each punctuation mark \
-            once: no doubled commas or full stops, no trailing ellipsis. Copy email addresses, URLs, \
-            and names exactly as dictated.
+            once: no doubled commas or full stops, no trailing ellipsis. The dictation's existing \
+            punctuation reflects pauses in speech, not grammar: place full stops and commas where the \
+            meaning needs them, not where the speaker paused. Copy email addresses, URLs, and names \
+            exactly as dictated.
             """,
         australianSpelling: "Use Australian English spelling: colour, organise, centre, realise.",
         markdown: """
@@ -165,7 +178,7 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
             .lightCleanup:
                 "REMEMBER: delete every um, uh, ah, er, you know, I mean, sort of, kind of, basically and filler like; collapse repeats; numbers as numerals. Keep every other word. Reply with only the text.",
             .polish:
-                "REMEMBER: delete every filler and repeat, fix misheard words (there/their, peak/peek), make the sentences fluent, numbers as numerals. Keep every point. Reply with only the text.",
+                "REMEMBER: delete every filler and repeat, fix misheard words (there/their, peak/peek), re-punctuate from meaning not pauses (join fragments, split run-ons), numbers as numerals. Keep every point. Reply with only the text.",
         ],
         budgets: [
             .formatting: GuardrailBudget(maxCostRatio: 0.05, minFreeEdits: 1, minRetention: 0.95),

@@ -14,20 +14,22 @@ nonisolated enum CleanupPostPass {
 
     static func tidy(
         _ output: String, reference input: String, markdownAllowed: Bool, numerals: Bool = false,
-        spokenFillers: Bool = false
+        spokenFillers: Bool = false, joinFragments: Bool = false
     ) -> String {
         tidyWithDiagnostics(
             output, reference: input, markdownAllowed: markdownAllowed, numerals: numerals,
-            spokenFillers: spokenFillers
+            spokenFillers: spokenFillers, joinFragments: joinFragments
         ).text
     }
 
-    /// `numerals` renders spoken numbers as digits and `spokenFillers` strips
+    /// `numerals` renders spoken numbers as digits, `spokenFillers` strips
     /// the unambiguous fillers and immediate repeats a lazy model pass left
-    /// behind (both for Light and Polish).
+    /// behind (both for Light and Polish), and `joinFragments` folds a
+    /// sentence that begins with a conjunction back onto the one before it
+    /// (Polish).
     static func tidyWithDiagnostics(
         _ output: String, reference input: String, markdownAllowed: Bool, numerals: Bool = false,
-        spokenFillers: Bool = false
+        spokenFillers: Bool = false, joinFragments: Bool = false
     ) -> TidyResult {
         var text = output
         if !markdownAllowed {
@@ -38,6 +40,7 @@ nonisolated enum CleanupPostPass {
             var next = segment
             if spokenFillers { next = stripSpokenFillers(next) }
             if numerals { next = SpokenNumbers.render(in: next) }
+            if joinFragments { next = joinPauseFragments(next) }
             return normalisePunctuation(next)
         }
         text = fixTrailingEllipsis(text, reference: input)
@@ -46,6 +49,24 @@ nonisolated enum CleanupPostPass {
         text = normaliseWhitespace(text)
         let anomaly = uppercaseRatio(text) > max(0.30, 2 * uppercaseRatio(input) + 0.05)
         return TidyResult(text: text, casingAnomaly: anomaly)
+    }
+
+    /// A speech engine ends a sentence wherever the speaker paused, so a
+    /// dictation is full of fragments that begin with a conjunction: "…in
+    /// faster sections. And the pauses…". Fold those back onto the previous
+    /// sentence with a comma. Only after a full stop that follows a letter
+    /// (never "?", "!", a number or an abbreviation), and never at the start
+    /// of a paragraph.
+    static func joinPauseFragments(_ text: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: #"(?<=[a-z]{2})\. (And|But|Because|Which|Or) (?=[a-z])"#) else {
+            return text
+        }
+        let ns = NSMutableString(string: text)
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).reversed() {
+            let word = ns.substring(with: match.range(at: 1)).lowercased()
+            ns.replaceCharacters(in: match.range, with: ", \(word) ")
+        }
+        return ns as String
     }
 
     /// Words that legitimately repeat ("had had", "that that is").
