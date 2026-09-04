@@ -308,11 +308,16 @@ struct HistoryCard: View {
                             }
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textMuted)
+
+                            Spacer()
+
+                            // Same quick actions as the dashboard's recent list.
+                            TranscriptQuickActions(item: item)
+                                .opacity(isHovered || isExpanded ? 1 : 0.5)
                         }
                     }
-                    
-                    Spacer()
-                    
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                     // Expand indicator
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12))
