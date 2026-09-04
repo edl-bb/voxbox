@@ -396,7 +396,7 @@ final class TargetFieldInserter {
         case .accessibilityRewrite:
             return finalizeViaAccessibility(cleaned, writer: writer, start: start)
         case .keystrokesOnly:
-            return finalizeViaKeystrokes(raw: raw, cleaned: cleaned, writer: writer)
+            return finalizeViaKeystrokes(raw: raw, cleaned: cleaned, writer: writer, start: start)
         }
     }
 
@@ -432,7 +432,7 @@ final class TargetFieldInserter {
     }
 
     private func finalizeViaKeystrokes(
-        raw: String, cleaned: String, writer: FieldWriter
+        raw: String, cleaned: String, writer: FieldWriter, start: Int
     ) -> LiveDelivery {
         guard hasTyped, !delivered.isEmpty else {
             log("finalize keys nothing typed result=notWritten", persist: true)
@@ -489,7 +489,11 @@ final class TargetFieldInserter {
         if plan.replacement.isEmpty {
             if plan.suffixGraphemes > 0 { writer.moveCaret(by: plan.suffixGraphemes) }
         } else {
-            writer.paste(plan.replacement, thenMoveCaretBy: plan.suffixGraphemes)
+            // Where the replacement goes: after the shared prefix. Given to
+            // the writer so it can put the caret back right before pasting.
+            let prefixGraphemes = typedCore.count - plan.selectGraphemes - plan.suffixGraphemes
+            let prefixUTF16 = (String(typedCore.prefix(prefixGraphemes)) as NSString).length
+            writer.paste(plan.replacement, thenMoveCaretBy: plan.suffixGraphemes, caretAt: start + prefixUTF16)
         }
         delivered = cleaned
         log(

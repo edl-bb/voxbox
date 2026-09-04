@@ -104,11 +104,16 @@ final class FakeFieldWriter: FieldWriter {
         let keepBefore = charIndex - removeCount
         characters.removeSubrange(keepBefore..<charIndex)
         text = String(characters)
-        caret = String(characters[0..<keepBefore]).utf16.count
+        caret = resetCaretToStartAfterDelete ? 0 : String(characters[0..<keepBefore]).utf16.count
         selectionLength = 0
     }
 
-    func paste(_ pasted: String, thenMoveCaretBy offset: Int) {
+    /// Chrome / Notion / Slack: after a Backspace burst the caret jumps to
+    /// the start of the composer before a deferred paste can land.
+    var resetCaretToStartAfterDelete = false
+
+    func paste(_ pasted: String, thenMoveCaretBy offset: Int, caretAt location: Int?) {
+        if let location { _ = setSelection(CFRange(location: location, length: 0)) }
         ops.append("paste(\((pasted as NSString).length))")
         replaceSelection(with: pasted)
         if offset != 0 { moveCaret(by: offset) }

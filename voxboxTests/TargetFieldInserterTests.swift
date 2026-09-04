@@ -307,7 +307,10 @@ final class TargetFieldInserterTests: XCTestCase {
         XCTAssertEqual(field.text, "Pre: Hello 👋 there, friend.\n\nSecond paragraph.")
         XCTAssertTrue(field.ops.contains("deleteBackward(16)"), "one per grapheme: \(field.ops)")
         XCTAssertTrue(field.ops.contains { $0.hasPrefix("paste(") }, "paragraphs are pasted, never typed")
-        XCTAssertFalse(field.ops.contains { $0.hasPrefix("setSelection") }, "no selection of any kind in keystroke targets")
+        XCTAssertTrue(field.ops.contains("setSelection(5,0)"), "caret re-placed at the span start before the paste: \(field.ops)")
+        XCTAssertFalse(
+            field.ops.contains { $0.hasPrefix("setSelection") && !$0.hasSuffix(",0)") },
+            "only caret placement, never a selection")
     }
 
     func testKeystrokeFinalizeReplacesOnlyTheDivergentWords() {
@@ -322,9 +325,25 @@ final class TargetFieldInserterTests: XCTestCase {
         XCTAssertEqual(field.caret, (field.text as NSString).length, "caret ends after the shared suffix")
         XCTAssertEqual(
             field.ops.filter { !$0.hasPrefix("type(") && $0 != "settle" },
-            ["moveCaret(by: -12)", "deleteBackward(15)", "paste(17)", "moveCaret(by: 12)"],
-            "step over ‘ how are you’, remove ‘there my friend’, paste, step back")
-        XCTAssertFalse(field.ops.contains { $0.hasPrefix("setSelection") }, "no selection of any kind")
+            ["moveCaret(by: -12)", "deleteBackward(15)", "setSelection(6,0)", "paste(17)", "moveCaret(by: 12)"],
+            "step over ‘ how are you’, remove ‘there my friend’, re-place the caret, paste, step back")
+    }
+
+    func testKeystrokeFinalizeSurvivesACaretSnapToStartBeforeThePaste() {
+        // Chrome: "Right, okay so I'm gonna start a new one and let's see…" came
+        // out with the replacement pasted at position 0.
+        let field = FakeFieldWriter()
+        field.resetCaretToStartAfterDelete = true
+        let inserter = TargetFieldInserter()
+        inserter.bind(writer: field, strategy: .keystrokesOnly, bundleIdentifier: nil, spanStart: 0)
+        _ = inserter.update(snapshot("Right okay so I'm gonna start and let's see how it goes so that's good"))
+        XCTAssertEqual(
+            inserter.finalize(
+                raw: "Right okay so I'm gonna start and let's see how it goes so that's good",
+                cleaned: "Right okay so I'm going to start and let's see how it goes so that's good"),
+            .inField)
+        XCTAssertEqual(field.text, "Right okay so I'm going to start and let's see how it goes so that's good")
+        XCTAssertTrue(field.ops.contains("setSelection(18,0)"), "caret re-placed after ‘Right okay so I'm ’ before pasting: \(field.ops)")
     }
 
     func testKeystrokeFinalizeWorksWithTextBeforeTheSpan() {

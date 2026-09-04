@@ -23,10 +23,13 @@ protocol FieldWriter: AnyObject {
     func deleteBackward(count: Int)
     /// Put `text` on the clipboard and press Cmd+V. Composers treat pasted
     /// newlines as soft breaks, where a typed Return would send.
-    /// Paste `text` (replacing any selection), then move the caret `offset`
-    /// graphemes (positive = right). The move is sequenced after the paste
-    /// even when the paste is deferred.
-    func paste(_ text: String, thenMoveCaretBy offset: Int)
+    /// Paste `text` at the caret, then move the caret `offset` graphemes
+    /// (positive = right). When `caretAt` is given, the caret is placed at
+    /// that UTF-16 offset immediately before the paste: composers snap the
+    /// caret to the start after a synthetic key burst, and a deferred paste
+    /// must not land there. The move is sequenced after the paste even when
+    /// the paste is deferred.
+    func paste(_ text: String, thenMoveCaretBy offset: Int, caretAt location: Int?)
     /// Left/Right arrow `abs(offset)` times.
     func moveCaret(by offset: Int)
     func moveCaret(_ move: CaretMove)
@@ -38,7 +41,7 @@ protocol FieldWriter: AnyObject {
 
 extension FieldWriter {
     func paste(_ text: String) {
-        paste(text, thenMoveCaretBy: 0)
+        paste(text, thenMoveCaretBy: 0, caretAt: nil)
     }
 }
 
@@ -184,7 +187,7 @@ final class AXFieldWriter: FieldWriter {
     /// The text goes on the pasteboard now; Cmd+V waits out the key burst
     /// that preceded it so the composer is idle when the paste arrives, and
     /// any caret move requested for after the paste is posted right behind it.
-    func paste(_ text: String, thenMoveCaretBy offset: Int) {
+    func paste(_ text: String, thenMoveCaretBy offset: Int, caretAt location: Int?) {
         let restore = UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
         let previous: ClipboardService.ClipboardSnapshot?
         if restore {
@@ -202,6 +205,13 @@ final class AXFieldWriter: FieldWriter {
             // Something else may have taken the pasteboard during the wait.
             if NSPasteboard.general.string(forType: .string) != text {
                 ClipboardService.shared.copy(text: text, concealed: previous != nil)
+            }
+            // Chrome, Notion and Slack snap the caret to the start of the
+            // composer after a key burst; put it back where the paste belongs.
+            // Chromium honours a selection-range set as a caret jump.
+            if let location, let self {
+                let placed = self.setSelection(CFRange(location: location, length: 0))
+                AppLogger.debug("paste caret re-placed at \(location) ok=\(placed)", category: AppLogger.clipboard)
             }
             ClipboardService.shared.paste()
             if offset != 0 {
