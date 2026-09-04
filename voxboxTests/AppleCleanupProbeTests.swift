@@ -38,6 +38,18 @@ final class AppleCleanupProbeTests: XCTestCase {
         }
     }
 
+    /// Experiment: hand Polish the passage with the engine's sentence breaks
+    /// flattened, so it has to place its own.
+    func testPolishOnFlattenedPunctuation() async {
+        let text = "I think it's still making too many assumptions about where the punctuation should be. Based on what comes out of the transcript model. There are things like full stops that get added. If there's a pause from the speaker. That is a mistake. And realistically the model should just consider all of the text together. And think about how the phrasing fits. Because people always talk in faster sections and slower sections."
+        let flattened = CleanupPostPass.flattenSentenceBreaks(text)
+        print("FLAT: \(flattened)")
+        let outcome = await TranscriptCleanupPreview.preview(
+            text: flattened, option: .polish, includeMarkdown: false, autoEdit: false, allowStepDown: false, promptSet: .compiled)
+        print("=== flattened · Polish · landed=\(outcome.landed?.displayName ?? "raw") · error=\(outcome.error ?? "none")")
+        print("OUT: \(outcome.output)")
+    }
+
     func testProbeEveryLevelOnTheSamples() async {
         for sample in CleanupSampleTranscripts.allCases {
             for option in [CleanupOption.basic, .light, .polish] {

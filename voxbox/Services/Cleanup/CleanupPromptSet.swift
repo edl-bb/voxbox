@@ -64,6 +64,15 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
         intensity == .polish
     }
 
+    /// Polish gets the dictation with the engine's pause-led sentence breaks
+    /// flattened, so it has to place full stops from the meaning. Probed on
+    /// the Apple model: with the breaks left in, it kept the fragments; with
+    /// them flattened, it wrote proper sentences. Light stays faithful to
+    /// the spoken breaks.
+    func flattensSentenceBreaks(_ intensity: FormattingIntensity) -> Bool {
+        intensity == .polish
+    }
+
     func instructionStages(
         for intensity: FormattingIntensity,
         includeMarkdown: Bool,

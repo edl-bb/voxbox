@@ -253,6 +253,20 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
         XCTAssertTrue(engine.requests[1].instructionStages.contains(markdown))
     }
 
+    func testPolishSeesFlattenedSentenceBreaksAndLightDoesNot() async {
+        let engine = ScriptedCleanupEngine { $0.input }
+        let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
+        let text = "It should be. Based on the model. There are things I think so."
+
+        let polish = await pipeline.clean(raw: text, plan: .test(.polish, stepDown: false))
+        XCTAssertEqual(engine.requests.last?.input, "It should be based on the model there are things I think so.")
+        XCTAssertEqual(polish.modelInput, text, "History and diagnostics keep the engine text")
+        XCTAssertEqual(polish.landed, .polish, "punctuation-only differences cost nothing")
+
+        _ = await pipeline.clean(raw: text, plan: .test(.light, stepDown: false))
+        XCTAssertEqual(engine.requests.last?.input, text)
+    }
+
     func testCustomRulesetIsVerbatimWrappedAndUngoverned() async {
         let ruleset = CustomCleanupRuleset(name: "Haiku", instructions: "Rewrite the dictation as a haiku.", temperature: 0.6)
         let haiku = "Ship it on Thursday.\nPriya waits for the release.\nThe team breathes at last."

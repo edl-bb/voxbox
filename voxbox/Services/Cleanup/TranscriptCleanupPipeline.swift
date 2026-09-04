@@ -240,8 +240,10 @@ nonisolated enum CleanupRequestBuilder {
             return request(for: text, ruleset: ruleset, promptSet: plan.promptSet)
         }
         let effective: FormattingIntensity = intensity == .custom ? .lightCleanup : intensity
+        let modelText = plan.promptSet.flattensSentenceBreaks(effective)
+            ? CleanupPostPass.flattenSentenceBreaks(text) : text
         return request(
-            for: text, intensity: effective, includeMarkdown: plan.includeMarkdown,
+            for: modelText, intensity: effective, includeMarkdown: plan.includeMarkdown,
             language: plan.language, promptSet: plan.promptSet)
     }
 

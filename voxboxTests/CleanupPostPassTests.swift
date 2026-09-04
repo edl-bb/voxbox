@@ -185,6 +185,18 @@ final class CleanupPostPassTests: XCTestCase {
         XCTAssertFalse(CleanupPromptSet.compiled.joinsPauseFragments(.lightCleanup))
     }
 
+    func testFlattenSentenceBreaksLeavesQuestionsParagraphsAndIAlone() {
+        XCTAssertEqual(
+            CleanupPostPass.flattenSentenceBreaks("It should be. Based on the model. There are things. I think so."),
+            "It should be based on the model there are things I think so.")
+        XCTAssertEqual(
+            CleanupPostPass.flattenSentenceBreaks("Is that right? Yes it is! Fine. Then we ship.\n\nNew paragraph. Starts here."),
+            "Is that right? Yes it is! Fine then we ship.\n\nNew paragraph starts here.")
+        XCTAssertEqual(
+            CleanupPostPass.flattenSentenceBreaks("Version 2.0. Next e.g. This one."),
+            "Version 2.0. Next e.g. This one.", "digits and abbreviations are not sentence ends we can judge")
+    }
+
     // MARK: - Preamble
 
     func testStripsLabelsWrappersTrailersAndQuotes() {

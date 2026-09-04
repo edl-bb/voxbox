@@ -51,6 +51,26 @@ nonisolated enum CleanupPostPass {
         return TidyResult(text: text, casingAnomaly: anomaly)
     }
 
+    /// Turns the engine's pause-led sentence breaks into plain word gaps so
+    /// the model has to decide where sentences end: "…should be. Based on…"
+    /// → "…should be based on…". Questions, exclamations, paragraph breaks,
+    /// numbers and abbreviations are left alone; "I" and capitalised names
+    /// keep their capital.
+    static func flattenSentenceBreaks(_ text: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: #"(?<=[a-z]{2})\. ([A-Z])([a-z]*)(?= )"#) else { return text }
+        let ns = NSMutableString(string: text)
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).reversed() {
+            let first = ns.substring(with: match.range(at: 1))
+            let rest = ns.substring(with: match.range(at: 2))
+            let word = first + rest
+            // Keep "I" and anything that looks like a name (capitalised word
+            // the flattening cannot judge; the model can).
+            let replacement = word == "I" || rest.isEmpty ? " \(word)" : " \(first.lowercased())\(rest)"
+            ns.replaceCharacters(in: match.range, with: replacement)
+        }
+        return ns as String
+    }
+
     /// A speech engine ends a sentence wherever the speaker paused, so a
     /// dictation is full of fragments that begin with a conjunction: "…in
     /// faster sections. And the pauses…". Fold those back onto the previous
