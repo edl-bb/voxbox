@@ -122,7 +122,9 @@ final class TranscriptCleanupPipeline {
                 modelOutput.trimmingCharacters(in: .whitespacesAndNewlines), promptSet: plan.promptSet)
             let markdownAllowed = plan.includeMarkdown && (intensity == .custom || plan.promptSet.allowsMarkdown(intensity))
             let tidy = CleanupPostPass.tidyWithDiagnostics(
-                stripped, reference: input, markdownAllowed: markdownAllowed)
+                stripped, reference: input, markdownAllowed: markdownAllowed,
+                numerals: plan.promptSet.rendersNumerals(intensity),
+                spokenFillers: plan.promptSet.stripsFillers(intensity))
 
             let evaluation: GuardrailEvaluation?
             let verdict: GuardrailVerdict

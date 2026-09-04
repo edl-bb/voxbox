@@ -116,8 +116,9 @@ final class TranscriptFormatterServiceTests: XCTestCase {
 
     func testPolishPromptWithoutMarkdownKeepsTheRest() {
         let polish = FormattingIntensity.polish.instructions(includeMarkdownFormatting: false)
-        XCTAssertTrue(polish.contains("sounds like the intended word"))
+        XCTAssertTrue(polish.contains("misheard words"))
         XCTAssertTrue(polish.contains("Do NOT add ideas"))
+        XCTAssertTrue(polish.contains("numerals"))
         XCTAssertFalse(polish.contains("Markdown"))
     }
 

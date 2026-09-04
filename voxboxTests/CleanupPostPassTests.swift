@@ -124,6 +124,44 @@ final class CleanupPostPassTests: XCTestCase {
         XCTAssertFalse(calm.casingAnomaly)
     }
 
+    // MARK: - Filler backstop
+
+    func testBackstopStripsFillersPhrasesAndRepeats() {
+        XCTAssertEqual(
+            CleanupPostPass.stripSpokenFillers(
+                "Hey team, quick update. Um, three things. First, the build is up so, you know, have a play. Second, I'm, I'm gonna move the retro. And third, if you've got capacity, uh, shout."),
+            "Hey team, quick update. Three things. First, the build is up so have a play. Second, I'm gonna move the retro. And third, if you've got capacity, shout.")
+        XCTAssertEqual(CleanupPostPass.stripSpokenFillers("the the second slide"), "the second slide")
+        XCTAssertEqual(CleanupPostPass.stripSpokenFillers("following up on, on the thing"), "following up on the thing")
+        XCTAssertEqual(CleanupPostPass.stripSpokenFillers("Yes, you know, we should ship."), "Yes, we should ship.")
+        XCTAssertEqual(CleanupPostPass.stripSpokenFillers("You know, we should ship."), "we should ship.")
+        XCTAssertEqual(
+            CleanupPostPass.tidy("You know, we should ship.", reference: "", markdownAllowed: false, spokenFillers: true),
+            "We should ship.", "tidy adds the sentence capital")
+    }
+
+    func testBackstopLeavesContentAlone() {
+        for text in [
+            "I mean it this time.",
+            "You know what I mean?",
+            "It's the kind of thing we do.",
+            "I had had enough by then.",
+            "I know that that is true.",
+            "It was very very late.",
+            "Basically it looks like rain.",
+        ] {
+            XCTAssertEqual(CleanupPostPass.stripSpokenFillers(text), text)
+        }
+    }
+
+    func testTidyAppliesTheBackstopOnlyWhenAsked() {
+        let text = "So, you know, I I think we should ship"
+        XCTAssertEqual(
+            CleanupPostPass.tidy(text, reference: text, markdownAllowed: false, spokenFillers: true),
+            "So I think we should ship")
+        XCTAssertEqual(CleanupPostPass.tidy(text, reference: text, markdownAllowed: false), text)
+    }
+
     // MARK: - Preamble
 
     func testStripsLabelsWrappersTrailersAndQuotes() {

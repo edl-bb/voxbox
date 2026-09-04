@@ -12,12 +12,22 @@ nonisolated enum CleanupPostPass {
 
     // MARK: - Tidy
 
-    static func tidy(_ output: String, reference input: String, markdownAllowed: Bool) -> String {
-        tidyWithDiagnostics(output, reference: input, markdownAllowed: markdownAllowed).text
+    static func tidy(
+        _ output: String, reference input: String, markdownAllowed: Bool, numerals: Bool = false,
+        spokenFillers: Bool = false
+    ) -> String {
+        tidyWithDiagnostics(
+            output, reference: input, markdownAllowed: markdownAllowed, numerals: numerals,
+            spokenFillers: spokenFillers
+        ).text
     }
 
+    /// `numerals` renders spoken numbers as digits and `spokenFillers` strips
+    /// the unambiguous fillers and immediate repeats a lazy model pass left
+    /// behind (both for Light and Polish).
     static func tidyWithDiagnostics(
-        _ output: String, reference input: String, markdownAllowed: Bool
+        _ output: String, reference input: String, markdownAllowed: Bool, numerals: Bool = false,
+        spokenFillers: Bool = false
     ) -> TidyResult {
         var text = output
         if !markdownAllowed {
@@ -25,7 +35,10 @@ nonisolated enum CleanupPostPass {
         }
         text = normaliseWhitespace(text)
         text = applyOutsideProtectedSpans(text) { segment in
-            normalisePunctuation(segment)
+            var next = segment
+            if spokenFillers { next = stripSpokenFillers(next) }
+            if numerals { next = SpokenNumbers.render(in: next) }
+            return normalisePunctuation(next)
         }
         text = fixTrailingEllipsis(text, reference: input)
         text = repairCasing(text, reference: input)
@@ -34,6 +47,47 @@ nonisolated enum CleanupPostPass {
         let anomaly = uppercaseRatio(text) > max(0.30, 2 * uppercaseRatio(input) + 0.05)
         return TidyResult(text: text, casingAnomaly: anomaly)
     }
+
+    /// Words that legitimately repeat ("had had", "that that is").
+    private static let allowedRepeats: Set<String> = ["had", "that", "very", "no", "bye", "so", "is", "ha"]
+
+    /// The deterministic backstop behind Light and Polish: um/uh-family
+    /// fillers (via Auto Edit's rules), filler phrases set off by commas, and
+    /// a word or contraction repeated back to back ("I'm, I'm gonna").
+    /// Context-dependent fillers ("like", "basically") are left to the model.
+    static func stripSpokenFillers(_ text: String) -> String {
+        var next = AutoEdit.stripFillers(text)
+        // "so, you know, have a play" → "so have a play"; "Yes, you know, we" → "Yes, we".
+        if let regex = try? NSRegularExpression(pattern: #"(?i)\b([A-Za-z']+),\s*(?:you know|i mean|sort of|kind of),\s*"#) {
+            let ns = NSMutableString(string: next)
+            for match in regex.matches(in: next, range: NSRange(location: 0, length: ns.length)).reversed() {
+                let before = ns.substring(with: match.range(at: 1))
+                let joiner = connectives.contains(before.lowercased()) ? " " : ", "
+                ns.replaceCharacters(in: match.range, with: before + joiner)
+            }
+            next = ns as String
+        }
+        // "You know, we should…" → "we should…" (the sentence capital comes later).
+        next = next.replacingOccurrences(
+            of: #"(?im)(^|[.!?]\s+)(?:you know|i mean|sort of|kind of),\s*"#, with: "$1", options: .regularExpression)
+        // Immediate repeats, optionally separated by a comma.
+        if let regex = try? NSRegularExpression(pattern: #"(?i)\b([A-Za-z]+(?:'[A-Za-z]+)?)(?:,\s*|\s+)\1\b"#) {
+            let ns = NSMutableString(string: next)
+            for match in regex.matches(in: next, range: NSRange(location: 0, length: ns.length)).reversed() {
+                let word = ns.substring(with: match.range(at: 1))
+                guard !allowedRepeats.contains(word.lowercased()) else { continue }
+                ns.replaceCharacters(in: match.range, with: word)
+            }
+            next = ns as String
+        }
+        return next.replacingOccurrences(of: #"[ \t]{2,}"#, with: " ", options: .regularExpression)
+    }
+
+    /// Words after which a removed filler phrase leaves no comma behind.
+    private static let connectives: Set<String> = [
+        "so", "and", "but", "because", "that", "to", "of", "at", "in", "on", "for", "with", "or", "if", "then",
+        "which", "is", "was", "are", "were", "just",
+    ]
 
     /// `**`, `__`, backticks and heading markers. List markers stay: they
     /// read fine as plain text.

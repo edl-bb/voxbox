@@ -19,6 +19,9 @@ Changes and release notes for VoxBox.
     - Rewritten prompts for Basic, Light and Polish with explicit sentence-case and punctuation rules. Basic no longer receives the Markdown stage, so it cannot add bold or headings to a dictation it was told not to change.
     - A deterministic post-pass tidies model output: leaked labels and "Here is the cleaned text" wrappers are stripped, doubled punctuation is collapsed, ALL CAPS and Title Case the speaker never dictated are reverted, and emails, URLs and numbers must survive or the pass is rejected.
     - Australian English spelling is applied after the model as well as before, so the model cannot re-Americanise.
+    - Light cleanup and Polish now write spoken numbers as numerals ("twelve thousand five hundred dollars" → $12,500, "twenty percent" → 20%, "two pm" → 2pm). This is done deterministically after the model, so it happens even when the model ignores the instruction. Lone small numbers ("one of the reasons") and ambiguous runs ("twenty twenty six") are left as spoken.
+    - Light cleanup and Polish also strip the unambiguous fillers deterministically after the model: um/uh-family words, "you know", "I mean", "sort of", "kind of" set off by commas, and back-to-back repeats ("I'm, I'm gonna", "the the"). Context-dependent words like "like" and "basically" stay the model's call.
+    - Light and Polish prompts are rewritten as explicit must-do lists with a worked example each, which is what got the Apple model to actually fix "there" → "their" and "peak" → "peek" at Polish.
     - Auto Edit keeps paragraph breaks, never leaves an orphan comma, and only capitalises the word after a filler it removed from the start of a sentence.
     - History keeps the raw transcript alongside the cleaned one, so custom rulesets can be tested against what was actually said.
 - Onboarding now covers the two choices new users tripped on.

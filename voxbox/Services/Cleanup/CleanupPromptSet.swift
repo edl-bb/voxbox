@@ -44,6 +44,19 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
         intensity == .lightCleanup || intensity == .polish
     }
 
+    /// Light and Polish write spoken numbers as numerals; Basic and custom
+    /// rulesets leave them as dictated. The post-pass enforces it whether or
+    /// not the model complied.
+    func rendersNumerals(_ intensity: FormattingIntensity) -> Bool {
+        intensity == .lightCleanup || intensity == .polish
+    }
+
+    /// Light and Polish are told to drop fillers and repeats; the post-pass
+    /// removes the unambiguous ones itself in case the model did not.
+    func stripsFillers(_ intensity: FormattingIntensity) -> Bool {
+        intensity == .lightCleanup || intensity == .polish
+    }
+
     func instructionStages(
         for intensity: FormattingIntensity,
         includeMarkdown: Bool,
@@ -88,36 +101,47 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
             dictation MUST appear in your reply, in the same order.
             """,
         light: """
-            MUST delete spoken fillers: um, uh, ah, er, hmm, you know, I mean, sort of, kind of, \
-            basically, and filler like. Keep content like (I like it, looks like, like this). \
-            Collapse false starts and repeated words: "I was I was going" becomes "I was going". \
-            Fix obvious grammar slips and punctuation. Add sentence and paragraph breaks where the \
-            speech pauses. Write numbers as numerals, including money, percentages and times: \
-            "twelve thousand five hundred dollars" becomes $12,500, "twenty percent" becomes 20%, \
-            "half past two" becomes 2:30. Keep every value exactly as spoken.
+            You MUST make these edits, every time they apply:
+            - Delete every spoken filler: um, uh, ah, er, hmm, you know, I mean, sort of, kind of, \
+            basically, and filler like or so. Keep content like (I like it, looks like, like this).
+            - Collapse false starts and repeated words: "I was I was going" becomes "I was going"; \
+            "the the second" becomes "the second".
+            - Fix obvious grammar slips and punctuation. Add sentence and paragraph breaks where the \
+            speech pauses.
+            - Write numbers as numerals, including money, percentages and times: "twelve thousand \
+            five hundred dollars" becomes $12,500, "twenty percent" becomes 20%, "two pm" becomes 2pm. \
+            Never change a value.
 
-            Keep every other word exactly as spoken. Do NOT reword, shorten, summarise, or reorder. \
-            This is wording-faithful tidying, not a rewrite.
+            Keep every other word exactly as spoken. Do NOT reword, shorten, summarise, or reorder.
+
+            Example. Dictation: "um so I I think we should, like, ship it on Thursday, it was two \
+            hundred bucks cheaper". Tidied: "I think we should ship it on Thursday, it was $200 cheaper."
             """,
         polish: """
-            Do these steps in order:
-            1. Delete spoken fillers (um, uh, ah, er, you know, I mean, sort of, kind of, basically, \
-            filler like) and false starts.
-            2. Where a word is clearly wrong but sounds like the intended word, replace it with the \
-            intended word (peak → peek, there → their).
-            3. Smooth choppy or run-on phrasing into fluent sentences, keeping the speaker's meaning, \
-            vocabulary, and tone.
+            You MUST make these edits, every time they apply:
+            1. Delete every spoken filler (um, uh, ah, er, you know, I mean, sort of, kind of, \
+            basically, filler like or so) and every false start or repeated word.
+            2. Replace misheard words with the word the speaker meant, judged by sound and context: \
+            "there review" → "their review", "peak at the quote" → "peek at the quote", "your \
+            welcome" → "you're welcome", "gonna" → "going to".
+            3. Turn choppy or run-on phrasing into fluent, complete sentences with correct \
+            punctuation, keeping the speaker's meaning, vocabulary and tone. Do not make it formal.
             4. Write numbers as numerals, including money, percentages and times: "twelve thousand \
-            five hundred dollars" becomes $12,500, "twenty percent" becomes 20%, "half past two" \
-            becomes 2:30. Keep every value exactly as spoken.
+            five hundred dollars" becomes $12,500, "twenty percent" becomes 20%, "two pm" becomes 2pm. \
+            Never change a value.
 
-            Do NOT add ideas, summarise, shorten for brevity, or drop or reorder points.
+            Keep every point the speaker made. Do NOT add ideas, summarise, shorten for brevity, or \
+            reorder.
+
+            Example. Dictation: "um so remember to peak at the quote, it was like two hundred bucks \
+            cheaper so legal should see it for there review". Polished: "Remember to peek at the \
+            quote. It was $200 cheaper, so legal should see it for their review."
             """,
         style: """
             Write in sentence case: capitalise only the first word of each sentence, the word I, and \
             proper nouns. Do NOT use title case, ALL CAPS, or headings. Use each punctuation mark \
             once: no doubled commas or full stops, no trailing ellipsis. Copy email addresses, URLs, \
-            and names exactly as dictated, and never change the value of a number.
+            and names exactly as dictated.
             """,
         australianSpelling: "Use Australian English spelling: colour, organise, centre, realise.",
         markdown: """
@@ -139,9 +163,9 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
             .formatting:
                 "REMEMBER: keep every word; change only punctuation, capitals, spacing, and breaks. Reply with only the text.",
             .lightCleanup:
-                "REMEMBER: delete um, uh, ah, er, you know, I mean, sort of, kind of, basically, and filler like. Keep every other word. Numbers as numerals. Sentence case. Reply with only the text.",
+                "REMEMBER: delete every um, uh, ah, er, you know, I mean, sort of, kind of, basically and filler like; collapse repeats; numbers as numerals. Keep every other word. Reply with only the text.",
             .polish:
-                "REMEMBER: keep the speaker's meaning and every point. Copy emails and URLs exactly; numbers as numerals with the exact value. Sentence case. Reply with only the text.",
+                "REMEMBER: delete every filler and repeat, fix misheard words (there/their, peak/peek), make the sentences fluent, numbers as numerals. Keep every point. Reply with only the text.",
         ],
         budgets: [
             .formatting: GuardrailBudget(maxCostRatio: 0.05, minFreeEdits: 1, minRetention: 0.95),
