@@ -155,8 +155,25 @@ final class AXFieldWriter: FieldWriter {
         }
         ClipboardService.shared.paste()
         guard let previous else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            ClipboardService.shared.restore(previous, ifCurrentStringMatches: text)
+        scheduleRestore(previous, pasted: text, attempt: 0)
+    }
+
+    /// Restore the previous clipboard once the field shows the pasted text,
+    /// or after `ClipboardRestorePolicy.maxAttempts` polls when the field
+    /// cannot be read (Chromium contenteditable reports an empty AXValue).
+    private func scheduleRestore(_ previous: ClipboardService.ClipboardSnapshot, pasted: String, attempt: Int) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + ClipboardRestorePolicy.pollInterval) { [weak self] in
+            let value = self?.readValue()
+            switch ClipboardRestorePolicy.decide(fieldValue: value, pasted: pasted, attempt: attempt) {
+            case .restoreNow:
+                AppLogger.debug("paste verified in field after \(attempt + 1) polls; restoring clipboard", category: AppLogger.clipboard)
+                ClipboardService.shared.restore(previous, ifCurrentStringMatches: pasted)
+            case .restoreUnverified:
+                AppLogger.debug("paste not verifiable; restoring clipboard after timeout", category: AppLogger.clipboard)
+                ClipboardService.shared.restore(previous, ifCurrentStringMatches: pasted)
+            case .checkAgain:
+                self?.scheduleRestore(previous, pasted: pasted, attempt: attempt + 1)
+            }
         }
     }
 

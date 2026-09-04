@@ -355,10 +355,21 @@ class MiniRecorderWindowController: NSObject {
 
             guard let previousClipboard else { return .pasted }
 
-            try? await Task.sleep(nanoseconds: 350_000_000)
-
-            await MainActor.run {
-                ClipboardService.shared.restore(previousClipboard, ifCurrentStringMatches: text)
+            // Restore only once the destination visibly holds the paste, or
+            // after the policy's timeout when it cannot be read. Restoring
+            // on a fixed 350 ms put an image back before Electron composers
+            // had read the pasteboard, so the image pasted instead.
+            for attempt in 0..<ClipboardRestorePolicy.maxAttempts {
+                try? await Task.sleep(nanoseconds: UInt64(ClipboardRestorePolicy.pollInterval * 1_000_000_000))
+                let decision = await MainActor.run {
+                    ClipboardRestorePolicy.decide(
+                        fieldValue: FocusedFieldReader.focusedValue(), pasted: text, attempt: attempt)
+                }
+                if decision == .checkAgain { continue }
+                await MainActor.run {
+                    ClipboardService.shared.restore(previousClipboard, ifCurrentStringMatches: text)
+                }
+                break
             }
             return .pasted
         }
