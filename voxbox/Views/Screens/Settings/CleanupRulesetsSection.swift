@@ -192,6 +192,9 @@ private struct RulesetEditorSheet: View {
     var body: some View {
         ScrollView {
             editor
+                // Fixed content width: a long menu label or transcript can
+                // wrap or truncate, never widen the sheet.
+                .frame(width: 512)
                 .padding(24)
         }
         .frame(width: 560)

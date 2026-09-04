@@ -134,7 +134,9 @@ struct RulesetTestPanel: View {
                         menuLabel(selectedHistoryLabel)
                     }
                     .menuStyle(.borderlessButton)
-                    .fixedSize()
+                    // Never let a long transcript widen the sheet.
+                    .frame(maxWidth: 260, alignment: .leading)
+                    .clipped()
                 }
             } else {
                 Menu {
@@ -159,12 +161,14 @@ struct RulesetTestPanel: View {
     }
 
     private func historyLabel(_ item: HistoryItem) -> String {
-        "\(item.date.formatted(.relative(presentation: .named))) · \(RulesetTestInput.previewLine(RulesetTestInput.text(for: item).text))"
+        "\(item.date.formatted(.relative(presentation: .named))) · \(RulesetTestInput.previewLine(RulesetTestInput.text(for: item).text, maxLength: 40))"
     }
 
     private func menuLabel(_ text: String) -> some View {
         HStack(spacing: 4) {
-            Text(text).lineLimit(1)
+            Text(text)
+                .lineLimit(1)
+                .truncationMode(.tail)
             Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
         }
         .font(Typography.uiMedium(12))
