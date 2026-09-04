@@ -94,6 +94,9 @@ struct HistoryView: View {
                                     }
                                 },
                                 onCopy: { copyToClipboard(text: item.transcript) },
+                                onCopyRaw: HistoryView.rawTranscript(of: item).map { raw in
+                                    { copyToClipboard(text: raw) }
+                                },
                                 onDelete: { itemPendingDeletion = item },
                                 audioPlayer: expandedItemId == item.id ? audioPlayer : nil
                             )
@@ -198,11 +201,23 @@ struct HistoryView: View {
 
 // MARK: - History Card Component
 
+extension HistoryView {
+    /// The engine text kept from 1.3 on, when it differs from the output.
+    static func rawTranscript(of item: HistoryItem) -> String? {
+        guard let raw = item.rawTranscript?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty,
+            raw != item.transcript
+        else { return nil }
+        return raw
+    }
+}
+
 struct HistoryCard: View {
     let item: HistoryItem
     let isExpanded: Bool
     let onToggle: () -> Void
     let onCopy: () -> Void
+    /// Copies what the speech engine heard; nil when the take did not keep it.
+    let onCopyRaw: (() -> Void)?
     let onDelete: () -> Void
     let audioFileExists: Bool
     let wordCount: Int
@@ -214,6 +229,7 @@ struct HistoryCard: View {
         isExpanded: Bool,
         onToggle: @escaping () -> Void,
         onCopy: @escaping () -> Void,
+        onCopyRaw: (() -> Void)? = nil,
         onDelete: @escaping () -> Void,
         audioPlayer: AudioPlayerService?
     ) {
@@ -221,6 +237,7 @@ struct HistoryCard: View {
         self.isExpanded = isExpanded
         self.onToggle = onToggle
         self.onCopy = onCopy
+        self.onCopyRaw = onCopyRaw
         self.onDelete = onDelete
         self.audioPlayer = audioPlayer
         if let audioURL = item.audioFileURL {
@@ -336,7 +353,25 @@ struct HistoryCard: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             .buttonStyle(.plain)
-                            
+
+                            if let onCopyRaw {
+                                Button(action: onCopyRaw) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "waveform.and.magnifyingglass")
+                                            .font(.system(size: 12))
+                                        Text("Copy raw transcript")
+                                            .font(Typography.labelMedium)
+                                    }
+                                    .foregroundStyle(Color.textSecondary)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(Color.bgHover)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                                .help("The transcript as the speech engine heard it, before any cleanup")
+                            }
+
                             Button(role: .destructive, action: onDelete) {
                                 HStack(spacing: 6) {
                                     Image(systemName: "trash")
