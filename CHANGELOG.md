@@ -2,16 +2,22 @@
 
 Changes and release notes for VoxBox.
 
-## [1.3.0] - Unreleased
-- **New feature**: Cleanup page — levels, instant rules, custom rulesets and a live preview in one place.
-- **New feature**: Test a ruleset before saving, on a sample or a recent transcript.
-- **New feature**: Onboarding now asks for recording mode and shows each cleanup level on a sample. Replay it from Settings.
-- **New feature**: History rows get the dashboard's Copy and Play quick actions, plus Copy raw transcript.
-- Improved transcript post-processing: numerals, fewer leftover fillers, misheard-word fixes, punctuation by meaning.
-- Improved live streaming in Chrome, Slack, Notion, Superhuman, Cursor and other web composers: more reliable, words appear sooner, and the end-of-take cleanup edits only the words that changed instead of retyping everything.
-- The recorder pill shows locked words plainly and words still being revised dimmed, beside the live waveform.
-- Fixed the previous clipboard being pasted instead of the transcript.
-- Downloadable cleanup models are parked until macOS 27; cleanup runs on Apple Intelligence.
+## [1.3.0] - 2026.09.04
+- **New feature**: Added a Cleanup page where you can customise how the transcript post-processing is handled
+    - See live results using template transcripts or your latest recording to validate your cleanup preference.
+    - Includes a new way to write, manage and test your custom prompts.
+
+- **Improvements**:
+    - Improved onboarding flow: now includes additional settings like toggle/hold to record and cleanup preferences.
+    - Improved live stream reliability and cleanup for live streamed text.
+    - Enhancements to the recording pill.
+    - Light cleanup and Polish enhancements to handle numbers, homophones and miss-heard words and other grammar improvements.
+    - Added quick action buttons to transcription history
+    - You can now re-run the on-boarding workflow from the settings page if you want to!
+
+- **Fixes**:
+    - Removed custom LLMs temporarily, as this wasn't working correctly, will re-introduce with MacOS27 as there is better native support.
+    - Fixed an issue where items on the clipboard were being send instead of the transcript.
 
 ## [1.2.0] - 2026-08-30
 - **New Feature**: Choose your Post-processing Model: Post-processing defaults to the build-in Apple Intelligence model, but now you can choose from 4 other LLMs to clean up your transcripts. Choose from Apple Intelligence, Llama 3.2 1B/3B, Qwen 3 1.7B/4B
