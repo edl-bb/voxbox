@@ -13,8 +13,6 @@ struct MLXCleanupEngine: CleanupEngine {
         FileManager.default.fileExists(atPath: directory.path)
     }
 
-    var displayName: String { model.name }
-
     func cleanup(_ request: FormattingRequest) async throws -> String {
         throw MLXCleanupEngineError.runtimeUnavailable
     }

@@ -42,7 +42,17 @@ Raw speech-to-text gets messy on longer takes: fillers, false starts, missing pu
 
 Instant, non-AI options are also available to strip "um's" and "ahh's" if you want the fastest experience possible.
 
-Cleanup runs on the Apple Intelligence model built into macOS 26. Support for other on-device models is planned once macOS 27's native model support ships.
+### Custom on-device LLMs
+
+![AI Models](branding/model-picker.png)
+
+VoxBox uses the built-in Apple Intelligence model by default, but you are welcome to pick from 4 other open weight models if they fit your needs better. 
+
+VoxBox currently supports:
+- Llama 3.2 1B
+- Qwen 3 1.7B
+- Llama 3.2 3B
+- Qwen 3 4B
 
 ---
 
@@ -57,7 +67,7 @@ Cleanup runs on the Apple Intelligence model built into macOS 26. Support for ot
 - **Custom hotkey** — use the key combination you prefer to invoke VoxBox
 - **Retention** — auto-delete audio and old transcripts; usage stats are retained
 - **Model download progress** – improved visibility when models are downloading in the background so you know how long you need to wait to begin transcribing.
-- **Local LLM post-processing** — use the on-device Apple Intelligence LLM to clean up the transcript
+- **Local LLM post-processing** – use an LLM to clean up the transcript
 
 ---
 

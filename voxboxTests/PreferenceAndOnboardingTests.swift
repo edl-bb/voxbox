@@ -412,86 +412,68 @@ final class PreferenceAndOnboardingTests: XCTestCase {
             .keystrokesOnly)
         XCTAssertFalse(LiveWriteStrategy.isElectronBundle("com.apple.Notes"))
         XCTAssertTrue(LiveWriteStrategy.isElectronBundle("com.todesktop.230313mzl4w4u92"))
-        // An Electron app we have never heard of, with text already in the
-        // composer, must still type rather than move the caret via AX.
-        XCTAssertEqual(
-            LiveWriteStrategy.choose(
-                hasWebMarkers: true, axValue: "Existing draft",
-                bundleIdentifier: "com.example.unknown-electron", isElectronApp: true),
-            .keystrokesOnly)
-        XCTAssertEqual(
-            LiveWriteStrategy.choose(
-                hasWebMarkers: true, axValue: "Existing draft",
-                bundleIdentifier: "com.google.Chrome", isElectronApp: false),
-            .accessibilityRewrite)
     }
 
-    func testElectronDetectionLooksForTheFrameworkInsideTheBundle() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("voxbox-electron-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: root) }
-        let electronApp = root.appendingPathComponent("Fake.app")
-        try FileManager.default.createDirectory(
-            at: electronApp.appendingPathComponent("Contents/Frameworks/Electron Framework.framework"),
-            withIntermediateDirectories: true)
-        let nativeApp = root.appendingPathComponent("Native.app")
-        try FileManager.default.createDirectory(
-            at: nativeApp.appendingPathComponent("Contents/MacOS"),
-            withIntermediateDirectories: true)
-
-        XCTAssertTrue(DictationTarget.isElectronBundle(at: electronApp))
-        XCTAssertFalse(DictationTarget.isElectronBundle(at: nativeApp))
-    }
-
-    func testElectronBundlesSplitIntoComposersAndEditors() {
-        XCTAssertTrue(LiveWriteStrategy.isElectronComposer("com.tinyspeck.slackmacgap"))
-        XCTAssertTrue(LiveWriteStrategy.isElectronComposer("notion.id"))
-        XCTAssertTrue(LiveWriteStrategy.isElectronComposer("notion.anything"))
-        XCTAssertFalse(LiveWriteStrategy.isElectronComposer("com.microsoft.VSCode"))
-        XCTAssertTrue(LiveWriteStrategy.isElectronEditor("com.microsoft.VSCode"))
-        XCTAssertTrue(LiveWriteStrategy.isElectronEditor("com.todesktop.230313mzl4w4u92"))
-        XCTAssertFalse(LiveWriteStrategy.isElectronEditor("com.tinyspeck.slackmacgap"))
+    func testKeystrokeCaretJumpMatchesNotionGlitch() {
+        var field = KeystrokeField()
+        field.apply(.type("This is"))
+        field.caret = 0
+        field.apply(.type(" a test right into notion. Yeah, OK, let’s just a bit silly"))
         XCTAssertEqual(
-            LiveWriteStrategy.electronBundleIdentifiers,
-            LiveWriteStrategy.electronComposers.union(LiveWriteStrategy.electronEditors))
+            field.text,
+            " a test right into notion. Yeah, OK, let’s just a bit sillyThis is")
     }
 
-    func testCaretRestoreIsOffUnlessAnAppIsKnownToResetTheCaret() {
-        // Dictating mid-text in Claude appended later bursts to the end
-        // because of a blind Cmd+Down; no app gets it by default now.
-        for bundle in [
-            "com.tinyspeck.slackmacgap", "notion.id", "com.anthropic.claudefordesktop",
-            "com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92", "com.apple.Notes",
-        ] {
-            XCTAssertNil(CaretRestore.move(forBundle: bundle, hasTyped: true), bundle)
-            XCTAssertNil(CaretRestore.move(forBundle: bundle, isElectronApp: true, hasTyped: true), bundle)
+    func testKeystrokeCaretRestoreKeepsNotionTranscriptInOrder() {
+        XCTAssertFalse(CaretRestore.shouldMoveToEndOfLine(alreadyTyped: false))
+        XCTAssertTrue(CaretRestore.shouldMoveToEndOfLine(alreadyTyped: true))
+        XCTAssertEqual(CaretRestore.rightArrows(caret: 0, expected: 7), 7)
+        XCTAssertEqual(CaretRestore.rightArrows(caret: 7, expected: 7), 0)
+
+        var field = KeystrokeField()
+        field.apply(.type("This is"))
+        field.caret = 0
+        if CaretRestore.shouldMoveToEndOfLine(alreadyTyped: true) {
+            field.moveToEndOfLine()
         }
-        XCTAssertNil(CaretRestore.move(forBundle: nil, isElectronApp: true, hasTyped: true))
-        XCTAssertTrue(CaretRestore.caretResettingComposers.isEmpty)
-        for bundle in CaretRestore.caretResettingComposers {
-            XCTAssertEqual(CaretRestore.move(forBundle: bundle, hasTyped: true), .endOfDocument)
-            XCTAssertNil(CaretRestore.move(forBundle: bundle, hasTyped: false))
-        }
-    }
-
-    func testAppendPlanOnlyExtendsWhatWasTyped() {
-        XCTAssertEqual(AppendPlan.plan(typed: "", stable: ""), .hold(.unchanged))
-        XCTAssertEqual(AppendPlan.plan(typed: "", stable: "Hello"), .append("Hello"))
-        XCTAssertEqual(AppendPlan.plan(typed: "Hello", stable: "Hello there"), .append(" there"))
-        XCTAssertEqual(AppendPlan.plan(typed: "Hello", stable: "Hello"), .hold(.unchanged))
-        // Engine shortened or recased a committed word: never delete, wait.
-        XCTAssertEqual(AppendPlan.plan(typed: "Hello there", stable: "Hello"), .hold(.stableDiverged))
+        field.apply(
+            .type(" a test right into notion. Yeah, okay, that's just a bit silly."))
         XCTAssertEqual(
-            AppendPlan.plan(typed: "hello there", stable: "Hello there this"),
-            .hold(.stableDiverged))
-        XCTAssertEqual(AppendPlan.plan(typed: "Hello there", stable: "Hi"), .hold(.stableDiverged))
+            field.text,
+            "This is a test right into notion. Yeah, okay, that's just a bit silly.")
     }
 
-    func testRevertPlanCountsGraphemesNotUTF16Units() {
+    func testKeystrokeLivePlanOnlyAppends() {
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "", next: "Hello"), .type("Hello"))
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(previous: "Hello", next: "Hello there"),
+            .type(" there"))
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello there", next: "Hello"), .none)
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello there", next: "Hi"), .none)
+        XCTAssertEqual(KeystrokeDelta.livePlan(previous: "Hello", next: "Hello"), .none)
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(previous: "This is a test right into notion", next: "This"),
+            .none)
         XCTAssertEqual(KeystrokeDelta.revertPlan(previous: "Hello there"), .delete(11))
-        XCTAssertEqual(KeystrokeDelta.revertPlan(previous: "Hi 👋 there"), .delete(10))
-        XCTAssertEqual(("Hi 👋 there" as NSString).length, 11)
         XCTAssertEqual(KeystrokeDelta.revertPlan(previous: ""), .none)
+    }
+
+    func testKeystrokeLivePlanRevisesTailAfterPhraseFinalizes() {
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(
+                previous: "hello there this is a test",
+                next: "Hello there this is a test of streaming"),
+            .type(" of streaming"))
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(
+                previous: "hello there this is a test of streaming and I keep talking",
+                next: "Hello there this is a test. and I keep talking more"),
+            .revise(delete: 32, type: ". and I keep talking more"))
+        XCTAssertEqual(
+            KeystrokeDelta.livePlan(
+                previous: "a reasonably long hypothesis that should not be wiped",
+                next: "OK"),
+            .none)
     }
 
     func testUnicodeTypingChunksLongPhrases() {
@@ -592,8 +574,7 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertNil(AXStringValue.read(error: .success, value: 12 as CFTypeRef))
     }
 
-    @MainActor
-    func testTargetFieldInserterWritesIntoAppKitTextField() async throws {
+    func testTargetFieldInserterWritesIntoAppKitTextField() throws {
         guard AXIsProcessTrusted() else {
             throw XCTSkip("Accessibility is not trusted in this test host")
         }
@@ -614,19 +595,15 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         DictationTarget.processIdentifier = ProcessInfo.processInfo.processIdentifier
 
         let inserter = TargetFieldInserter()
-        let bound = await inserter.begin()
-        XCTAssertTrue(bound, "AppKit text fields should bind for live rewrite")
-        XCTAssertEqual(
-            inserter.update(LiveWriteInput(fullText: "world", stable: "world")),
-            .wrote(.axReplace, chars: 5))
+        XCTAssertTrue(inserter.begin(), "AppKit text fields should bind for live rewrite")
+        XCTAssertTrue(inserter.update("world"))
         XCTAssertEqual(field.stringValue, "Hello world")
         inserter.revert()
         XCTAssertEqual(field.stringValue, "Hello ")
         window.close()
     }
 
-    @MainActor
-    func testTargetFieldInserterWritesIntoEmptyAppKitTextField() async throws {
+    func testTargetFieldInserterWritesIntoEmptyAppKitTextField() throws {
         guard AXIsProcessTrusted() else {
             throw XCTSkip("Accessibility is not trusted in this test host")
         }
@@ -645,11 +622,8 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         DictationTarget.processIdentifier = ProcessInfo.processInfo.processIdentifier
 
         let inserter = TargetFieldInserter()
-        let bound = await inserter.begin()
-        XCTAssertTrue(bound)
-        XCTAssertEqual(
-            inserter.update(LiveWriteInput(fullText: "hello", stable: "hello")),
-            .wrote(.axReplace, chars: 5))
+        XCTAssertTrue(inserter.begin())
+        XCTAssertTrue(inserter.update("hello"))
         XCTAssertEqual(field.stringValue, "hello")
         inserter.revert()
         XCTAssertEqual(field.stringValue, "")
@@ -660,5 +634,44 @@ final class PreferenceAndOnboardingTests: XCTestCase {
         XCTAssertTrue(AppVersion.isNewerVersion("1.0.4", than: "1.0.3"))
         XCTAssertFalse(AppVersion.isNewerVersion("1.0.3", than: "1.0.3"))
         XCTAssertFalse(AppVersion.isNewerVersion("1.0.2", than: "1.0.3"))
+    }
+}
+
+/// Single-line composer used to replay keystroke plans. Caret is UTF-16.
+private struct KeystrokeField {
+    var text = ""
+    var caret = 0
+
+    mutating func apply(_ delta: KeystrokeDelta) {
+        switch delta {
+        case .none:
+            return
+        case .type(let suffix):
+            insert(suffix)
+        case .delete(let count):
+            delete(count)
+        case .revise(let count, let suffix):
+            delete(count)
+            insert(suffix)
+        }
+    }
+
+    mutating func insert(_ suffix: String) {
+        let ns = text as NSString
+        let at = min(max(0, caret), ns.length)
+        text = ns.substring(to: at) + suffix + ns.substring(from: at)
+        caret = at + (suffix as NSString).length
+    }
+
+    mutating func delete(_ count: Int) {
+        let ns = text as NSString
+        let end = min(max(0, caret), ns.length)
+        let start = max(0, end - count)
+        text = ns.substring(to: start) + ns.substring(from: end)
+        caret = start
+    }
+
+    mutating func moveToEndOfLine() {
+        caret = (text as NSString).length
     }
 }

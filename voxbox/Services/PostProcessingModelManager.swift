@@ -41,13 +41,9 @@ final class PostProcessingModelManager: ObservableObject {
         }
     }
 
-    /// The model cleanup actually runs on. A stored `.mlx` choice from 1.2
-    /// resolves to Apple Intelligence while downloadable models are parked.
     var selectedModel: PostProcessingModel {
-        guard let model = PostProcessingModel.model(for: selectedVariant),
-            model.kind == .appleSystem || PostProcessingModel.downloadableModelsEnabled
-        else { return PostProcessingModel.catalog[0] }
-        return model
+        PostProcessingModel.model(for: selectedVariant)
+            ?? PostProcessingModel.catalog[0]
     }
 
     // MARK: - State

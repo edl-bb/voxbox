@@ -13,7 +13,6 @@ import SwiftUI
 @main
 struct VoxBoxApp: App {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
-    @AppStorage(OnboardingReplay.requestedKey) private var onboardingReplayRequested: Bool = false
     @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @ObservedObject private var appearance = AppearanceController.shared
@@ -24,11 +23,10 @@ struct VoxBoxApp: App {
         ProcessInfo.processInfo.arguments.contains("--uitesting")
     }
 
-    /// Onboarding is first-run only, unless Settings asked for a replay.
-    /// Missing Accessibility must not hide the dashboard — auto-paste is
-    /// optional; the permission pills stay in Settings.
+    /// Onboarding is first-run only. Missing Accessibility must not hide the
+    /// dashboard — auto-paste is optional; the permission pills stay in Settings.
     private var showsMainApp: Bool {
-        (hasCompletedOnboarding && !onboardingReplayRequested) || isUITesting
+        hasCompletedOnboarding || isUITesting
     }
 
     init() {
@@ -40,7 +38,6 @@ struct VoxBoxApp: App {
         // For UI testing: bypass onboarding automatically
         if ProcessInfo.processInfo.arguments.contains("--uitesting") {
             hasCompletedOnboarding = true
-            onboardingReplayRequested = false
         }
     }
 
@@ -52,7 +49,7 @@ struct VoxBoxApp: App {
                     if showsMainApp {
                         MainView()
                     } else {
-                        OnboardingView(isReplay: hasCompletedOnboarding && onboardingReplayRequested)
+                        OnboardingView()
                     }
                 }
             }

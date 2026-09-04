@@ -427,7 +427,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 suppressEmojiPicker()
             }
 
-            if RecordingMode.current() == .toggle {
+            let recordingMode = UserDefaults.standard.integer(forKey: "recordingMode")
+            if recordingMode == 1 {
                 if AudioRecordingService.shared.isRecording {
                     miniRecorderController?.stopRecording()
                 } else {
@@ -439,7 +440,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else if !isPressed && isHotkeyPressed {
             isHotkeyPressed = false
 
-            if RecordingMode.current() == .hold {
+            let recordingMode = UserDefaults.standard.integer(forKey: "recordingMode")
+            if recordingMode == 0 {
                 miniRecorderController?.stopRecording()
             }
         }
@@ -454,7 +456,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         KeyboardShortcuts.onKeyDown(for: .toggleRecord) { [weak self] in
             guard let self, self.getSelectedHotkey() == .custom else { return }
 
-            if RecordingMode.current() == .toggle {
+            let recordingMode = UserDefaults.standard.integer(forKey: "recordingMode")
+            if recordingMode == 1 {
                 if AudioRecordingService.shared.isRecording {
                     self.miniRecorderController?.stopRecording()
                 } else {
@@ -467,7 +470,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         KeyboardShortcuts.onKeyUp(for: .toggleRecord) { [weak self] in
             guard let self, self.getSelectedHotkey() == .custom else { return }
-            guard RecordingMode.current() == .hold else { return }
+            guard UserDefaults.standard.integer(forKey: "recordingMode") == 0 else { return }
             self.miniRecorderController?.stopRecording()
         }
 
@@ -478,7 +481,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleModifierComboEvent(_ event: NSEvent) {
         guard isHotkeyPressed else { return }
-        guard RecordingMode.current() == .hold else { return }
+        guard UserDefaults.standard.integer(forKey: "recordingMode") == 0 else { return }
         guard !event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty else { return }
         guard event.keyCode != getSelectedHotkey().keyCode else { return }
         // Ignore the synthetic F19 posted by suppressEmojiPicker() — it carries the

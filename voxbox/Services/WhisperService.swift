@@ -60,10 +60,6 @@ class WhisperService {
     private var liveSink: LiveAudioSampleSink?
     private var liveStreamer: AudioStreamTranscriber?
     private var liveStreamTask: Task<Void, Never>?
-    private var liveDigestContinuation: AsyncStream<WhisperLiveDigest>.Continuation?
-    private var liveConsumerTask: Task<Void, Never>?
-    private var liveDigestCount = 0
-    private var liveTextChangeCount = 0
     private var liveStable = ""
     private var liveRevisable = ""
 
@@ -307,9 +303,7 @@ class WhisperService {
         return options
     }
 
-    /// `stripFillers: false` keeps ums and uhs: History stores the raw take
-    /// that way so a ruleset can be re-run on what was actually said.
-    static func normalizedTranscription(from rawText: String, stripFillers: Bool = true) -> String {
+    static func normalizedTranscription(from rawText: String) -> String {
         var normalized = rawText
 
         for pattern in placeholderPatterns {
@@ -332,9 +326,7 @@ class WhisperService {
             options: .regularExpression
         )
 
-        if stripFillers {
-            normalized = AutoEdit.apply(to: normalized)
-        }
+        normalized = AutoEdit.apply(to: normalized)
 
         return normalized.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -343,7 +335,7 @@ class WhisperService {
 
     func startLive(
         language: String,
-        onUpdate: @escaping @MainActor (LiveTranscriptSnapshot) -> Void
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
     ) async throws {
         cancelLive()
         guard let pipe, isInitialized, let tokenizer = pipe.tokenizer else {
@@ -353,28 +345,6 @@ class WhisperService {
         isTranscribing = true
         liveStable = ""
         liveRevisable = ""
-        liveDigestCount = 0
-        liveTextChangeCount = 0
-
-        // WhisperKit fires `stateChangeCallback` from inside its actor on
-        // every state mutation, including per-buffer energy updates. Hand
-        // each state to the main actor through a newest-wins stream and a
-        // single consumer, so snapshots arrive in order, on one thread, and
-        // only when the text actually changed.
-        let (digests, continuation) = AsyncStream<WhisperLiveDigest>.makeStream(
-            bufferingPolicy: .bufferingNewest(1))
-        liveDigestContinuation = continuation
-        liveConsumerTask = Task { @MainActor [weak self] in
-            var last: WhisperLiveDigest?
-            for await digest in digests {
-                guard let self else { return }
-                self.liveDigestCount += 1
-                guard digest != last else { continue }
-                last = digest
-                self.liveTextChangeCount += 1
-                self.publishLiveState(digest, onUpdate: onUpdate)
-            }
-        }
 
         let sink = LiveAudioSampleSink()
         liveSink = sink
@@ -387,8 +357,8 @@ class WhisperService {
             audioProcessor: sink,
             decodingOptions: decodingOptions(for: language),
             useVAD: false,
-            stateChangeCallback: { _, newState in
-                continuation.yield(WhisperLiveDigest(newState))
+            stateChangeCallback: { [weak self] _, newState in
+                self?.publishLiveState(newState, onUpdate: onUpdate)
             }
         )
         liveStreamer = streamer
@@ -414,12 +384,6 @@ class WhisperService {
             await streamer.stopStreamTranscription()
         }
         _ = await liveStreamTask?.value
-        // Let the last state reach the consumer before reading it.
-        liveDigestContinuation?.finish()
-        _ = await liveConsumerTask?.value
-        AppLogger.debug(
-            "whisper live digests=\(liveDigestCount) textChanges=\(liveTextChangeCount)",
-            category: AppLogger.transcription)
         let text = Self.normalizedTranscription(
             from: LiveTranscriptSnapshot(stable: liveStable, revisable: liveRevisable).fullText
         )
@@ -430,8 +394,6 @@ class WhisperService {
     func cancelLive() {
         AudioRecordingService.shared.liveBufferHandler = nil
         liveStreamTask?.cancel()
-        liveDigestContinuation?.finish()
-        liveConsumerTask?.cancel()
         if let streamer = liveStreamer {
             Task { await streamer.stopStreamTranscription() }
         }
@@ -442,23 +404,21 @@ class WhisperService {
         liveStreamer = nil
         liveSink = nil
         liveStreamTask = nil
-        liveDigestContinuation = nil
-        liveConsumerTask = nil
         liveStable = ""
         liveRevisable = ""
         isTranscribing = false
     }
 
     private func publishLiveState(
-        _ digest: WhisperLiveDigest,
-        onUpdate: @escaping @MainActor (LiveTranscriptSnapshot) -> Void
+        _ state: AudioStreamTranscriber.State,
+        onUpdate: @escaping @Sendable (LiveTranscriptSnapshot) -> Void
     ) {
         let snapshot = WhisperLiveHypothesis.snapshot(
             confirmed: Self.normalizedTranscription(
-                from: digest.confirmed.joined(separator: " ")),
+                from: state.confirmedSegments.map(\.text).joined(separator: " ")),
             unconfirmed: Self.normalizedTranscription(
-                from: digest.unconfirmed.joined(separator: " ")),
-            current: Self.normalizedTranscription(from: digest.current),
+                from: state.unconfirmedSegments.map(\.text).joined(separator: " ")),
+            current: Self.normalizedTranscription(from: state.currentText),
             previousRevisable: liveRevisable
         )
         liveStable = snapshot.stable
@@ -466,27 +426,6 @@ class WhisperService {
         onUpdate(snapshot)
     }
 
-}
-
-/// The text-bearing part of `AudioStreamTranscriber.State`. Equal digests
-/// mean nothing the user can see changed (buffer energy, fallbacks, and
-/// buffer sizes are dropped), so the consumer can skip them.
-nonisolated struct WhisperLiveDigest: Equatable, Sendable {
-    let confirmed: [String]
-    let unconfirmed: [String]
-    let current: String
-
-    init(confirmed: [String], unconfirmed: [String], current: String) {
-        self.confirmed = confirmed
-        self.unconfirmed = unconfirmed
-        self.current = current
-    }
-
-    init(_ state: AudioStreamTranscriber.State) {
-        confirmed = state.confirmedSegments.map(\.text)
-        unconfirmed = state.unconfirmedSegments.map(\.text)
-        current = state.currentText
-    }
 }
 
 /// Maps WhisperKit’s windowed decode onto a stable prefix plus a tail that
