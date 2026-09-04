@@ -26,6 +26,13 @@ final class ClipboardRestorePolicyTests: XCTestCase {
             .checkAgain)
     }
 
+    func testPasteDelayGrowsWithTheKeyBurst() {
+        XCTAssertEqual(ClipboardRestorePolicy.pasteDelay(afterKeystrokes: 0), 0)
+        XCTAssertEqual(ClipboardRestorePolicy.pasteDelay(afterKeystrokes: 1), 0.254, accuracy: 0.001)
+        XCTAssertEqual(ClipboardRestorePolicy.pasteDelay(afterKeystrokes: 100), 0.65, accuracy: 0.001)
+        XCTAssertEqual(ClipboardRestorePolicy.pasteDelay(afterKeystrokes: 400), 1.5, "capped")
+    }
+
     func testGivesUpAfterTheTimeoutAndRestoresAnyway() {
         XCTAssertEqual(
             ClipboardRestorePolicy.decide(fieldValue: nil, pasted: pasted, attempt: ClipboardRestorePolicy.maxAttempts - 1),

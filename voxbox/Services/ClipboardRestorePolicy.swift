@@ -32,6 +32,15 @@ nonisolated enum ClipboardRestorePolicy {
     /// How much of the pasted text has to be visible to count as landed.
     static let probeLength = 40
 
+    /// How long to wait between a burst of synthetic key events and Cmd+V.
+    /// An Electron composer that is still digesting a few hundred Backspaces
+    /// drops a paste that arrives on top of them (seen in Slack), so the wait
+    /// grows with the burst: 0.25 s floor, 4 ms per key, 1.5 s ceiling.
+    static func pasteDelay(afterKeystrokes count: Int) -> TimeInterval {
+        guard count > 0 else { return 0 }
+        return min(1.5, 0.25 + Double(count) * 0.004)
+    }
+
     enum Decision: Equatable {
         case restoreNow
         case checkAgain

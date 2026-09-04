@@ -115,6 +115,7 @@ final class AXFieldWriter: FieldWriter {
         guard !text.isEmpty else { return }
         let source = CGEventSource(stateID: .hidSystemState)
         for chunk in UnicodeTyping.chunks(text) {
+            keystrokesSinceLastPaste += 1
             var unichars = Array(chunk.utf16)
             guard let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
                 let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
@@ -128,8 +129,13 @@ final class AXFieldWriter: FieldWriter {
         }
     }
 
+    /// Key events posted since the last paste; sets the settle time before
+    /// the next Cmd+V.
+    private var keystrokesSinceLastPaste = 0
+
     func deleteBackward(count: Int) {
         guard count > 0 else { return }
+        keystrokesSinceLastPaste += count
         let source = CGEventSource(stateID: .hidSystemState)
         for _ in 0..<count {
             guard let down = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true),
@@ -144,6 +150,8 @@ final class AXFieldWriter: FieldWriter {
 
     /// Same clipboard contract as auto-paste: the previous clipboard comes
     /// back after the destination has read ours, when the user has that on.
+    /// The text goes on the pasteboard now; Cmd+V waits out the key burst
+    /// that preceded it so the composer is idle when the paste arrives.
     func paste(_ text: String) {
         let restore = UserDefaults.standard.object(forKey: "restoreClipboardAfterAutoPaste") as? Bool ?? true
         let previous: ClipboardService.ClipboardSnapshot?
@@ -153,9 +161,20 @@ final class AXFieldWriter: FieldWriter {
             previous = nil
             ClipboardService.shared.copy(text: text)
         }
-        ClipboardService.shared.paste()
-        guard let previous else { return }
-        scheduleRestore(previous, pasted: text, attempt: 0)
+        let delay = ClipboardRestorePolicy.pasteDelay(afterKeystrokes: keystrokesSinceLastPaste)
+        AppLogger.debug(
+            "paste after \(keystrokesSinceLastPaste) key events; waiting \(Int(delay * 1000)) ms",
+            category: AppLogger.clipboard)
+        keystrokesSinceLastPaste = 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            // Something else may have taken the pasteboard during the wait.
+            if NSPasteboard.general.string(forType: .string) != text {
+                ClipboardService.shared.copy(text: text, concealed: previous != nil)
+            }
+            ClipboardService.shared.paste()
+            guard let previous else { return }
+            self?.scheduleRestore(previous, pasted: text, attempt: 0)
+        }
     }
 
     /// Restore the previous clipboard once the field shows the pasted text,
