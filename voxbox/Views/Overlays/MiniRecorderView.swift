@@ -405,8 +405,9 @@ struct MiniRecorderView: View {
         let stable = liveSession.hudStableText
         let revisable = liveSession.hudRevisableText
         let joiner = stable.isEmpty || revisable.isEmpty ? "" : " "
-        return (Text(stable).foregroundColor(.white.opacity(0.95))
-            + Text(joiner + revisable).italic().foregroundColor(.white.opacity(0.55)))
+        let locked = Text(stable).foregroundColor(.white.opacity(0.95))
+        let pending = Text(joiner + revisable).italic().foregroundColor(.white.opacity(0.55))
+        return Text("\(locked)\(pending)")
             .font(Typography.pillLabel)
             .lineLimit(1)
             .truncationMode(.head)
