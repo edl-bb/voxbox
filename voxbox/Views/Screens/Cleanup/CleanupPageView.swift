@@ -118,7 +118,7 @@ struct CleanupPageView: View {
             Spacer()
             if !PostProcessingModel.downloadableModelsEnabled {
                 Text("Other on-device models arrive with macOS 27")
-                    .font(Typography.ui(12))
+                    .font(Typography.caption)
                     .foregroundStyle(Color.textMuted)
             }
         }
@@ -199,7 +199,7 @@ struct CleanupPageView: View {
                     .foregroundStyle(Color.textPrimary)
                 Text(caption)
                     .font(Typography.captionSmall)
-                    .foregroundStyle(Color.textMuted)
+                    .foregroundStyle(Color.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
@@ -212,7 +212,7 @@ struct CleanupPageView: View {
             CustomRulesetManagerView()
             Text("Custom rulesets are sent to the model exactly as written, with their own temperature and no guardrail. Open a ruleset to test it before saving.")
                 .font(Typography.captionSmall)
-                .foregroundStyle(Color.textMuted)
+                .foregroundStyle(Color.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
@@ -226,8 +226,8 @@ struct CleanupPageView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("TRY IT")
-                    .font(Typography.uiBold(10)).tracking(1)
-                    .foregroundStyle(Color.textMuted)
+                    .font(Typography.captionBold).tracking(1)
+                    .foregroundStyle(Color.textSecondary)
                 Spacer()
                 Menu {
                     ForEach(CleanupSampleTranscripts.allCases) { candidate in
@@ -245,7 +245,7 @@ struct CleanupPageView: View {
                         Text(useLastTake ? "My last take" : sample.title)
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
                     }
-                    .font(Typography.uiMedium(12))
+                    .font(Typography.labelSmall)
                     .foregroundStyle(Color.textSecondary)
                 }
                 .menuStyle(.borderlessButton)
@@ -260,16 +260,16 @@ struct CleanupPageView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("You said")
                         .font(Typography.captionBold)
-                        .foregroundStyle(Color.textMuted)
-                    Text(previewText)
-                        .font(Typography.ui(12.5))
-                        .italic()
                         .foregroundStyle(Color.textSecondary)
+                    Text(previewText)
+                        .font(Typography.bodySmall)
+                        .foregroundStyle(Color.textSecondary)
+                        .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                     if useLastTake, let lastTake, !lastTake.isRaw {
                         Text("Using the cleaned transcript from History. The raw take wasn't kept.")
                             .font(Typography.captionSmall)
-                            .foregroundStyle(Color.textMuted)
+                            .foregroundStyle(Color.textSecondary)
                     }
                 }
 
@@ -287,12 +287,12 @@ struct CleanupPageView: View {
         let label = currentLevel.title.uppercased()
         if currentLevel != .off, !isAvailable {
             Text("Preview unavailable until Apple Intelligence is back.")
-                .font(Typography.ui(13))
-                .foregroundStyle(Color.textMuted)
+                .font(Typography.bodySmall)
+                .foregroundStyle(Color.textSecondary)
         } else if previewOption == nil {
             Text("Write some instructions in your ruleset, then the preview runs here.")
-                .font(Typography.ui(13))
-                .foregroundStyle(Color.textMuted)
+                .font(Typography.bodySmall)
+                .foregroundStyle(Color.textSecondary)
         } else if let option = previewOption {
             switch runner.state(for: option, text: previewText) {
             case .idle, .queued, .running:
@@ -300,34 +300,36 @@ struct CleanupPageView: View {
                     Spinner(size: 12)
                     Text("Cleaning up…")
                 }
-                .font(Typography.ui(13))
+                .font(Typography.bodySmall)
                 .foregroundStyle(Color.textSecondary)
             case .failed(let message):
                 Text(message)
-                    .font(Typography.ui(13))
+                    .font(Typography.bodySmall)
                     .foregroundStyle(Color.accentError)
             case .done(let outcome):
                 VStack(alignment: .leading, spacing: 8) {
                     Text(outcome.output)
-                        .font(Typography.ui(15))
+                        .font(Typography.bodyLarge)
+                        .lineSpacing(3)
                         .foregroundStyle(Color.textPrimary)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(14)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.bgApp))
+                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.textPrimary.opacity(0.04)))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.border, lineWidth: 1))
                         .overlay(alignment: .topLeading) {
                             Text(label)
-                                .font(Typography.uiBold(9)).tracking(1)
-                                .foregroundStyle(Color.textMuted)
+                                .font(Typography.captionBold).tracking(1)
+                                .foregroundStyle(Color.textSecondary)
                                 .padding(.horizontal, 6)
-                                .background(Color.bgApp)
+                                .background(Color.bgCard)
                                 .offset(x: 10, y: -7)
                         }
                     HStack(spacing: 12) {
                         Text(footer(for: outcome))
-                            .font(Typography.monoSmall)
-                            .foregroundStyle(Color.textMuted)
+                            .font(Typography.captionSmall)
+                            .foregroundStyle(Color.textSecondary)
                         Spacer()
                         Button("Run again") {
                             runner.invalidate()
@@ -342,15 +344,9 @@ struct CleanupPageView: View {
 
     private func footer(for outcome: TranscriptCleanupOutcome) -> String {
         guard outcome.modelRan else {
-            return currentLevel == .off ? "as transcribed" : (outcome.skippedReason ?? "no model pass")
+            return currentLevel == .off ? "As transcribed" : "Instant cleanup only"
         }
-        var parts = [outcome.engineName ?? "Apple Intelligence", String(format: "%.1f s", Double(outcome.totalDurationMs) / 1000)]
-        if let landed = outcome.landed {
-            parts.append("landed at \(landed.displayName)")
-        } else {
-            parts.append("changed too much, kept the original")
-        }
-        return parts.joined(separator: " · ")
+        return "\(outcome.engineName ?? "Apple Intelligence") · \(String(format: "%.1f s", Double(outcome.totalDurationMs) / 1000))"
     }
 
     private func runPreview() {
@@ -373,26 +369,30 @@ private struct CleanupLevelRow: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
                     .font(.system(size: 15))
-                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textMuted)
+                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
                     .padding(.top, 2)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(level.title)
                         .font(Typography.onboardingCardTitle)
                         .foregroundStyle(Color.textPrimary)
                     Text(level.summary)
-                        .font(Typography.ui(12.5))
+                        .font(Typography.bodySmall)
                         .foregroundStyle(Color.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 14).padding(.vertical, 12)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.bgCard))
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isSelected ? Color.textPrimary.opacity(0.035) : Color.bgCard)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(
+                    .stroke(
                         isSelected ? Color.textPrimary : Color.border.opacity(isHovered ? 1 : 0.6),
-                        lineWidth: isSelected ? 1.5 : 1))
+                        lineWidth: 1)
+            )
             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
