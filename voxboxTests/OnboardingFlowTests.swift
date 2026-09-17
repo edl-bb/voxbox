@@ -74,6 +74,7 @@ final class OnboardingFlowTests: XCTestCase {
 
     // MARK: - Cleanup choice
 
+    @MainActor
     func testCurrentChoiceReadsTheFormatterKeys() {
         XCTAssertEqual(OnboardingCleanupChoice.current(in: defaults), .off, "fresh install")
         defaults.set(true, forKey: TranscriptFormatterService.enabledKey)
@@ -88,6 +89,7 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(OnboardingCleanupChoice.current(in: defaults), .off)
     }
 
+    @MainActor
     func testApplyWritesTheFormatterKeys() {
         let store = CustomRulesetStore(defaults: defaults)
         defaults.set(FormattingIntensity.polish.rawValue, forKey: TranscriptFormatterService.intensityKey)
@@ -107,6 +109,7 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertTrue(store.rulesets.isEmpty, "built-in levels never create rulesets")
     }
 
+    @MainActor
     func testCustomCreatesExactlyOneRulesetAndAsksForTheEditor() {
         let store = CustomRulesetStore(defaults: defaults)
 
@@ -126,6 +129,7 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertFalse(OnboardingCleanupChoice.custom.apply(defaults: defaults, rulesetStore: store), "usable ruleset: no editor needed")
     }
 
+    @MainActor
     func testPreviewOptionsMapToCleanupOptions() {
         let store = CustomRulesetStore(defaults: defaults)
         XCTAssertEqual(OnboardingCleanupChoice.off.previewOption(rulesetStore: store), .off)

@@ -14,7 +14,7 @@ struct PostProcessingModelsView: View {
                     .font(Typography.sectionTitle)
                     .foregroundStyle(Color.textPrimary)
                 Text(
-                    PostProcessingModel.downloadableModelsEnabled
+                    OSCapabilities.customCleanupModels
                         ? "The model that cleans up transcripts after transcription. Apple Intelligence is built in, or download a model to run the cleanup with instead."
                         : "The model that cleans up transcripts after transcription. Apple Intelligence is built into macOS and runs entirely on your Mac."
                 )
@@ -23,7 +23,7 @@ struct PostProcessingModelsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
 
-            if !PostProcessingModel.downloadableModelsEnabled {
+            if !OSCapabilities.customCleanupModels {
                 Label(
                     "Downloadable models such as Llama and Qwen are coming with macOS 27's native on-device model support.",
                     systemImage: "clock"
@@ -79,6 +79,8 @@ private struct PostProcessingModelRow: View {
                         } else if model.kind == .mlx && isDownloaded {
                             downloadedBadge
                         }
+
+                        CleanupModelStatusAccessory(model: model)
                     }
 
                     Text("\(model.provider) • \(model.details)")

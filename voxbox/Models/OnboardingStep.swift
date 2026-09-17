@@ -50,7 +50,8 @@ nonisolated enum OnboardingReplay {
 }
 
 /// The five cards on the cleanup step, mapped onto the formatter settings.
-nonisolated enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable, Sendable {
+/// Main-actor by default: `apply` and `previewOption` touch `CustomRulesetStore`.
+enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable {
     case off
     case basic
     case lightCleanup
@@ -91,18 +92,6 @@ nonisolated enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable, Senda
         }
     }
 
-    /// What the card previews. Custom needs a usable ruleset; nil means the
-    /// card explains that rules come after setup.
-    func previewOption(rulesetStore: CustomRulesetStore) -> CleanupOption? {
-        switch self {
-        case .off: return .off
-        case .basic: return .basic
-        case .lightCleanup: return .light
-        case .polish: return .polish
-        case .custom: return rulesetStore.usableActiveRuleset.map { .custom($0) }
-        }
-    }
-
     /// The card that matches the stored settings. Fresh installs land on Off.
     static func current(in defaults: UserDefaults = .standard) -> OnboardingCleanupChoice {
         guard defaults.bool(forKey: TranscriptFormatterService.enabledKey) else { return .off }
@@ -112,6 +101,18 @@ nonisolated enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable, Senda
         case .lightCleanup: return .lightCleanup
         case .polish: return .polish
         case .custom: return .custom
+        }
+    }
+
+    /// What the card previews. Custom needs a usable ruleset; nil means the
+    /// card explains that rules come after setup.
+    func previewOption(rulesetStore: CustomRulesetStore) -> CleanupOption? {
+        switch self {
+        case .off: return .off
+        case .basic: return .basic
+        case .lightCleanup: return .light
+        case .polish: return .polish
+        case .custom: return rulesetStore.usableActiveRuleset.map { .custom($0) }
         }
     }
 

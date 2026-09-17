@@ -8,11 +8,11 @@ enum TranscriptCleanupPreview {
     static func preview(
         text: String,
         option: CleanupOption,
-        includeMarkdown: Bool = TranscriptFormatterService.isMarkdownFormattingEnabled,
+        includeMarkdown: Bool = false,
         language: String = "auto",
-        autoEdit: Bool = AutoEdit.isEnabled,
+        autoEdit: Bool = false,
         allowStepDown: Bool = false,
-        promptSet: CleanupPromptSet = .resolved(),
+        promptSet: CleanupPromptSet = .compiled,
         pipeline: TranscriptCleanupPipeline = .shared
     ) async -> TranscriptCleanupOutcome {
         let plan = CleanupPlan(
@@ -42,18 +42,26 @@ enum TranscriptCleanupPreview {
             let outcome = await preview(
                 text: text, option: option, includeMarkdown: includeMarkdown, language: language)
             if Task.isCancelled { return }
-            await onResult(option, outcome)
+            onResult(option, outcome)
         }
     }
 
     /// Load the system model before the first real call so the first
-    /// preview does not pay the cold-start latency.
+    /// preview does not pay the cold-start latency. Goes through the
+    /// session pool so the first Basic cleanup reuses this session.
     static func prewarm() async {
         guard TranscriptFormatterService.isModelAvailable else { return }
-        let session = LanguageModelSession(model: AppleIntelligenceCleanupEngine.systemModel) {
-            CleanupPromptSet.compiled.instructionStages(
-                for: .formatting, includeMarkdown: false, language: "auto")
+        let stages = CleanupPromptSet.compiled.instructionStages(
+            for: .formatting, includeMarkdown: false, language: "auto")
+        let key = CleanupSessionPool.Key(
+            variant: PostProcessingModel.appleSystemVariant,
+            instructionFingerprint: stages.joined(separator: "\n\n"),
+            temperature: 0)
+        let model = AppleIntelligenceCleanupEngine.systemModel
+        await CleanupSessionPool.shared.prewarm(key: key) {
+            LanguageModelSession(model: model) {
+                stages
+            }
         }
-        await session.prewarm()
     }
 }

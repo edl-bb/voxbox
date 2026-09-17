@@ -10,7 +10,7 @@
 import Foundation
 
 /// A snapshot of the host Mac's relevant compute capability.
-struct DeviceCapability: Equatable {
+nonisolated struct DeviceCapability: Equatable {
     enum Chip: Equatable {
         /// Apple Silicon with a best-effort generation (M1 = 1, M2 = 2, …); 0 if unknown.
         case appleSilicon(generation: Int)

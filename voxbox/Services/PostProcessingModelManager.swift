@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import MLXFoundationModels
 
 /// Owns the post-processing (cleanup) model choice and the download/removal
 /// lifecycle of Hugging Face models. Mirrors the shape of
@@ -19,13 +20,19 @@ final class PostProcessingModelManager: ObservableObject {
     @Published private(set) var downloadProgress: [String: Double] = [:]
     @Published private(set) var downloadStatus: [String: ModelDownloadStatus] = [:]
     @Published private(set) var downloadError: [String: String] = [:]
+    /// Variant whose weights/JIT warmup is in flight. Nil when idle.
+    /// Apple Intelligence is never set here.
+    @Published private(set) var preparingVariant: String?
 
     private var downloadTasks: [String: Task<Void, Never>] = [:]
+    private var preparationTask: Task<Void, Never>?
+    private var preparationToken = UUID()
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         refreshDownloadedModels()
+        startPreparationIfNeeded(for: selectedVariant)
     }
 
     // MARK: - Selection
@@ -36,8 +43,12 @@ final class PostProcessingModelManager: ObservableObject {
                 ?? PostProcessingModel.appleSystemVariant
         }
         set {
+            let previous = selectedVariant
+            guard previous != newValue else { return }
             objectWillChange.send()
             defaults.set(newValue, forKey: Self.selectionKey)
+            invalidatePool(variant: previous)
+            startPreparationIfNeeded(for: newValue)
         }
     }
 
@@ -45,9 +56,34 @@ final class PostProcessingModelManager: ObservableObject {
     /// resolves to Apple Intelligence while downloadable models are parked.
     var selectedModel: PostProcessingModel {
         guard let model = PostProcessingModel.model(for: selectedVariant),
-            model.kind == .appleSystem || PostProcessingModel.downloadableModelsEnabled
+            model.kind == .appleSystem || OSCapabilities.customCleanupModels
         else { return PostProcessingModel.catalog[0] }
         return model
+    }
+
+    /// Marks a variant as on-disk without writing weights. Factory tests
+    /// use this to drive the downloaded MLX branch.
+    func markDownloadedForTesting(_ variant: String) {
+        downloadProgress[variant] = 1.0
+    }
+
+    /// Test hook: flip the preparing flag without loading live weights.
+    func beginPreparingForTesting(_ variant: String) {
+        cancelInFlightPreparation()
+        preparingVariant = variant
+    }
+
+    /// Test hook: return to idle without waiting for preload/prewarm.
+    func endPreparingForTesting() {
+        cancelInFlightPreparation()
+        preparingVariant = nil
+    }
+
+    /// True only for the selected downloadable variant while warmup is in flight.
+    /// Apple Intelligence never reports preparing.
+    func isPreparing(_ model: PostProcessingModel) -> Bool {
+        guard model.kind != .appleSystem else { return false }
+        return preparingVariant == model.variant && selectedVariant == model.variant
     }
 
     // MARK: - State
@@ -128,10 +164,102 @@ final class PostProcessingModelManager: ObservableObject {
             // Missing directory is fine; anything else leaves state unchanged.
         }
         downloadProgress[variant] = 0
+        invalidatePool(variant: variant)
+        if preparingVariant == variant {
+            cancelInFlightPreparation()
+            preparingVariant = nil
+        }
         if selectedVariant == variant {
             selectedVariant = PostProcessingModel.appleSystemVariant
         }
         return true
+    }
+
+    // MARK: - Preparing (preload + prewarm)
+
+    private static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
+    private func shouldPrepare(_ variant: String) -> Bool {
+        guard OSCapabilities.customCleanupModels,
+            let model = PostProcessingModel.model(for: variant),
+            model.kind == .mlx
+        else { return false }
+        return isDownloaded(variant)
+    }
+
+    private func startPreparationIfNeeded(for variant: String) {
+        cancelInFlightPreparation()
+        guard shouldPrepare(variant) else {
+            preparingVariant = nil
+            return
+        }
+        // Unit tests drive the flag via begin/endPreparingForTesting so a
+        // leftover on-disk catalog model cannot hang XCTest on live weights.
+        if Self.isRunningTests {
+            preparingVariant = nil
+            return
+        }
+
+        downloadError[variant] = nil
+        let token = UUID()
+        preparationToken = token
+        preparingVariant = variant
+        preparationTask = Task { [weak self] in
+            await self?.runPreparation(variant: variant, token: token)
+        }
+    }
+
+    private func cancelInFlightPreparation() {
+        preparationTask?.cancel()
+        preparationTask = nil
+        preparationToken = UUID()
+    }
+
+    private func invalidatePool(variant: String) {
+        Task {
+            await CleanupSessionPool.shared.invalidate(variant: variant)
+        }
+    }
+
+    private func runPreparation(variant: String, token: UUID) async {
+        defer {
+            if preparationToken == token {
+                preparingVariant = nil
+                preparationTask = nil
+            }
+        }
+        guard !Task.isCancelled else { return }
+        guard shouldPrepare(variant) else { return }
+
+        if #available(macOS 27, *) {
+            guard let model = PostProcessingModel.model(for: variant) else { return }
+            let engine = CleanupEngineFactory.engine(for: model, manager: self)
+            guard let mlx = engine as? FoundationModelsMLXCleanupEngine, mlx.isAvailable
+            else { return }
+
+            do {
+                try await mlx.makeLanguageModel().preload()
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled, preparationToken == token else { return }
+                AppLogger.warning(
+                    "Cleanup model prepare failed: \(error.localizedDescription)",
+                    category: AppLogger.transcription)
+                downloadError[variant] =
+                    "Couldn't prepare this model — try selecting it again."
+                return
+            }
+
+            guard !Task.isCancelled, preparationToken == token else { return }
+            let request = TranscriptFormatterService.request(
+                for: "warmup",
+                intensity: .lightCleanup,
+                includeMarkdownFormatting: false)
+            await mlx.prewarm(request)
+        }
     }
 
     // MARK: - Published-state updates (main actor)
@@ -165,6 +293,9 @@ final class PostProcessingModelManager: ObservableObject {
         downloadStatus[variant] = nil
         downloadError[variant] = errorMessage
         downloadTasks[variant] = nil
+        if completed, selectedVariant == variant {
+            startPreparationIfNeeded(for: variant)
+        }
     }
 
     // MARK: - Transfer (off the main actor)
@@ -267,12 +398,12 @@ final class PostProcessingModelManager: ObservableObject {
 
     // MARK: - Storage
 
-    static var storageRoot: URL {
+    nonisolated static var storageRoot: URL {
         ModelStorage.whisperKitBase.appendingPathComponent(
             "postprocessing-models", isDirectory: true)
     }
 
-    static func storageDir(for variant: String) -> URL {
+    nonisolated static func storageDir(for variant: String) -> URL {
         storageRoot.appendingPathComponent(variant, isDirectory: true)
     }
 

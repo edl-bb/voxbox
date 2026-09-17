@@ -4,7 +4,7 @@ import Foundation
 
 /// Explicit setting that asks for live delivery while the user is still speaking.
 enum StreamingMode {
-    static let defaultsKey = "streamingMode"
+    nonisolated static let defaultsKey = "streamingMode"
 
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
         TranscriptDeliveryMode.current(in: defaults) == .streaming

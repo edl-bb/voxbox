@@ -1,7 +1,7 @@
 import Foundation
 
 /// Which runtime executes a post-processing (cleanup) model.
-enum PostProcessingEngineKind: String, Codable, Sendable {
+nonisolated enum PostProcessingEngineKind: String, Codable, Sendable {
     /// Apple FoundationModels — the ~3B system model that ships with macOS 26.
     case appleSystem
     /// An MLX-format model downloaded from Hugging Face and run locally
@@ -11,7 +11,7 @@ enum PostProcessingEngineKind: String, Codable, Sendable {
 
 /// A model the cleanup pass can run on. Distinct from `AIModel` (speech →
 /// text); these are text → text instruction followers.
-struct PostProcessingModel: Identifiable, Equatable, Sendable {
+nonisolated struct PostProcessingModel: Identifiable, Equatable, Sendable {
     let variant: String
     let name: String
     let provider: String
@@ -38,17 +38,30 @@ struct PostProcessingModel: Identifiable, Equatable, Sendable {
         return "Needs \(minimumRAMGB) GB+ RAM to run well — your Mac has \(deviceRAM) GB"
     }
 
+    /// Extra stop tokens matching the `LLMRegistry` row for this catalog
+    /// variant. Empty for Apple Intelligence.
+    var extraEOSTokens: Set<String> {
+        switch kind {
+        case .appleSystem:
+            return []
+        case .mlx:
+            if variant.lowercased().contains("llama") { return ["<|eot_id|>"] }
+            if variant.lowercased().contains("qwen") { return ["<|im_end|>"] }
+            return []
+        }
+    }
+
     static let appleSystemVariant = "apple-intelligence"
 
-    /// Downloadable MLX models are parked until macOS 27's native
-    /// `LanguageModel` support lands (see docs/byo-llm-post-processing.md).
-    /// While false, the picker shows only Apple Intelligence and any stored
-    /// `.mlx` selection resolves to it.
-    static let downloadableModelsEnabled = false
+    /// Downloadable MLX models are parked until macOS 27. Reads
+    /// `OSCapabilities.customCleanupModels` so tests can inject either side
+    /// of the gate. While false, the picker shows only Apple Intelligence
+    /// and any stored `.mlx` selection resolves to it.
+    static var downloadableModelsEnabled: Bool { OSCapabilities.customCleanupModels }
 
     /// What the picker offers right now.
     static var offered: [PostProcessingModel] {
-        downloadableModelsEnabled ? catalog : catalog.filter { $0.kind == .appleSystem }
+        OSCapabilities.customCleanupModels ? catalog : catalog.filter { $0.kind == .appleSystem }
     }
 
     /// Curated catalog: the zero-download system model first, then small

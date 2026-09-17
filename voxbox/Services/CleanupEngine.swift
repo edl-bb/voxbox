@@ -1,10 +1,9 @@
 import Foundation
-import FoundationModels
 
 /// A backend that can execute one transcript-cleanup request. The pipeline
 /// picks an engine per request via `CleanupEngineFactory`, so runtimes can
 /// be added or swapped without touching the cleanup chain.
-protocol CleanupEngine {
+nonisolated protocol CleanupEngine {
     /// Whether the engine can run right now (model present, OS support, …).
     var isAvailable: Bool { get }
     /// Human name for outcomes and previews ("Apple Intelligence").
@@ -20,66 +19,12 @@ nonisolated enum CleanupEngineError: Error, Equatable {
     case contentFilter
 }
 
-/// Apple FoundationModels — the ~3B system model that ships with macOS 26.
-struct AppleIntelligenceCleanupEngine: CleanupEngine {
-    var isAvailable: Bool {
-        if case .available = SystemLanguageModel.default.availability { return true }
-        return false
-    }
-
-    var displayName: String {
-        PostProcessingModel.catalog.first { $0.variant == PostProcessingModel.appleSystemVariant }?.name
-            ?? "Apple Intelligence"
-    }
-
-    /// Built-in levels are deterministic: `temperature: 0` alone is not
-    /// documented as greedy, so ask for greedy sampling explicitly. Custom
-    /// rulesets keep their own temperature. Never cap response tokens: a
-    /// cap truncates silently.
-    static func generationOptions(for request: FormattingRequest) -> GenerationOptions {
-        if request.temperature <= 0 {
-            return GenerationOptions(sampling: .greedy)
-        }
-        return GenerationOptions(temperature: request.temperature)
-    }
-
-    /// Cleanup edits the user's own words, which is exactly what Apple's
-    /// `permissiveContentTransformations` guardrail is for. The default
-    /// guardrail refuses ordinary dictation that merely mentions a sensitive
-    /// word ("look at this pill").
-    static var systemModel: SystemLanguageModel {
-        SystemLanguageModel(guardrails: .permissiveContentTransformations)
-    }
-
-    func cleanup(_ request: FormattingRequest) async throws -> String {
-        let session = LanguageModelSession(model: Self.systemModel) {
-            request.instructionStages
-        }
-        do {
-            let response = try await session.respond(
-                to: request.userPrompt,
-                options: Self.generationOptions(for: request)
-            )
-            return response.content
-        } catch let error as LanguageModelSession.GenerationError {
-            switch error {
-            case .guardrailViolation, .refusal:
-                throw CleanupEngineError.contentFilter
-            default:
-                throw error
-            }
-        }
-    }
-}
-
 /// Chooses the engine for the selected post-processing model.
 ///
-/// macOS 27 note: FoundationModels there opens a public `LanguageModel`
-/// protocol with an Apple-provided MLX implementation. Once the app can
-/// build against the macOS 27 SDK, add a bridged engine here and prefer it
-/// under `#available(macOS 27, *)` for `.mlx` models; the direct
-/// `MLXCleanupEngine` stays as the macOS 26 path. Only this factory should
-/// need to change.
+/// Routing is locked in CONTRACTS.md: Apple Intelligence for the system
+/// model and for any MLX variant that is not on disk; the parked
+/// `MLXCleanupEngine` stub when weights exist but the OS gate is off;
+/// `FoundationModelsMLXCleanupEngine` when weights exist on macOS 27.
 enum CleanupEngineFactory {
     static func engine(
         for model: PostProcessingModel,
@@ -93,6 +38,11 @@ enum CleanupEngineFactory {
                 // Selected but not on disk (deleted externally, fresh Mac):
                 // fall back to the system model rather than fail cleanup.
                 return AppleIntelligenceCleanupEngine()
+            }
+            if #available(macOS 27, *), OSCapabilities.customCleanupModels {
+                return FoundationModelsMLXCleanupEngine(
+                    model: model,
+                    directory: PostProcessingModelManager.storageDir(for: model.variant))
             }
             return MLXCleanupEngine(
                 model: model,

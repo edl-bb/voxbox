@@ -4,22 +4,22 @@ import Foundation
 /// Distinct from on-device AI cleanup, which can also drop fillers but only
 /// on longer dictations and only when a cleanup model is available.
 nonisolated enum AutoEdit {
-    static let defaultsKey = "enableAutoEdit"
+    nonisolated static let defaultsKey = "enableAutoEdit"
 
     /// Optional comma before, the filler, optional comma or terminal mark
     /// after. Word boundaries are letters so "hum" and "rather" survive.
     private static let fillerPattern =
         #"(?i)(,\s*)?(?<![A-Za-z])(?:uh+|um+|umm+|uhm+|erm+|hmm+|ah|er)(?![A-Za-z])(\s*([,.;:!?]))?"#
 
-    static var isEnabled: Bool {
+    nonisolated static var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: defaultsKey)
     }
 
-    static func apply(to text: String) -> String {
+    nonisolated static func apply(to text: String) -> String {
         apply(to: text, enabled: isEnabled)
     }
 
-    static func apply(to text: String, enabled: Bool) -> String {
+    nonisolated static func apply(to text: String, enabled: Bool) -> String {
         guard enabled else {
             return text.trimmingCharacters(in: .whitespacesAndNewlines)
         }

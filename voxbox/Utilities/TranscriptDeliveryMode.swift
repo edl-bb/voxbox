@@ -5,7 +5,7 @@ import Foundation
 /// Default is Auto paste transcription. Clipboard copies only — VoxBox does
 /// not Cmd+V or write into the focused app. Streaming writes into the
 /// destination as tokens appear.
-enum TranscriptDeliveryMode: String, CaseIterable, Identifiable {
+nonisolated enum TranscriptDeliveryMode: String, CaseIterable, Identifiable {
     case clipboard
     case autoPaste
     case streaming
@@ -75,12 +75,12 @@ enum TranscriptDeliveryMode: String, CaseIterable, Identifiable {
 }
 
 /// Pure commit decision so tests do not have to drive the window controller.
-enum TranscriptCommitAction: Equatable {
+nonisolated enum TranscriptCommitAction: Equatable {
     case copyOnly
     case paste(restoreClipboard: Bool)
 }
 
-enum TranscriptCommitPlanner {
+nonisolated enum TranscriptCommitPlanner {
     static func plan(
         mode: TranscriptDeliveryMode,
         canPaste: Bool,

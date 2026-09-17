@@ -1,7 +1,7 @@
 import Foundation
 
 /// What the user asked the model to do with a transcript.
-nonisolated enum CleanupOption: Hashable, Sendable {
+nonisolated enum CleanupOption: Sendable {
     case off
     case basic
     case light
@@ -16,7 +16,7 @@ nonisolated enum CleanupOption: Hashable, Sendable {
         case .lightCleanup: self = .light
         case .polish: self = .polish
         case .custom:
-            if let ruleset, ruleset.isUsable {
+            if let ruleset, !ruleset.instructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 self = .custom(ruleset)
             } else {
                 self = .light
@@ -50,13 +50,20 @@ nonisolated enum CleanupOption: Hashable, Sendable {
         if case .custom = self { return true }
         return false
     }
+}
 
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(intensity?.rawValue ?? -1)
-        if case .custom(let ruleset) = self {
-            hasher.combine(ruleset.id)
-            hasher.combine(ruleset.instructions)
-            hasher.combine(ruleset.temperature)
+extension CleanupOption: nonisolated Equatable {
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.off, .off), (.basic, .basic), (.light, .light), (.polish, .polish):
+            return true
+        case (.custom(let left), .custom(let right)):
+            return left.id == right.id
+                && left.name == right.name
+                && left.instructions == right.instructions
+                && left.temperature == right.temperature
+        default:
+            return false
         }
     }
 }
@@ -78,21 +85,6 @@ nonisolated struct CleanupPlan: Sendable {
     /// Real takes record `lastOutcome` and post `.transcriptCleanupFinished`.
     var isPreview: Bool = false
     var promptSet: CleanupPromptSet = .resolved()
-
-    static func fromSettings(language: String) -> CleanupPlan {
-        CleanupPlan(
-            option: TranscriptFormatterService.isEnabled
-                ? CleanupOption(
-                    intensity: TranscriptFormatterService.intensity,
-                    ruleset: CustomRulesetStore.shared.usableActiveRuleset)
-                : .off,
-            includeMarkdown: TranscriptFormatterService.isMarkdownFormattingEnabled,
-            language: language,
-            autoEditEnabled: AutoEdit.isEnabled,
-            smartTrailingPunctuation: SmartTrailingPunctuation.isEnabled,
-            minimumWordCount: TranscriptFormatterService.minimumWordCount,
-            promptSet: .resolved())
-    }
 }
 
 /// Raw engine text and what the chain turned it into.

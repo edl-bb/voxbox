@@ -19,6 +19,21 @@ final class CleanupPreviewRunner: ObservableObject {
     struct Key: Hashable {
         var text: String
         var option: CleanupOption
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(text)
+            switch option {
+            case .off: hasher.combine(-1)
+            case .basic: hasher.combine(0)
+            case .light: hasher.combine(1)
+            case .polish: hasher.combine(2)
+            case .custom(let ruleset):
+                hasher.combine(3)
+                hasher.combine(ruleset.id)
+                hasher.combine(ruleset.instructions)
+                hasher.combine(ruleset.temperature)
+            }
+        }
     }
 
     @Published private(set) var states: [Key: State] = [:]

@@ -13,22 +13,22 @@ import Foundation
 /// network access — matching the app's privacy-first design.
 enum AustralianEnglishSpelling {
     /// The language code stored in `transcriptionLanguage` for this variant.
-    static let languageCode = "en-AU"
+    nonisolated static let languageCode = "en-AU"
 
-    static func isAustralianEnglish(_ code: String) -> Bool {
+    nonisolated static func isAustralianEnglish(_ code: String) -> Bool {
         code.caseInsensitiveCompare(languageCode) == .orderedSame
     }
 
     /// The language hint actually sent to the transcription engine. Regional
     /// English variants decode as plain English; every other code passes
     /// through untouched.
-    static func engineLanguage(for code: String) -> String {
+    nonisolated static func engineLanguage(for code: String) -> String {
         isAustralianEnglish(code) ? "en" : code
     }
 
     /// Rewrite American spellings in `text` to Australian ones. Whole words
     /// only; unknown words are never modified.
-    static func apply(to text: String) -> String {
+    nonisolated static func apply(to text: String) -> String {
         guard !text.isEmpty else { return text }
 
         var result = ""
@@ -48,7 +48,7 @@ enum AustralianEnglishSpelling {
         return result
     }
 
-    private static func replaced(word: String) -> String {
+    nonisolated private static func replaced(word: String) -> String {
         guard !word.isEmpty else { return word }
         guard let australian = replacements[word.lowercased()] else { return word }
         return matchCase(of: word, to: australian)
@@ -56,7 +56,7 @@ enum AustralianEnglishSpelling {
 
     /// Carry the source word's capitalisation over to the replacement:
     /// ALL CAPS stays all caps, Initial Caps stays initial caps.
-    private static func matchCase(of source: String, to replacement: String) -> String {
+    nonisolated private static func matchCase(of source: String, to replacement: String) -> String {
         if source == source.uppercased() && source.count > 1 {
             return replacement.uppercased()
         }
@@ -70,9 +70,9 @@ enum AustralianEnglishSpelling {
 
     /// Lowercased US spelling → lowercased Australian spelling.
     /// Built once, lazily, from verb stems plus explicit word families.
-    static let replacements: [String: String] = buildReplacements()
+    nonisolated static let replacements: [String: String] = buildReplacements()
 
-    private static func buildReplacements() -> [String: String] {
+    nonisolated private static func buildReplacements() -> [String: String] {
         var map: [String: String] = [:]
 
         // -ize → -ise verbs. Stems end in "iz"; appending the shared verb

@@ -9,7 +9,7 @@ import Foundation
 /// transcript inside `wrapTemplate`, followed by the intensity's
 /// `repeatSuffix`. Custom rulesets send their instructions verbatim and
 /// get the wrap but no suffix.
-nonisolated struct CleanupPromptSet: Equatable, Sendable {
+nonisolated struct CleanupPromptSet: Sendable {
     var role: String
     var basic: String
     var light: String
@@ -245,5 +245,36 @@ nonisolated struct CleanupPromptSet: Equatable, Sendable {
     /// `compiled`.
     static func resolved() -> CleanupPromptSet {
         TranscriptCleanupDebug.overlay(on: compiled)
+    }
+}
+
+extension CleanupPromptSet: nonisolated Equatable {
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.role == rhs.role
+            && lhs.basic == rhs.basic
+            && lhs.light == rhs.light
+            && lhs.polish == rhs.polish
+            && lhs.style == rhs.style
+            && lhs.australianSpelling == rhs.australianSpelling
+            && lhs.markdown == rhs.markdown
+            && lhs.outputOnly == rhs.outputOnly
+            && lhs.wrapTemplate == rhs.wrapTemplate
+            && suffixMap(lhs.repeatSuffixes) == suffixMap(rhs.repeatSuffixes)
+            && budgetMap(lhs.budgets) == budgetMap(rhs.budgets)
+            && lhs.fillerLexicon.pureTokens == rhs.fillerLexicon.pureTokens
+            && lhs.fillerLexicon.phrases == rhs.fillerLexicon.phrases
+            && lhs.fillerLexicon.deletableTokens == rhs.fillerLexicon.deletableTokens
+    }
+
+    nonisolated private static func suffixMap(_ map: [FormattingIntensity: String]) -> [Int: String] {
+        Dictionary(uniqueKeysWithValues: map.map { ($0.key.rawValue, $0.value) })
+    }
+
+    nonisolated private static func budgetMap(
+        _ map: [FormattingIntensity: GuardrailBudget]
+    ) -> [Int: [Double]] {
+        Dictionary(uniqueKeysWithValues: map.map {
+            ($0.key.rawValue, [$0.value.maxCostRatio, Double($0.value.minFreeEdits), $0.value.minRetention])
+        })
     }
 }

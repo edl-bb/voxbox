@@ -249,7 +249,7 @@ final class LiveDictationSession {
 
     private static func clean(_ text: String, language: String) async -> String {
         let outcome = await TranscriptCleanupPipeline.shared.clean(
-            raw: text, plan: .fromSettings(language: language))
+            raw: text, plan: TranscriptFormatterService.planFromSettings(language: language))
         return outcome.output
     }
 
