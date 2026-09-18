@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The custom-ruleset list with New, Edit (sheet) and Delete. Lives on the
-/// Cleanup page under the Custom level.
+/// The custom-ruleset list with New, Edit (sheet), Delete, and (macOS 27)
+/// drag-to-reorder. Lives on the Cleanup page under the Custom level.
 struct CustomRulesetManagerView: View {
     @ObservedObject private var store = CustomRulesetStore.shared
     @State private var editingRuleset: CustomCleanupRuleset?
@@ -55,17 +55,7 @@ struct CustomRulesetManagerView: View {
                     .foregroundStyle(Color.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                VStack(spacing: 8) {
-                    ForEach(store.rulesets) { ruleset in
-                        RulesetRow(
-                            ruleset: ruleset,
-                            isActive: store.activeRulesetID == ruleset.id,
-                            onSelect: { store.activeRulesetID = ruleset.id },
-                            onEdit: { editingRuleset = ruleset },
-                            onDelete: { store.delete(id: ruleset.id) }
-                        )
-                    }
-                }
+                rulesetList
 
                 if let active = store.activeRuleset, !active.isUsable {
                     Label(
@@ -78,6 +68,53 @@ struct CustomRulesetManagerView: View {
             }
         }
         .padding(.top, 4)
+    }
+
+    /// `.reorderable()` is on `DynamicViewContent` (ForEach), so the 27
+    /// branch cannot type-erase the ForEach before applying it.
+    @ViewBuilder
+    private var rulesetList: some View {
+        if #available(macOS 27, *) {
+            VStack(spacing: 8) {
+                ForEach(store.rulesets) { ruleset in
+                    rulesetRow(ruleset)
+                }
+                .reorderable()
+            }
+            .reorderContainer(for: CustomCleanupRuleset.self) { difference in
+                applyRulesetReorder(difference)
+            }
+        } else {
+            VStack(spacing: 8) {
+                ForEach(store.rulesets) { ruleset in
+                    rulesetRow(ruleset)
+                }
+            }
+        }
+    }
+
+    private func rulesetRow(_ ruleset: CustomCleanupRuleset) -> RulesetRow {
+        RulesetRow(
+            ruleset: ruleset,
+            isActive: store.activeRulesetID == ruleset.id,
+            onSelect: { store.activeRulesetID = ruleset.id },
+            onEdit: { editingRuleset = ruleset },
+            onDelete: { store.delete(id: ruleset.id) }
+        )
+    }
+
+    @available(macOS 27, *)
+    private func applyRulesetReorder(
+        _ difference: ReorderDifference<UUID, ReorderableSingleCollectionIdentifier>
+    ) {
+        let beforeID: UUID?
+        switch difference.destination.position {
+        case .before(let id):
+            beforeID = id
+        case .end:
+            beforeID = nil
+        }
+        store.moveRulesets(ids: difference.sources, before: beforeID)
     }
 }
 

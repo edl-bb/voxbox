@@ -107,22 +107,22 @@ nonisolated struct FormattingRequest: Equatable, Sendable {
 final class TranscriptFormatterService {
     static let shared = TranscriptFormatterService()
 
-    static let enabledKey = "formatTranscriptWithOnDeviceAI"
-    static let intensityKey = "formatTranscriptIntensity"
-    static let markdownFormattingKey = "formatTranscriptMarkdown"
+    nonisolated static let enabledKey = "formatTranscriptWithOnDeviceAI"
+    nonisolated static let intensityKey = "formatTranscriptIntensity"
+    nonisolated static let markdownFormattingKey = "formatTranscriptMarkdown"
 
     /// Opt-in; default off.
-    static var isEnabled: Bool {
+    nonisolated static var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: enabledKey)
     }
 
     /// Default on: the Polish prompt already asked for markdown, so an
     /// unset key keeps existing output.
-    static var isMarkdownFormattingEnabled: Bool {
+    nonisolated static var isMarkdownFormattingEnabled: Bool {
         UserDefaults.standard.object(forKey: markdownFormattingKey) as? Bool ?? true
     }
 
-    static var intensity: FormattingIntensity {
+    nonisolated static var intensity: FormattingIntensity {
         // integer(forKey:) returns 0 when unset, which would silently select
         // .formatting — read the raw object so "never set" falls back to the
         // documented default of .lightCleanup.
@@ -135,7 +135,7 @@ final class TranscriptFormatterService {
     /// Whether the system model can run on this machine right now (it can be
     /// unavailable on low battery, unsupported hardware, or while downloading
     /// system assets). Used by Settings to explain a disabled toggle.
-    static var isModelAvailable: Bool {
+    nonisolated static var isModelAvailable: Bool {
         if case .available = SystemLanguageModel.default.availability { return true }
         return false
     }
@@ -148,7 +148,7 @@ final class TranscriptFormatterService {
     }
 
     /// Dictations shorter than this many words skip the model entirely.
-    static let minimumWordCount = 8
+    nonisolated static let minimumWordCount = 8
 
     /// Result of the most recent real (non-preview) take this launch.
     private(set) var lastOutcome: TranscriptCleanupOutcome?
@@ -163,7 +163,7 @@ final class TranscriptFormatterService {
 
     // MARK: - Requests (compiled prompt set)
 
-    static func request(
+    nonisolated static func request(
         for text: String,
         intensity: FormattingIntensity,
         includeMarkdownFormatting: Bool
@@ -172,7 +172,7 @@ final class TranscriptFormatterService {
             for: text, intensity: intensity, includeMarkdown: includeMarkdownFormatting)
     }
 
-    static func request(for text: String, ruleset: CustomCleanupRuleset) -> FormattingRequest {
+    nonisolated static func request(for text: String, ruleset: CustomCleanupRuleset) -> FormattingRequest {
         CleanupRequestBuilder.request(for: text, ruleset: ruleset)
     }
 
@@ -193,13 +193,28 @@ final class TranscriptFormatterService {
 
     // MARK: - Running
 
+    static func planFromSettings(language: String) -> CleanupPlan {
+        CleanupPlan(
+            option: isEnabled
+                ? CleanupOption(
+                    intensity: intensity,
+                    ruleset: CustomRulesetStore.shared.usableActiveRuleset)
+                : .off,
+            includeMarkdown: isMarkdownFormattingEnabled,
+            language: language,
+            autoEditEnabled: AutoEdit.isEnabled,
+            smartTrailingPunctuation: SmartTrailingPunctuation.isEnabled,
+            minimumWordCount: minimumWordCount,
+            promptSet: .resolved())
+    }
+
     /// Model stage only (no spelling, dictionary, Auto Edit or trailing
     /// punctuation), for callers that have already run those. Returns the
     /// input unchanged whenever the feature is off, the model is
     /// unavailable, the text is too short, or every rung is vetoed.
     func format(_ text: String, language: String = "auto") async -> String {
         guard Self.isEnabled else { return text }
-        var plan = CleanupPlan.fromSettings(language: language)
+        var plan = Self.planFromSettings(language: language)
         plan.applyDictionary = false
         plan.autoEditEnabled = false
         plan.smartTrailingPunctuation = false

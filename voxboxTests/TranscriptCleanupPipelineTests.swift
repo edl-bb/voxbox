@@ -2,6 +2,7 @@ import XCTest
 
 @testable import voxbox
 
+@MainActor
 final class TranscriptCleanupPipelineTests: XCTestCase {
 
     private let raw = "um so I think uh we should ship the release on thursday and tell priya"
@@ -107,6 +108,10 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
 
     // MARK: - Fallback engine
 
+    /// Ticket 05: `FoundationModelsMLXCleanupEngine` throwing
+    /// `runtimeUnavailable` (missing weights) is this same path — the
+    /// pipeline already retries on Apple Intelligence. Do not special-case
+    /// the MLX engine here.
     func testLocalModelFailureRetriesOnTheSystemModel() async {
         let local = ScriptedCleanupEngine(displayName: "Qwen 3 1.7B") { _ in
             throw ScriptedCleanupEngine.Failure(message: "weights missing")
@@ -301,6 +306,7 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
 
     // MARK: - Recording
 
+    @MainActor
     func testRealTakesRecordTheOutcomeAndPreviewsDoNot() async {
         let engine = ScriptedCleanupEngine { $0.input }
         let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)

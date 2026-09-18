@@ -12,7 +12,7 @@ import Foundation
 ///   5. Australian spelling again (undoes any re-Americanising)
 ///   6. Smart trailing punctuation
 final class TranscriptCleanupPipeline {
-    static let shared = TranscriptCleanupPipeline()
+    nonisolated static let shared = TranscriptCleanupPipeline()
 
     /// Builds requests and runs engines. Injectable for tests.
     var engineProvider: (PostProcessingModel) -> CleanupEngine = { model in
@@ -21,7 +21,7 @@ final class TranscriptCleanupPipeline {
     var fallbackEngine: () -> CleanupEngine = { AppleIntelligenceCleanupEngine() }
     var selectedModel: () -> PostProcessingModel = { PostProcessingModelManager.shared.selectedModel }
 
-    init() {}
+    nonisolated init() {}
 
     func clean(raw: String, plan: CleanupPlan) async -> TranscriptCleanupOutcome {
         let started = Date()
@@ -216,7 +216,7 @@ final class TranscriptCleanupPipeline {
         Int(Date().timeIntervalSince(date) * 1000)
     }
 
-    static func describe(_ verdict: GuardrailVerdict) -> String {
+    nonisolated static func describe(_ verdict: GuardrailVerdict) -> String {
         switch verdict {
         case .accepted: return "accepted"
         case .notGoverned: return "not governed"
@@ -279,7 +279,7 @@ nonisolated enum CleanupRequestBuilder {
             input: trimmed,
             userPrompt: promptSet.userPrompt(for: trimmed, intensity: nil),
             intensity: .custom,
-            temperature: ruleset.temperature.clamped(to: CustomRulesetStore.temperatureRange),
+            temperature: DoubleClamp.clamp(ruleset.temperature, to: CustomCleanupRuleset.temperatureRange),
             budget: nil)
     }
 }

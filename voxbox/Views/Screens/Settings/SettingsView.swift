@@ -244,7 +244,8 @@ struct GeneralSettingsTab: View {
                                     }
                                 }
                                 .pickerStyle(.segmented)
-                                .frame(width: 180)
+                                .labelsHidden()
+                                .fixedSize(horizontal: true, vertical: false)
                             }
 
                             Text(recordingMode.settingsCaption)

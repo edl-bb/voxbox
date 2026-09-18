@@ -3,13 +3,13 @@ import Foundation
 /// Changelog-flavored markdown blocks: headings, nested lists, paragraphs.
 /// SwiftUI `Text(AttributedString)` drops list and heading presentation, so
 /// Release Notes renders these blocks explicitly.
-enum ChangelogMarkdownBlock: Equatable {
+nonisolated enum ChangelogMarkdownBlock: Equatable {
     case heading(level: Int, text: String)
     case listItem(depth: Int, text: String)
     case paragraph(String)
 }
 
-enum ChangelogMarkdown {
+nonisolated enum ChangelogMarkdown {
     static func blocks(in markdown: String) -> [ChangelogMarkdownBlock] {
         let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         var blocks: [ChangelogMarkdownBlock] = []

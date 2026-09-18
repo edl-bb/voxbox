@@ -5,7 +5,7 @@ struct HistoryView: View {
     @AppStorage(HotkeyOption.defaultsKey) private var selectedHotkey: HotkeyOption = .fn
     private let audioPlayer = AudioPlayerService.shared
     @State private var showDeleteAlert = false
-    @State private var itemPendingDeletion: HistoryItem? = nil
+    @State private var deleteConfirmation = HistoryDeleteConfirmation()
     @State private var expandedItemId: UUID? = nil
     @State private var showCopyToast = false
     
@@ -93,12 +93,16 @@ struct HistoryView: View {
                                         }
                                     }
                                 },
-                                onCopy: { copyToClipboard(text: item.transcript) },
+                                onCopy: { copyShownTranscript(item) },
                                 onCopyRaw: HistoryView.rawTranscript(of: item).map { raw in
                                     { copyToClipboard(text: raw) }
                                 },
-                                onDelete: { itemPendingDeletion = item },
+                                onDelete: { requestDelete(item) },
                                 audioPlayer: expandedItemId == item.id ? audioPlayer : nil
+                            )
+                            .historyCardSwipeActions(
+                                onCopy: { copyShownTranscript(item) },
+                                onDelete: { requestDelete(item) }
                             )
                         }
                     }
@@ -107,6 +111,7 @@ struct HistoryView: View {
                 }
             }
         }
+        .historySwipeActionsContainerIfAvailable()
         .overlay(alignment: .bottom) {
             if showCopyToast {
                 HStack(spacing: 8) {
@@ -137,14 +142,14 @@ struct HistoryView: View {
         .alert(
             "Delete Transcript?",
             isPresented: Binding(
-                get: { itemPendingDeletion != nil },
+                get: { deleteConfirmation.pendingItem != nil },
                 set: { isPresented in
                     if !isPresented {
-                        itemPendingDeletion = nil
+                        deleteConfirmation.dismiss()
                     }
                 }
             ),
-            presenting: itemPendingDeletion
+            presenting: deleteConfirmation.pendingItem
         ) { item in
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
@@ -153,7 +158,7 @@ struct HistoryView: View {
                     audioPlayer.reset()
                 }
                 historyService.deleteItem(id: item.id)
-                itemPendingDeletion = nil
+                deleteConfirmation.dismiss()
             }
         } message: { item in
             if let audioURL = item.audioFileURL,
@@ -165,6 +170,14 @@ struct HistoryView: View {
         }
     }
     
+    private func requestDelete(_ item: HistoryItem) {
+        deleteConfirmation.request(item)
+    }
+
+    private func copyShownTranscript(_ item: HistoryItem) {
+        copyToClipboard(text: HistoryCardActions.copyText(for: item))
+    }
+
     private func copyToClipboard(text: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -196,6 +209,27 @@ struct HistoryView: View {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+/// Shared by the History card Delete button and macOS 27 swipe Delete.
+/// Parks the take for the existing "Delete Transcript?" alert.
+struct HistoryDeleteConfirmation {
+    private(set) var pendingItem: HistoryItem?
+
+    mutating func request(_ item: HistoryItem) {
+        pendingItem = item
+    }
+
+    mutating func dismiss() {
+        pendingItem = nil
+    }
+}
+
+enum HistoryCardActions {
+    /// Text the card Copy button and swipe Copy both send to the pasteboard.
+    static func copyText(for item: HistoryItem) -> String {
+        item.transcript
     }
 }
 
@@ -521,6 +555,35 @@ private struct HistoryCardScrubber: View {
                 duration: $audioPlayer.duration
             )
             .frame(height: 60)
+        }
+    }
+}
+
+extension View {
+    /// Trailing Copy / Delete on History cards. No-op below macOS 27, where
+    /// `swipeActions` only works inside `List`.
+    @ViewBuilder
+    fileprivate func historyCardSwipeActions(
+        onCopy: @escaping () -> Void,
+        onDelete: @escaping () -> Void
+    ) -> some View {
+        if #available(macOS 27, *) {
+            self.swipeActions(edge: .trailing) {
+                Button("Delete", role: .destructive, action: onDelete)
+                Button("Copy", action: onCopy)
+            }
+        } else {
+            self
+        }
+    }
+
+    /// Coordinates card swipe actions in the History `ScrollView`.
+    @ViewBuilder
+    fileprivate func historySwipeActionsContainerIfAvailable() -> some View {
+        if #available(macOS 27, *) {
+            self.swipeActionsContainer()
+        } else {
+            self
         }
     }
 }

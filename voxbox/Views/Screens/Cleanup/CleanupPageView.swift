@@ -115,8 +115,9 @@ struct CleanupPageView: View {
                     .font(Typography.uiBold(14))
                     .foregroundStyle(Color.textPrimary)
             }
+            CleanupModelStatusAccessory(model: postProcessing.selectedModel)
             Spacer()
-            if !PostProcessingModel.downloadableModelsEnabled {
+            if !OSCapabilities.customCleanupModels {
                 Text("Other on-device models arrive with macOS 27")
                     .font(Typography.caption)
                     .foregroundStyle(Color.textMuted)

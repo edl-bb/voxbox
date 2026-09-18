@@ -15,7 +15,7 @@
 
 import Foundation
 
-enum ModelStorage {
+nonisolated enum ModelStorage {
     /// WhisperKit `downloadBase`. WhisperKit stores CoreML models under
     /// `<base>/models/argmaxinc/whisperkit-coreml/<variant>` and any tokenizer configs
     /// it fetches under `<base>/models/openai/...`.

@@ -81,6 +81,37 @@ final class CustomRulesetTests: XCTestCase {
         XCTAssertNotNil(store.usableActiveRuleset)
     }
 
+    func testMoveFromIndexPersistsOrderAcrossStoreReload() {
+        let store = CustomRulesetStore(defaults: defaults)
+        let first = store.addRuleset(name: "Alpha")!
+        let second = store.addRuleset(name: "Beta")!
+        let third = store.addRuleset(name: "Gamma")!
+        XCTAssertEqual(store.rulesets.map(\.id), [first.id, second.id, third.id])
+
+        store.move(from: 0, to: 3)
+
+        XCTAssertEqual(store.rulesets.map(\.id), [second.id, third.id, first.id])
+
+        let reloaded = CustomRulesetStore(defaults: defaults)
+        XCTAssertEqual(reloaded.rulesets.map(\.id), [second.id, third.id, first.id])
+    }
+
+    func testReorderDoesNotChangeActiveRulesetID() {
+        let store = CustomRulesetStore(defaults: defaults)
+        let first = store.addRuleset(name: "Alpha")!
+        _ = store.addRuleset(name: "Beta")!
+        let third = store.addRuleset(name: "Gamma")!
+        store.activeRulesetID = first.id
+
+        store.move(from: 2, to: 0)
+
+        XCTAssertEqual(store.rulesets.map(\.id).first, third.id)
+        XCTAssertEqual(store.activeRulesetID, first.id)
+
+        let reloaded = CustomRulesetStore(defaults: defaults)
+        XCTAssertEqual(reloaded.activeRulesetID, first.id)
+    }
+
     // MARK: - Formatting requests
 
     func testCustomRequestSendsInstructionsVerbatimWithNoBuiltInStages() {
