@@ -475,7 +475,7 @@
 				CODE_SIGN_ENTITLEMENTS = voxbox/Resources/voxbox.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 46;
+				CURRENT_PROJECT_VERSION = 47;
 				DEVELOPMENT_TEAM = K8S7G9UFR8;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -490,7 +490,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.edlittle.VoxBox;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -512,7 +512,7 @@
 				CODE_SIGN_ENTITLEMENTS = voxbox/Resources/voxbox.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 46;
+				CURRENT_PROJECT_VERSION = 47;
 				DEVELOPMENT_TEAM = K8S7G9UFR8;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -527,7 +527,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.edlittle.VoxBox;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -678,14 +678,6 @@
 				minimumVersion = 2.4.0;
 			};
 		};
-		FA0000000000000000000001 /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.15.4;
-			};
-		};
 		A20000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
@@ -700,6 +692,14 @@
 			requirement = {
 				kind = revision;
 				revision = 2bebe4e9ad127758ebcd76c6ad45a1740d0d2852;
+			};
+		};
+		FA0000000000000000000001 /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.15.4;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -720,11 +720,6 @@
 			package = 1C547F222F0E7D07008120A6 /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = "whisperkit-cli";
 		};
-		FA0000000000000000000002 /* FluidAudio */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA0000000000000000000001 /* XCRemoteSwiftPackageReference "FluidAudio" */;
-			productName = FluidAudio;
-		};
 		A20000000000000000000002 /* MLXFoundationModels */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A20000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
@@ -734,6 +729,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A20000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
 			productName = MLXLLM;
+		};
+		FA0000000000000000000002 /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA0000000000000000000001 /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
