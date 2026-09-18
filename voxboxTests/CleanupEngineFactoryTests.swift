@@ -66,8 +66,8 @@ final class CleanupEngineFactoryTests: XCTestCase {
         }
     }
 
-    func testFactoryReturnsFoundationModelsMLXWhenGateOnAndDownloaded() {
-        OSCapabilities.withTestOverride(true) {
+    func testFactoryReturnsFoundationModelsMLXWhenGateOnAndDownloaded() throws {
+        try OSCapabilities.withTestOverride(true) {
             let (manager, defaults, suite) = makeManager()
             defer { defaults.removePersistentDomain(forName: suite) }
 
@@ -77,9 +77,8 @@ final class CleanupEngineFactoryTests: XCTestCase {
 
             let engine = CleanupEngineFactory.engine(for: model, manager: manager)
             guard #available(macOS 27, *) else {
-                XCTFail(
+                throw XCTSkip(
                     "FoundationModelsMLXCleanupEngine requires macOS 27; this host is \(ProcessInfo.processInfo.operatingSystemVersion)")
-                return
             }
             XCTAssertTrue(
                 engine is FoundationModelsMLXCleanupEngine,
@@ -124,9 +123,8 @@ final class CleanupEngineFactoryTests: XCTestCase {
 
     func testFoundationModelsMLXEngineWithEmptyDirectoryIsUnavailableAndThrows() async throws {
         guard #available(macOS 27, *) else {
-            XCTFail(
+            throw XCTSkip(
                 "FoundationModelsMLXCleanupEngine requires macOS 27; this host is \(ProcessInfo.processInfo.operatingSystemVersion)")
-            return
         }
 
         let directory = FileManager.default.temporaryDirectory
