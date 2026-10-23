@@ -57,7 +57,7 @@ struct SidebarView: View {
                     .tracking(3)
                     .foregroundStyle(Color.textMuted.opacity(0.25))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
             .onHover { hovering in
                 if hovering {
                     NSCursor.pointingHand.push()
@@ -149,7 +149,7 @@ struct SidebarButton: View {
             )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.1)) {
                 isHovered = hovering

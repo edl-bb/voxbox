@@ -18,9 +18,14 @@ concurrency:
 jobs:
   build-and-test:
     name: Build & Unit Test
-    runs-on: macos-26
+    # Product compiles against the macOS 27 SDK (deployment target stays 26.0).
+    # macos-26 runners ship Xcode 26, which cannot see MLXLanguageModel or
+    # SwiftUI's ReorderDifference. `xcode-27` is GitHub's Xcode 27 image.
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Select Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app
@@ -30,21 +35,29 @@ jobs:
           xcodebuild -version
           swift --version
 
+      # Cmlx ships .metal shaders; Xcode 27 does not bundle the Metal
+      # toolchain, so a fresh runner fails the package build without this.
+      - name: Download Metal Toolchain
+        run: xcodebuild -downloadComponent MetalToolchain
+
       # Cache resolved Swift packages so WhisperKit / FluidAudio / swift-transformers
-      # aren't re-fetched and recompiled every run. Keyed on the resolved graph.
+      # aren't re-fetched and recompiled every run. Keyed on the resolved graph
+      # plus the Xcode 27 image so macos-26 artifacts are not reused.
       - name: Cache SwiftPM
         uses: actions/cache@v4
         with:
           path: SourcePackages
-          key: ${{ runner.os }}-spm-${{ hashFiles('VoxBox.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          key: ${{ runner.os }}-xcode27-spm-${{ hashFiles('VoxBox.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-xcode27-spm-
 
       # Compile once with build-for-testing, then run the tests without rebuilding,
       # instead of a full `build` followed by a `test` that recompiles the app.
       # On failure, compiler errors are re-emitted as ::error:: workflow
       # commands so they surface as check-run annotations (readable via the
       # API even when the raw log download is unavailable).
+      # skipPackagePluginValidation is belt-and-suspenders: mlx-swift main
+      # no longer registers CudaBuild on macOS, but Xcode 27 still prompts.
       - name: Build for testing
         run: |
           set -o pipefail
@@ -53,6 +66,8 @@ jobs:
             -configuration Debug \
             -destination 'platform=macOS' \
             -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-build.log; then
             grep -E "(^|[[:space:]])(error|fatal error): " xcodebuild-build.log \
               | sort -u | head -40 \
@@ -68,6 +83,8 @@ jobs:
             -destination 'platform=macOS' \
             -only-testing:voxboxTests \
             -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild-test.log; then
             grep -E "(error: |Test Case .* failed|failed \()" xcodebuild-test.log \
               | sort -u | head -40 \
@@ -80,6 +97,8 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # SwiftLint is sometimes preinstalled on the macOS runner image; fall
       # back to brew, and tolerate brew failures (the macos-26 image has hit

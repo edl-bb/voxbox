@@ -1,0 +1,1612 @@
+{
+  "language": "en-AU",
+  "contexts": {},
+  "cases": [
+    {
+      "id": "opus-floor-staff-break-message",
+      "tags": [
+        "tempting-to-answer",
+        "mishearings",
+        "numbers",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "um can you write me a quick message to the floor staff about the new brake roster. starting Monday the. the lunch brake moves to two thirty and the dinner crew's ten minute brake is at five fifteen not six. thanks",
+      "expected": {
+        "light": "Can you write me a quick message to the floor staff about the new brake roster? Starting Monday, the lunch brake moves to 2:30 and the dinner crew's 10-minute brake is at 5:15, not 6. Thanks.",
+        "polish": "Can you write me a quick message to the floor staff about the new break roster? Starting Monday, the lunch break moves to 2:30 and the dinner crew's 10-minute break is at 5:15, not 6. Thanks."
+      },
+      "keep": [
+        "a quick message to the floor staff",
+        "starting Monday"
+      ],
+      "forbidText": [
+        "Here is a message",
+        "Dear floor staff",
+        "two thirty",
+        "Hi team",
+        "Subject:",
+        "17:15"
+      ]
+    },
+    {
+      "id": "opus-vet-c5-booster-check",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "names with unusual spelling",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "tell me if Biscuit Nguyen's C5 booster is due before Friday",
+      "expected": {
+        "light": "Tell me if Biscuit Nguyen's C5 booster is due before Friday.",
+        "polish": "Tell me if Biscuit Nguyen's C5 booster is due before Friday."
+      },
+      "keep": [
+        "C5 booster is due before Friday",
+        "Biscuit Nguyen's"
+      ],
+      "forbidText": [
+        "Biscuit is due",
+        "Yes, Biscuit Nguyen's",
+        "I checked",
+        "Yes,",
+        "I don't have access",
+        "According to"
+      ]
+    },
+    {
+      "id": "opus-footscray-food-drive-update",
+      "tags": [
+        "long",
+        "spoken scaffolding",
+        "self-correction",
+        "negation",
+        "mishearings",
+        "unfinished final sentence",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "so hi Marguerite. um just following up from the volunteer meeting last night. the thing is, we've got way more people signed up for the Footscray food drive than we can actually. fit in the hall so I think we need to split them into two shifts. first shift is nine till twelve and the second one is twelve thirty to. three. no sorry, three thirty, because the truck from Kinfolk Pantry doesn't get there until one. I meant to say, the donation total so far is four thousand two hundred and sixty dollars which is about eighty five percent of the target, which is honestly amazing. uh can you let Thao and Jarrah know they're running the sign in desk. also the thing is broken on the website where people pick there shift, so maybe ask Dev to have a look at it. I'd rather we didn't send another email blast until that's fixed. no worries if you can't get to it today. and um the other thing was parking at the. hall on Saturday, we might need to",
+      "expected": {
+        "light": "So hi Marguerite, just following up from the volunteer meeting last night. The thing is, we've got way more people signed up for the Footscray food drive than we can actually fit in the hall, so I think we need to split them into two shifts. First shift is 9 till 12 and the second one is 12:30 to 3:30, because the truck from Kinfolk Pantry doesn't get there until 1. I meant to say, the donation total so far is $4,260, which is about 85% of the target, which is honestly amazing. Can you let Thao and Jarrah know they're running the sign in desk? Also the thing is broken on the website where people pick there shift, so maybe ask Dev to have a look at it. I'd rather we didn't send another email blast until that's fixed. No worries if you can't get to it today. And the other thing was parking at the hall on Saturday, we might need to",
+        "polish": "Hi Marguerite, just following up from the volunteer meeting last night. We've got way more people signed up for the Footscray food drive than we can actually fit in the hall, so I think we need to split them into two shifts. The first shift is 9 till 12 and the second one is 12:30 to 3:30, because the truck from Kinfolk Pantry doesn't get there until 1. The donation total so far is $4,260, which is about 85% of the target, which is honestly amazing. Can you let Thao and Jarrah know they're running the sign-in desk? Also, the thing is broken on the website where people pick their shift, so maybe ask Dev to have a look at it. I'd rather we didn't send another email blast until that's fixed. No worries if you can't get to it today. And the other thing was parking at the hall on Saturday, we might need to"
+      },
+      "keep": [
+        "the thing is broken",
+        "we didn't send another email",
+        "Thao and Jarrah know",
+        "Footscray food drive"
+      ],
+      "forbidText": [
+        "3:00",
+        "no sorry",
+        "I will let",
+        "No sorry",
+        "to 3 because",
+        "we might need to book"
+      ]
+    },
+    {
+      "id": "opus-lab-rerun-mixed-model",
+      "tags": [
+        "tempting-to-answer",
+        "technical tokens",
+        "numbers",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "okay so can you rerun the analysis on the new batch. the files are in data/cohort_b/raw and the script is run_mixed_model.R. um set the seed to forty two. uh the last run gave a p value of point oh four three which feels too good honestly. don't overwrite the old outputs",
+      "expected": {
+        "light": "Okay so can you rerun the analysis on the new batch? The files are in data/cohort_b/raw and the script is run_mixed_model.R. Set the seed to 42. The last run gave a p-value of 0.043, which feels too good honestly. Don't overwrite the old outputs.",
+        "polish": "Can you rerun the analysis on the new batch? The files are in data/cohort_b/raw and the script is run_mixed_model.R. Set the seed to 42. The last run gave a p-value of 0.043, which feels too good honestly. Don't overwrite the old outputs."
+      },
+      "keep": [
+        "data/cohort_b/raw",
+        "run_mixed_model.R",
+        "which feels too good honestly",
+        "don't overwrite the old outputs"
+      ],
+      "forbidText": [
+        "I have rerun",
+        "forty two",
+        "point oh four three",
+        "0.43",
+        "I'll rerun",
+        "Sure"
+      ]
+    },
+    {
+      "id": "opus-vet-mango-hyperthyroid-notes",
+      "tags": [
+        "long",
+        "numbers",
+        "negation",
+        "mishearings",
+        "spoken scaffolding",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7",
+        "ambiguous"
+      ],
+      "raw": "right so for Mrs Papadopoulos's cat Mango. he's a twelve year old desh, came in vomiting three times since Sunday. weight today is four point two kilos which is down from four point eight in March so. that's a fair drop. um we did bloods and the T4 is up at sixty two nanomoles per litre so hyperthyroid is likely. do not start the methimazole until we've got the kidney values back, I mean that, because if his creatinine is high we'd we'd want to go slower. plan is to recheck in two to three weeks. owner's happy to go ahead but asked about cost so quote her roughly three hundred and fifty to four hundred dollars for the next visit including bloods. oh and she mentioned he's been, like, howling at night, the way old cats do, which kind of fits. the phone number on file is wrong, the new one is oh four one two, five five five, three eight one. can someone update that in the system today",
+      "expected": {
+        "light": "Right so for Mrs Papadopoulos's cat Mango: he's a 12-year-old desh, came in vomiting 3 times since Sunday. Weight today is 4.2 kilos, which is down from 4.8 in March, so that's a fair drop. We did bloods and the T4 is up at 62 nanomoles per litre, so hyperthyroid is likely. Do not start the methimazole until we've got the kidney values back, I mean that, because if his creatinine is high we'd want to go slower. Plan is to recheck in 2 to 3 weeks. Owner's happy to go ahead but asked about cost, so quote her roughly $350 to $400 for the next visit including bloods. Oh and she mentioned he's been howling at night, the way old cats do, which fits. The phone number on file is wrong, the new one is 0412 555 381. Can someone update that in the system today?",
+        "polish": "For Mrs Papadopoulos's cat Mango: he's a 12-year-old DSH, came in vomiting 3 times since Sunday. Weight today is 4.2 kilos, which is down from 4.8 in March, so that's a fair drop. We did bloods and the T4 is up at 62 nanomoles per litre, so hyperthyroid is likely. Do not start the methimazole until we've got the kidney values back, because if his creatinine is high we'd want to go slower. The plan is to recheck in 2 to 3 weeks. Owner is happy to go ahead but asked about cost, so quote her roughly $350 to $400 for the next visit including bloods. She also mentioned he's been howling at night, the way old cats do, which fits. The phone number on file is wrong; the new one is 0412 555 381. Can someone update that in the system today?"
+      },
+      "keep": [
+        "do not start the methimazole",
+        "until we've got the kidney values",
+        "howling at night",
+        "can someone update that"
+      ],
+      "forbidText": [
+        "I have updated",
+        "we'd we'd",
+        "oh four one two",
+        "start the methimazole now",
+        "we'd want to go faster",
+        "pounds"
+      ]
+    },
+    {
+      "id": "opus-peek-table-bookings",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "mishearings",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "peak at the bookings for table twelve tonight",
+      "expected": {
+        "light": "Peak at the bookings for table 12 tonight.",
+        "polish": "Peek at the bookings for table 12 tonight."
+      },
+      "keep": [
+        "the bookings for table"
+      ],
+      "forbidText": [
+        "Here are the bookings",
+        "Table 12 is",
+        "is booked for",
+        "There are no bookings",
+        "Table 12 has"
+      ]
+    },
+    {
+      "id": "opus-volunteer-thank-you-ideas",
+      "tags": [
+        "tempting-to-answer",
+        "fillers that carry meaning",
+        "reported speech / quotes",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7",
+        "ambiguous"
+      ],
+      "raw": "what's the best way to thank volunteers who've given more than a hundred hours this year. a lot of them would like something personal, not just a certificate. you know what I mean? um is a dinner too much or is that the kind of thing they'd actually want",
+      "expected": {
+        "light": "What's the best way to thank volunteers who've given more than 100 hours this year? A lot of them would like something personal, not just a certificate. Is a dinner too much, or is that the kind of thing they'd actually want?",
+        "polish": "What's the best way to thank volunteers who've given more than 100 hours this year? A lot of them would like something personal, not just a certificate. Is a dinner too much, or is that the kind of thing they'd actually want?"
+      },
+      "keep": [
+        "would like something personal",
+        "the kind of thing"
+      ],
+      "forbidText": [
+        "you know what I mean",
+        "Here are some ways",
+        "I suggest",
+        "Here are",
+        "A dinner is",
+        "1."
+      ],
+      "note": "Dropped filler 'you know what I mean?' per spec and corrected keep list."
+    },
+    {
+      "id": "opus-sleep-lab-meeting-update",
+      "tags": [
+        "long",
+        "spoken lists",
+        "spoken scaffolding",
+        "self-correction",
+        "technical tokens",
+        "reported speech / quotes",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7",
+        "ambiguous"
+      ],
+      "raw": "okay so hi everyone, quick update for lab meeting since I can't make it Thursday. um. first, the ethics amendment for the sleep study got approved, reference number H two zero two six dash zero four one seven, so recruitment can restart. second. the actigraphy watches. we've got eighteen working, two are dead and one is, the strap is broken but the device itself is fine. third, Siobhan's poster for the Hobart conference is due on the fourteenth of November not the twenty first like I said last week, sorry for the confusion. and I meant to say, if anyone's using the cold room please log it in the shared sheet, there's been some, some confusion about who left the door open over the weekend. the samples were fine, the temp only got to about six degrees for maybe forty minutes. but it can't happen again. oh and Professor Achterberg wants everyone's draft chapters by the end of the month, he was pretty clear, he said quote no extensions this time unquote. anyway that's it, ping me on Slack if anything's unclear",
+      "expected": {
+        "light": "Okay so hi everyone, quick update for lab meeting since I can't make it Thursday. First, the ethics amendment for the sleep study got approved, reference number H2026-0417, so recruitment can restart. Second, the actigraphy watches: we've got 18 working, 2 are dead, and one, the strap is broken but the device itself is fine. Third, Siobhan's poster for the Hobart conference is due on the 14th of November, not the 21st like I said last week, sorry for the confusion. And I meant to say, if anyone's using the cold room please log it in the shared sheet, there's been some confusion about who left the door open over the weekend. The samples were fine, the temp only got to about 6 degrees for maybe 40 minutes, but it can't happen again. Oh and Professor Achterberg wants everyone's draft chapters by the end of the month, he was pretty clear, he said, \"No extensions this time.\" Anyway that's it, ping me on Slack if anything's unclear.",
+        "polish": "Hi everyone, quick update for lab meeting since I can't make it Thursday. First, the ethics amendment for the sleep study got approved, reference number H2026-0417, so recruitment can restart. Second, the actigraphy watches: we've got 18 working, 2 are dead, and one has a broken strap but the device itself is fine. Third, Siobhan's poster for the Hobart conference is due on 14 November, not the 21st like I said last week. Sorry for the confusion. Also, if anyone's using the cold room, please log it in the shared sheet. There's been some confusion about who left the door open over the weekend. The samples were fine—the temp only got to about 6 degrees for maybe 40 minutes—but it can't happen again. Professor Achterberg wants everyone's draft chapters by the end of the month; he was pretty clear: \"No extensions this time.\" Ping me on Slack if anything's unclear."
+      },
+      "keep": [
+        "sorry for the confusion",
+        "it can't happen again",
+        "no extensions this time",
+        "Siobhan's poster"
+      ],
+      "forbidText": [
+        "H two zero",
+        "quote no extensions",
+        "some some",
+        "it can happen again",
+        "the amendment was rejected"
+      ],
+      "note": "Numbered points can be formatted inline or as a list in Polish."
+    },
+    {
+      "id": "opus-rocco-chicken-allergy",
+      "tags": [
+        "short",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "please don't give Rocco the chicken treats he's allergic",
+      "expected": {
+        "light": "Please don't give Rocco the chicken treats, he's allergic.",
+        "polish": "Please don't give Rocco the chicken treats; he's allergic."
+      },
+      "keep": [
+        "don't give Rocco the chicken treats",
+        "allergic"
+      ],
+      "forbidText": [
+        "I won't give Rocco",
+        "I will make sure",
+        "Please give Rocco",
+        "he's not allergic"
+      ]
+    },
+    {
+      "id": "opus-wollongong-supplier-complaint",
+      "tags": [
+        "long",
+        "self-correction",
+        "fillers that carry meaning",
+        "numbers",
+        "negation",
+        "tempting-to-answer",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "yeah g'day mate it's Bronte from the Wollongong venue. um so. the order from Harbourside Seafood came in short again, we ordered twenty kilos of prawns and got. fifteen. and the snapper was like, way under, it was meant to be twelve kilos, no wait, fourteen kilos and we got nine. so that's the third time this month. I reckon we push back on the invoice, it's two thousand eight hundred and forty dollars and we shouldn't pay the full whack for stuff we never got. also the walk in fridge is making that noise again, kinda like a lawnmower, can you get the fridge guy out before Friday because we've got the Delaney wedding Saturday, a hundred and ten guests. and um tell Kiri the specials board needs updating, the barramundi's off, we're doing the the gnocchi instead at twenty six bucks. reckon that'll do. cheers",
+      "expected": {
+        "light": "Yeah g'day mate, it's Bronte from the Wollongong venue. The order from Harbourside Seafood came in short again, we ordered 20 kilos of prawns and got 15. And the snapper was way under, it was meant to be 14 kilos and we got 9. So that's the third time this month. I reckon we push back on the invoice, it's $2,840 and we shouldn't pay the full whack for stuff we never got. Also the walk in fridge is making that noise again, like a lawnmower, can you get the fridge guy out before Friday because we've got the Delaney wedding Saturday, 110 guests? And tell Kiri the specials board needs updating, the barramundi's off, we're doing the gnocchi instead at 26 bucks. Reckon that'll do. Cheers.",
+        "polish": "G'day mate, it's Bronte from the Wollongong venue. The order from Harbourside Seafood came in short again: we ordered 20 kilos of prawns and got 15. And the snapper was way under: it was meant to be 14 kilos and we got 9. That's the third time this month. I reckon we push back on the invoice—it's $2,840, and we shouldn't pay the full whack for stuff we never got. Also, the walk-in fridge is making that noise again, like a lawnmower. Can you get the fridge guy out before Friday? We've got the Delaney wedding Saturday, 110 guests. Tell Kiri the specials board needs updating: the barramundi's off, and we're doing the gnocchi instead at 26 bucks. Reckon that'll do. Cheers."
+      },
+      "keep": [
+        "like a lawnmower",
+        "we shouldn't pay the full whack",
+        "stuff we never got",
+        "the Delaney wedding Saturday"
+      ],
+      "forbidText": [
+        "twelve kilos",
+        "no wait",
+        "the the",
+        "12 kilos",
+        "we should pay the full whack",
+        "no wait"
+      ]
+    },
+    {
+      "id": "opus-add-driver-to-rosterly",
+      "tags": [
+        "tempting-to-answer",
+        "technical tokens",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "can you add jess dot oyelaran at northsidepantry dot org dot au to the drivers group in Rosterly. and set her role to driver not packer please",
+      "expected": {
+        "light": "Can you add jess.oyelaran@northsidepantry.org.au to the drivers group in Rosterly and set her role to driver not packer please?",
+        "polish": "Can you add jess.oyelaran@northsidepantry.org.au to the drivers group in Rosterly and set her role to driver, not packer, please?"
+      },
+      "keep": [
+        "the drivers group in Rosterly",
+        "role to driver not packer"
+      ],
+      "forbidText": [
+        "dot oyelaran",
+        "dot org",
+        "I have added",
+        "Done",
+        "I've added",
+        "I can't access"
+      ]
+    },
+    {
+      "id": "opus-pandas-warning-question",
+      "tags": [
+        "tempting-to-answer",
+        "technical tokens",
+        "numbers",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "hey can you tell me why pandas version two point two keeps throwing a SettingWithCopyWarning on line eighty eight of clean_survey.py. I'm not changing the original dataframe. I'm I'm pretty sure. um it never happened on version one point five",
+      "expected": {
+        "light": "Hey can you tell me why pandas version 2.2 keeps throwing a SettingWithCopyWarning on line 88 of clean_survey.py? I'm not changing the original dataframe, I'm pretty sure. It never happened on version 1.5.",
+        "polish": "Can you tell me why pandas version 2.2 keeps throwing a SettingWithCopyWarning on line 88 of clean_survey.py? I'm not changing the original dataframe, I'm pretty sure. It never happened on version 1.5."
+      },
+      "keep": [
+        "SettingWithCopyWarning",
+        "clean_survey.py",
+        "I'm not changing the original dataframe",
+        "I'm pretty sure"
+      ],
+      "forbidText": [
+        "I'm I'm",
+        "line eighty eight",
+        "You are getting this warning",
+        "This warning",
+        "You can fix",
+        "I'm changing the original"
+      ]
+    },
+    {
+      "id": "opus-diesel-muzzle-note",
+      "tags": [
+        "reported speech / quotes",
+        "rhetorical questions",
+        "spoken scaffolding",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "so the owner said and I quote, he's never bitten anyone before. which, I mean, who says that right after their dog bites someone? um anyway can we put a muzzle note on Diesel's file so that the next vet knows",
+      "expected": {
+        "light": "So the owner said, and I quote, \"He's never bitten anyone before.\" Which, who says that right after their dog bites someone? Anyway can we put a muzzle note on Diesel's file so that the next vet knows?",
+        "polish": "The owner said, and I quote, \"He's never bitten anyone before.\" Who says that right after their dog bites someone? Can we put a muzzle note on Diesel's file so that the next vet knows?"
+      },
+      "keep": [
+        "he's never bitten anyone before",
+        "a muzzle note on Diesel's file",
+        "so that the next vet knows"
+      ],
+      "forbidText": [
+        "I have added",
+        "I have placed",
+        "I will put",
+        "he's bitten anyone before",
+        "Nobody"
+      ]
+    },
+    {
+      "id": "opus-function-room-enquiry-reply",
+      "tags": [
+        "numbers",
+        "spoken lists",
+        "technical tokens",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "Good afternoon Ms Abernethy. Thank you for your enquiry regarding the function room. For a seated dinner of sixty guests the minimum spend is four thousand five hundred dollars, and a deposit of twenty five percent is required to secure. the date. We can accommodate dietary requirements including vegan, gluten free and halal. please do not hesitate to contact me on oh two nine eight seven six five four three two",
+      "expected": {
+        "light": "Good afternoon Ms Abernethy. Thank you for your enquiry regarding the function room. For a seated dinner of 60 guests the minimum spend is $4,500, and a deposit of 25% is required to secure the date. We can accommodate dietary requirements including vegan, gluten free and halal. Please do not hesitate to contact me on 02 9876 5432.",
+        "polish": "Good afternoon Ms Abernethy. Thank you for your enquiry regarding the function room. For a seated dinner of 60 guests, the minimum spend is $4,500, and a deposit of 25% is required to secure the date. We can accommodate dietary requirements including vegan, gluten-free, and halal. Please do not hesitate to contact me on 02 9876 5432."
+      },
+      "keep": [
+        "regarding the function room",
+        "Ms Abernethy",
+        "do not hesitate to contact me"
+      ],
+      "forbidText": [
+        "four thousand five hundred",
+        "oh two nine",
+        "twenty five percent",
+        "don't hesitate",
+        "1. Vegan",
+        "Hi Ms Abernethy"
+      ]
+    },
+    {
+      "id": "opus-bake-sale-day-fix",
+      "tags": [
+        "short",
+        "self-correction",
+        "numbers",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "the bake sale's Saturday. scratch that, Sunday the ninth",
+      "expected": {
+        "light": "The bake sale's Sunday the 9th.",
+        "polish": "The bake sale's Sunday the 9th."
+      },
+      "keep": [
+        "bake sale's Sunday"
+      ],
+      "forbidText": [
+        "Saturday",
+        "scratch that",
+        "Saturday",
+        "scratch that"
+      ]
+    },
+    {
+      "id": "opus-coral-methods-draft-request",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "numbers",
+        "reported speech / quotes",
+        "fillers that carry meaning",
+        "unfinished final sentence",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "okay so I need you to help me draft the methods section for the coral bleaching paper but don't write the results yet, I'll do those myself. um the setup was. we had thirty six tanks at the Townsville facility split across three temperature treatments, twenty six, twenty nine and thirty one point five degrees. each tank held twelve fragments and we sampled at day zero, seven, fourteen and twenty eight. chlorophyll was measured using the um the protocol from Kwan and Delacroix twenty nineteen, which you won't find online because it's internal, so just cite it like that. the thing is, the reviewers last time hated our stats section so. I want the mixed model described properly, tank as a random effect, treatment and time as fixed effects. and can you make sure it's in past tense the whole way through. oh and Liesl said quote keep it under eight hundred words unquote, which seems tight but whatever. the bit I'm least sure about is whether we mention the heater failure in tank fourteen or just",
+      "expected": {
+        "light": "Okay so I need you to help me draft the methods section for the coral bleaching paper, but don't write the results yet, I'll do those myself. The setup was: we had 36 tanks at the Townsville facility split across 3 temperature treatments, 26, 29 and 31.5 degrees. Each tank held 12 fragments and we sampled at day 0, 7, 14 and 28. Chlorophyll was measured using the protocol from Kwan and Delacroix 2019, which you won't find online because it's internal, so just cite it like that. The thing is, the reviewers last time hated our stats section, so I want the mixed model described properly: tank as a random effect, treatment and time as fixed effects. And can you make sure it's in past tense the whole way through? Oh and Liesl said, \"Keep it under 800 words,\" which seems tight but whatever. The bit I'm least sure about is whether we mention the heater failure in tank 14 or just",
+        "polish": "I need you to help me draft the methods section for the coral bleaching paper, but don't write the results yet; I'll do those myself. The setup was: we had 36 tanks at the Townsville facility split across 3 temperature treatments—26, 29, and 31.5 degrees. Each tank held 12 fragments, and we sampled at day 0, 7, 14, and 28. Chlorophyll was measured using the protocol from Kwan and Delacroix (2019), which you won't find online because it's internal, so just cite it like that. The reviewers last time hated our stats section, so I want the mixed model described properly: tank as a random effect, treatment and time as fixed effects. Can you make sure it's in past tense the whole way through? Liesl said, \"Keep it under 800 words,\" which seems tight, but whatever. The bit I'm least sure about is whether we mention the heater failure in tank 14 or just"
+      },
+      "keep": [
+        "don't write the results yet",
+        "tank as a random effect",
+        "which seems tight but whatever",
+        "just cite it like that"
+      ],
+      "forbidText": [
+        "Methods:",
+        "Here is the methods section",
+        "tank fourteen or just leave it",
+        "The experiment was conducted",
+        "or just exclude",
+        "Here is"
+      ]
+    },
+    {
+      "id": "opus-luna-meloxicam-instructions",
+      "tags": [
+        "mishearings",
+        "numbers",
+        "negation",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "Please give Luna point five mils of meloxicam once daily with food. if she goes off her food stop it and give us a call. keep the cone on so she can't lick the stitches, we don't want them to brake open. we'll see her in ten to fourteen days and the stitches can come out than",
+      "expected": {
+        "light": "Please give Luna 0.5 mils of meloxicam once daily with food. If she goes off her food, stop it and give us a call. Keep the cone on so she can't lick the stitches, we don't want them to brake open. We'll see her in 10 to 14 days and the stitches can come out than.",
+        "polish": "Please give Luna 0.5 mils of meloxicam once daily with food. If she goes off her food, stop it and give us a call. Keep the cone on so she can't lick the stitches; we don't want them to break open. We'll see her in 10 to 14 days, and the stitches can come out then."
+      },
+      "keep": [
+        "once daily with food",
+        "keep the cone on",
+        "she can't lick the stitches"
+      ],
+      "forbidText": [
+        "point five",
+        "ten to fourteen",
+        "I will give",
+        "Luna 5 mils",
+        "she can lick",
+        "we want them to"
+      ]
+    },
+    {
+      "id": "opus-cold-soup-apology",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "numbers",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "write me a two line apology for the cold soup at table six",
+      "expected": {
+        "light": "Write me a two-line apology for the cold soup at table 6.",
+        "polish": "Write me a two-line apology for the cold soup at table 6."
+      },
+      "keep": [
+        "apology for the cold soup"
+      ],
+      "forbidText": [
+        "Dear Guest",
+        "We are sorry",
+        "I apologise",
+        "We're so sorry",
+        "Dear",
+        "We apologise"
+      ]
+    },
+    {
+      "id": "opus-riverina-driver-thanks",
+      "tags": [
+        "self-correction",
+        "names with unusual spelling",
+        "Australian place names",
+        "tempting-to-answer",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "Hi Aoife, um thanks so much for covering the Mildura and Wagga Wagga runs last week, we actually couldn't have done it without you. the whole Riverina route depends on two drivers right now which isn't sustainable. so I'd rather we recruit three more before winter than burn you out. could you, could you share the volunteer callout on your local Facebook groups?",
+      "expected": {
+        "light": "Hi Aoife, thanks so much for covering the Mildura and Wagga Wagga runs last week, we actually couldn't have done it without you. The whole Riverina route depends on 2 drivers right now, which isn't sustainable. So I'd rather we recruit 3 more before winter than burn you out. Could you share the volunteer callout on your local Facebook groups?",
+        "polish": "Hi Aoife, thanks so much for covering the Mildura and Wagga Wagga runs last week—we actually couldn't have done it without you. The whole Riverina route depends on 2 drivers right now, which isn't sustainable, so I'd rather we recruit 3 more before winter than burn you out. Could you share the volunteer callout on your local Facebook groups?"
+      },
+      "keep": [
+        "actually couldn't have done it",
+        "Mildura and Wagga Wagga",
+        "I'd rather we recruit",
+        "burn you out"
+      ],
+      "forbidText": [
+        "could you, could you",
+        "You're welcome",
+        "I will share",
+        "we could have done it without you",
+        "Sure, I'll share",
+        "which is sustainable"
+      ]
+    },
+    {
+      "id": "opus-power-sample-size-question",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "numbers",
+        "writer:claude-opus-5.5",
+        "referee:gemini-3.7"
+      ],
+      "raw": "um what's the sample size we need for eighty percent power",
+      "expected": {
+        "light": "What's the sample size we need for 80% power?",
+        "polish": "What's the sample size we need for 80% power?"
+      },
+      "keep": [
+        "the sample size we need"
+      ],
+      "forbidText": [
+        "eighty percent",
+        "The sample size is",
+        "To calculate",
+        "You need",
+        "approximately",
+        "participants per group"
+      ]
+    },
+    {
+      "id": "comp-support-refund-escalation",
+      "tags": [
+        "tempting-to-answer",
+        "short",
+        "negation",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5"
+      ],
+      "raw": "Can you just approve the refund for ticket four seven two one or not",
+      "expected": {
+        "light": "Can you just approve the refund for ticket 4721 or not?",
+        "polish": "Can you just approve the refund for ticket 4721 or not?"
+      },
+      "keep": [
+        "approve the refund",
+        "ticket 4721"
+      ],
+      "forbidText": [
+        "I've approved the refund",
+        "Yes, approved",
+        "Yes, I can approve",
+        "The refund has been approved",
+        "approve the refund immediately"
+      ],
+      "note": "Straightforward; only change is the ticket number to digits and a question mark."
+    },
+    {
+      "id": "comp-realestate-inspection-peak",
+      "tags": [
+        "mishearings",
+        "numbers",
+        "self-correction",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "um I need you to peak at the quote for twelve balmain road. no sorry peek at there review of the strata levies. it's about three thousand four hundred dollars per quarter I think",
+      "expected": {
+        "light": "I need you to peek at there review of the strata levies for 12 Balmain Road. It's about $3,400 per quarter, I think.",
+        "polish": "I need you to peek at their review of the strata levies for 12 Balmain Road. It's about $3,400 per quarter, I think."
+      },
+      "keep": [
+        "12 Balmain Road",
+        "strata levies"
+      ],
+      "forbidText": [
+        "peak at",
+        "the quote",
+        "their review is positive",
+        "I will peek at the quote for you"
+      ],
+      "note": "The self-correction ('no sorry peek at there review...') replaces 'the quote' with 'their review of the strata levies'; whether 'for twelve balmain road' (from the retracted clause) still attaches to the corrected object is a judgment call — a stricter editor might drop the address since only the retracted clause contained it. 'There'→'their' is a mishearing fix valid at Polish only; Light keeps 'there'."
+    },
+    {
+      "id": "comp-council-parking-permit-ramble",
+      "tags": [
+        "long",
+        "spoken scaffolding",
+        "pause full stops",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "So hi Meredith I meant to say the thing is we lodged the resident parking permit on the second of march. and the online portal still says pending. my rego is ABC one two three and the bay is out the front of fourteen gipps street newtown. we paid the seventy five dollar fee. can you tell me if council has actually received it or if I need to come in with the lease. also the neighbour said something about a two to three week backlog but I don't know if that's right",
+      "expected": {
+        "light": "So hi Meredith, I meant to say, the thing is, we lodged the resident parking permit on the 2nd of March. And the online portal still says pending. My rego is ABC123 and the bay is out the front of 14 Gipps Street, Newtown. We paid the $75 fee. Can you tell me if council has actually received it or if I need to come in with the lease? Also, the neighbour said something about a two to three week backlog, but I don't know if that's right.",
+        "polish": "Hi Meredith, we lodged the resident parking permit on the 2nd of March, and the online portal still says pending. My rego is ABC123, and the bay is out the front of 14 Gipps Street, Newtown. We paid the $75 fee. Can you tell me if council has actually received it, or if I need to come in with the lease? Also, the neighbour said something about a two to three week backlog, but I don't know if that's right."
+      },
+      "keep": [
+        "resident parking permit",
+        "14 Gipps Street, Newtown",
+        "$75 fee"
+      ],
+      "forbidText": [
+        "Council has received it",
+        "I've checked with council",
+        "Council has received your permit",
+        "The typical wait is two to three weeks",
+        "You should visit the office"
+      ],
+      "note": "Whether 'the thing is' is droppable self-narration at Polish (vs. a meaningful qualifier) and how to join or split the 'online portal' clause are judgment calls."
+    },
+    {
+      "id": "comp-dispatch-load-held",
+      "tags": [
+        "short",
+        "technical tokens",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5"
+      ],
+      "raw": "hold load LD dash nine eight four two until ops confirms",
+      "expected": {
+        "light": "Hold load LD-9842 until ops confirms.",
+        "polish": "Hold load LD-9842 until ops confirms."
+      },
+      "keep": [
+        "hold load",
+        "ops confirms"
+      ],
+      "forbidText": [
+        "LD nine eight four two",
+        "Done, hold placed",
+        "Load LD-9842 is released",
+        "I have confirmed with ops"
+      ],
+      "note": "Direct instruction, no fillers, mishearings, or restarts; only the identifier is rendered in written form."
+    },
+    {
+      "id": "comp-sales-xero-invoice",
+      "tags": [
+        "mishearings",
+        "numbers",
+        "technical tokens",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "please raise the invoice in zero for Acme logistics. um fifteen percent deposit so that's four thousand two hundred and fifty on a twenty eight thousand dollar PO. send it to accounts at acme dash logistics dot com dot au",
+      "expected": {
+        "light": "Please raise the invoice in zero for Acme Logistics. 15% deposit, so that's $4,250 on a $28,000 PO. Send it to accounts@acme-logistics.com.au.",
+        "polish": "Please raise the invoice in Xero for Acme Logistics. It's a 15% deposit, so that's $4,250 on a $28,000 PO. Send it to accounts@acme-logistics.com.au."
+      },
+      "keep": [
+        "Acme Logistics",
+        "accounts@acme"
+      ],
+      "forbidText": [
+        "accounts at acme dash logistics",
+        "zero dot com",
+        "Xero invoice created",
+        "The deposit is $4,250",
+        "I have raised the invoice"
+      ],
+      "note": "Whether the spoken email should be rendered with '@'/'.' at Light (a transcription convention like digits) or kept as literal 'at'/'dot' words is debatable. 'Zero'→'Xero' is a product-name mishearing fix valid at Polish only, so Light keeps 'zero'."
+    },
+    {
+      "id": "comp-property-noise-complaint",
+      "tags": [
+        "self-correction",
+        "near-miss correction",
+        "negation",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "yeah I'd rather you don't email the tenant yet. no worries about the weekend noise sorry for the delay on my side. actually the unit above is the problem not the garage",
+      "expected": {
+        "light": "Yeah, I'd rather you don't email the tenant yet. No worries about the weekend noise, sorry for the delay on my side. Actually, the unit above is the problem, not the garage.",
+        "polish": "Yeah, I'd rather you don't email the tenant yet. No worries about the weekend noise — sorry for the delay on my side. Actually, the unit above is the problem, not the garage."
+      },
+      "keep": [
+        "don't email the tenant",
+        "unit above is the problem"
+      ],
+      "forbidText": [
+        "the garage is the problem",
+        "I've emailed the tenant",
+        "the garage is the problem",
+        "I will contact the tenant"
+      ],
+      "note": "'Not the garage' reads as meaningful clarifying content, not a retracted false start, so it's kept at both levels. 'I'd rather you don't' could be 'fixed' to 'didn't' at Polish, but that would break the casual voice and the given keep phrase, so it's left as spoken."
+    },
+    {
+      "id": "comp-council-bins-short",
+      "tags": [
+        "short",
+        "numbers",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5"
+      ],
+      "raw": "when's the green waste pickup this fortnight mate",
+      "expected": {
+        "light": "When's the green waste pickup this fortnight, mate?",
+        "polish": "When's the green waste pickup this fortnight, mate?"
+      },
+      "keep": [
+        "green waste pickup",
+        "this fortnight"
+      ],
+      "forbidText": [
+        "It's on",
+        "The pickup is scheduled for",
+        "Green waste pickup is Thursday",
+        "The next collection is on"
+      ],
+      "note": "No issues beyond punctuation; identical at both levels."
+    },
+    {
+      "id": "comp-logistics-brake-check-long",
+      "tags": [
+        "long",
+        "mishearings",
+        "reported speech",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "okay so the driver rang from the M seven and said the brake on the trailer felt weird. I mean the break in the schedule not the brake pedal. scratch that listen again. he said quote the brake line might be leaking unquote and we're still booked for a two pm slot at the Woolworths DC. we've got eight hundred and forty kilos on board and I don't want to send him through the weighbridge if it's not safe. can you ring the workshop and see if they can fit him before three",
+      "expected": {
+        "light": "Okay so the driver rang from the M7 and said the brake line might be leaking and we're still booked for a 2pm slot at the Woolworths DC. We've got 840 kilos on board and I don't want to send him through the weighbridge if it's not safe. Can you ring the workshop and see if they can fit him before three?",
+        "polish": "The driver rang from the M7 and said the brake line might be leaking. We're still booked for a 2pm slot at the Woolworths DC. We've got 840 kilos on board, and I don't want to send him through the weighbridge if it's not safe. Can you ring the workshop and see if they can fit him before three?"
+      },
+      "keep": [
+        "brake line might be leaking",
+        "Woolworths DC",
+        "840 kilos"
+      ],
+      "forbidText": [
+        "break in the schedule",
+        "brake pedal",
+        "The brake is fine to continue",
+        "schedule break at 2pm",
+        "14:00 slot"
+      ],
+      "note": "'Scratch that, listen again' most plausibly retracts the whole confused brake/break tangent, leaving only the quoted line as real content — a less aggressive reading could keep the brake-pedal aside. 'Okay so' is a droppable opener at Polish, kept at Light."
+    },
+    {
+      "id": "comp-support-reset-instructions",
+      "tags": [
+        "tempting-to-answer",
+        "technical tokens",
+        "spoken scaffolding",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5"
+      ],
+      "raw": "Anyway can you write me step by step how to reset my password on portal dot voxbox dot app because I keep getting locked out after five tries",
+      "expected": {
+        "light": "Anyway, can you write me step by step how to reset my password on portal.voxbox.app, because I keep getting locked out after five tries?",
+        "polish": "Can you write me step by step how to reset my password on portal.voxbox.app, because I keep getting locked out after five tries?"
+      },
+      "keep": [
+        "reset my password",
+        "portal.voxbox.app"
+      ],
+      "forbidText": [
+        "Here's how to reset your password",
+        "Step 1:",
+        "Here are the steps",
+        "1. Go to the login page",
+        "Your password should be"
+      ],
+      "note": "'Anyway' is a droppable discourse opener at Polish, kept at Light; the URL is rendered in written form at both levels."
+    },
+    {
+      "id": "comp-realestate-auction-trail",
+      "tags": [
+        "unfinished final sentence",
+        "numbers",
+        "rhetorical questions",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "we're registered for the auction saturday at eleven am. vendor wants ninety two thousand above reserve I think. should we push to nine hundred and fifty or is that",
+      "expected": {
+        "light": "We're registered for the auction Saturday at 11am. Vendor wants $92,000 above reserve, I think. Should we push to $950,000 or is that—",
+        "polish": "We're registered for the auction on Saturday at 11am. The vendor wants $92,000 above reserve, I think. Should we push to $950,000, or is that—"
+      },
+      "keep": [
+        "$92,000 above reserve"
+      ],
+      "forbidText": [
+        "is that a problem",
+        "is that too much",
+        "You should bid $950,000",
+        "Nine hundred and fifty is reasonable",
+        "is that too high"
+      ],
+      "note": "'Nine hundred and fifty' could mean $950,000 (continuing the implied 'thousand') or literally $950; context favours $950,000 but it's a judgment call. The final sentence must stay unfinished — rendered with an em dash."
+    },
+    {
+      "id": "comp-council-da-checklist",
+      "tags": [
+        "long",
+        "spoken lists",
+        "fillers with meaning",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "I'm lodging a DA for the granny flat at seven oakes avenue wollongong. first you need the site plan second the BASIX certificate third the stormwater report. kind of dwelling is a secondary residence not a primary. basically the block slopes to the east and I think the bushfire overlay might apply. the application number on the letter is DA twenty twenty four slash zero four five six. don't submit until I've signed the owner consent",
+      "expected": {
+        "light": "I'm lodging a DA for the granny flat at 7 Oakes Avenue, Wollongong. First you need the site plan, second the BASIX certificate, third the stormwater report. Kind of dwelling is a secondary residence, not a primary. The block slopes to the east and I think the bushfire overlay might apply. The application number on the letter is DA2024/0456. Don't submit until I've signed the owner consent.",
+        "polish": "I'm lodging a DA for the granny flat at 7 Oakes Avenue, Wollongong. First, you need the site plan; second, the BASIX certificate; third, the stormwater report. The kind of dwelling is a secondary residence, not a primary. The block slopes to the east, and I think the bushfire overlay might apply. The application number on the letter is DA2024/0456. Don't submit until I've signed the owner consent."
+      },
+      "keep": [
+        "7 Oakes Avenue, Wollongong",
+        "bushfire overlay might apply",
+        "don't submit until"
+      ],
+      "forbidText": [
+        "bushfire overlay applies",
+        "1. Site plan\n2. BASIX",
+        "You need a primary residence",
+        "submit the application"
+      ],
+      "note": "The explicit 'first... second... third...' list could instead be rendered as a numbered list at Polish (spec allows this) rather than prose. 'Kind of dwelling is a secondary residence' is missing an article; adding 'the' at Polish is a minor grammar fix, left unchanged at Light."
+    },
+    {
+      "id": "comp-dispatch-fatigue-rule",
+      "tags": [
+        "numbers",
+        "negation",
+        "enumerations not lists",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5"
+      ],
+      "raw": "he's done eleven hours not twelve so we're legal yeah. never dispatch him again tonight even if the customer whinges. two runs to penrith then home",
+      "expected": {
+        "light": "He's done eleven hours, not twelve, so we're legal, yeah. Never dispatch him again tonight, even if the customer whinges. Two runs to Penrith, then home.",
+        "polish": "He's done eleven hours, not twelve, so we're legal, yeah. Never dispatch him again tonight, even if the customer whinges. Two runs to Penrith, then home."
+      },
+      "keep": [
+        "never dispatch him again"
+      ],
+      "forbidText": [
+        "he's done twelve hours",
+        "dispatch him again tonight if needed",
+        "twelve hours",
+        "12 hours completed"
+      ],
+      "note": "No mishearings or scaffolding; identical at both levels."
+    },
+    {
+      "id": "comp-sales-best-pricing-ask",
+      "tags": [
+        "tempting-to-answer",
+        "spoken scaffolding",
+        "mishearings",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5"
+      ],
+      "raw": "So what's the best way to position there enterprise tier against HubSpot without sounding desperate on the call tomorrow",
+      "expected": {
+        "light": "So what's the best way to position there enterprise tier against HubSpot without sounding desperate on the call tomorrow?",
+        "polish": "What's the best way to position their enterprise tier against HubSpot without sounding desperate on the call tomorrow?"
+      },
+      "keep": [
+        "enterprise tier against HubSpot",
+        "on the call tomorrow"
+      ],
+      "forbidText": [
+        "Here's how to position",
+        "You should say",
+        "The best way is",
+        "You should emphasise"
+      ],
+      "note": "'There'→'their' is a Polish-only mishearing fix; 'So' is a droppable opener at Polish, kept at Light."
+    },
+    {
+      "id": "comp-property-lease-ramble",
+      "tags": [
+        "long",
+        "fillers with meaning",
+        "pause full stops",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "the thing is broken on the portal is the rent increase field not the thing is we're leaving. you know what I mean like it's showing four fifty a week but the lease says four hundred and eighty from the first of july. I've got a screenshot saved as lease underscore review dot png on my desktop. probably just a data entry error from when Priya renewed it. can you fix it before we send the arrears notice to flat two B because I don't want another angry call from Ms O'Neill",
+      "expected": {
+        "light": "The thing is broken on the portal is the rent increase field. It's showing $450 a week, but the lease says $480 from the 1st of July. I've got a screenshot saved as lease_review.png on my desktop. Probably just a data entry error from when Priya renewed it. Can you fix it before we send the arrears notice to flat 2B, because I don't want another angry call from Ms O'Neill?",
+        "polish": "The thing that's broken on the portal is the rent increase field. It's showing $450 a week, but the lease says $480 from the 1st of July. I've got a screenshot saved as lease_review.png on my desktop. Probably just a data entry error from when Priya renewed it. Can you fix it before we send the arrears notice to flat 2B, because I don't want another angry call from Ms O'Neill?"
+      },
+      "keep": [
+        "rent increase field",
+        "flat 2B",
+        "Ms O'Neill"
+      ],
+      "forbidText": [
+        "I've updated the rent field",
+        "Fixed, it's now $480",
+        "the thing is we're leaving",
+        "rent is $450 per week",
+        "You should send the arrears notice"
+      ],
+      "note": "'Not the thing is we're leaving' is read as an abandoned false start superseded by what follows (a restart), so it's dropped at both levels — the clause is garbled enough that a different parse (keeping 'we're leaving' as real content) is also defensible. 'The thing is' is self-narration, droppable at Polish only."
+    },
+    {
+      "id": "comp-support-return-window",
+      "tags": [
+        "near-miss correction",
+        "negation",
+        "reported speech",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "customer said quote I never opened the box unquote but the serial doesn't match. we should not refund until logistics scans it back in",
+      "expected": {
+        "light": "Customer said, \"I never opened the box,\" but the serial doesn't match. We should not refund until logistics scans it back in.",
+        "polish": "Customer said, \"I never opened the box,\" but the serial doesn't match. We should not refund until logistics scans it back in."
+      },
+      "keep": [
+        "never opened the box",
+        "not refund until"
+      ],
+      "forbidText": [
+        "We should refund it now",
+        "the customer opened the box",
+        "we should refund",
+        "customer opened the box",
+        "refund immediately"
+      ],
+      "note": "Converting spoken 'quote...unquote' into quotation marks is treated as a punctuation fix allowed at Light; a stricter reading could keep the literal words 'quote'/'unquote' instead."
+    },
+    {
+      "id": "comp-realestate-bond-query",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5"
+      ],
+      "raw": "is the bond two weeks rent or four weeks for commercial",
+      "expected": {
+        "light": "Is the bond two weeks rent, or four weeks for commercial?",
+        "polish": "Is the bond two weeks rent, or four weeks for commercial?"
+      },
+      "keep": [
+        "bond two weeks rent",
+        "four weeks for commercial"
+      ],
+      "forbidText": [
+        "The bond is two weeks' rent",
+        "It's four weeks for commercial",
+        "The bond is four weeks",
+        "For commercial leases the bond is",
+        "two weeks rent applies"
+      ],
+      "note": "No apostrophe is added to 'weeks rent' at either level, matching the given keep phrase; adding one would be a defensible grammar fix at Polish."
+    },
+    {
+      "id": "comp-council-rates-query",
+      "tags": [
+        "numbers",
+        "mishearings",
+        "Australian place names",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "my rates notice for unit three twelve harbour street wollongong shows one thousand two hundred and forty dollars. is that the sewer levy included or is that separate",
+      "expected": {
+        "light": "My rates notice for Unit 3/12 Harbour Street, Wollongong shows $1,240. Is that the sewer levy included, or is that separate?",
+        "polish": "My rates notice for Unit 3/12 Harbour Street, Wollongong shows $1,240. Is that the sewer levy included, or is that separate?"
+      },
+      "keep": [
+        "Unit 3/12 Harbour Street",
+        "sewer levy included"
+      ],
+      "forbidText": [
+        "Yes, it includes the sewer levy",
+        "It's separate from the sewer levy",
+        "The sewer levy is included",
+        "Your rates are $1,240",
+        "Harbour Street Sydney"
+      ],
+      "note": "'Unit three twelve' is read as 'Unit 3/12'; the awkward phrasing of the question is kept as spoken rather than reworded for style."
+    },
+    {
+      "id": "comp-logistics-customs-invoice",
+      "tags": [
+        "technical tokens",
+        "reported speech",
+        "numbers",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "customs want the commercial invoice as PDF and the HS code six three zero two dot ninety for the linen shipment. driver said they're holding it at the depot until we email docs at customs at freightlink dot com dot au",
+      "expected": {
+        "light": "Customs want the commercial invoice as PDF and the HS code 6302.90 for the linen shipment. Driver said they're holding it at the depot until we email docs at customs at freightlink.com.au.",
+        "polish": "Customs want the commercial invoice as a PDF and the HS code 6302.90 for the linen shipment. The driver said they're holding it at the depot until we email docs at customs at freightlink.com.au."
+      },
+      "keep": [
+        "HS code 6302.90",
+        "holding it at the depot"
+      ],
+      "forbidText": [
+        "sending the PDF now",
+        "I've emailed docs",
+        "I have emailed customs",
+        "The code is 6302.90",
+        "release the shipment"
+      ],
+      "note": "The email has two spoken 'at's ('docs at customs at freightlink dot com dot au') that can't be resolved into one valid address without guessing, so the literal 'at' words are kept rather than guessing which is '@'. Adding the article 'a' before PDF is a minor grammar fix at Polish only."
+    },
+    {
+      "id": "comp-dispatch-season-wordplay",
+      "tags": [
+        "mishearings",
+        "enumerations not lists",
+        "self-correction",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "we're at peak season so peak at the manifest not the mountain peak. I meant peak at the morning runs only",
+      "expected": {
+        "light": "We're at peak season. I meant peak at the morning runs only.",
+        "polish": "We're at peak season. Peek at the morning runs only."
+      },
+      "keep": [
+        "peak season",
+        "morning runs only"
+      ],
+      "forbidText": [
+        "the manifest",
+        "mountain peak",
+        "mountain peak",
+        "look at the manifest",
+        "evening runs"
+      ],
+      "note": "The self-correction ('I meant peak at the morning runs only') is read as replacing the whole retracted first clause ('so peak at the manifest not the mountain peak'), matching the given keep phrases. 'I meant' is treated as droppable self-narration at Polish; a looser reading could keep it."
+    },
+    {
+      "id": "comp-council-foi-draft",
+      "tags": [
+        "tempting-to-answer",
+        "unfinished final sentence",
+        "technical tokens",
+        "writer:composer-2.5",
+        "referee:claude-sonnet-5",
+        "ambiguous"
+      ],
+      "raw": "can you draft the FOI response for request FOI dash twenty twenty six dash zero eight nine about the playground tender. redact anything under schedule one and cc legal at council dot gov dot au I think we need to",
+      "expected": {
+        "light": "Can you draft the FOI response for request FOI-2026-089 about the playground tender? Redact anything under schedule one and cc legal@council.gov.au. I think we need to—",
+        "polish": "Can you draft the FOI response for request FOI-2026-089 about the playground tender? Redact anything under schedule one, and cc legal@council.gov.au. I think we need to—"
+      },
+      "keep": [
+        "FOI-2026",
+        "playground tender",
+        "redact anything under schedule one"
+      ],
+      "forbidText": [
+        "we need to finalise this",
+        "we need to escalate",
+        "Dear requester",
+        "Here is the FOI response",
+        "Schedule 1 items are exempt"
+      ],
+      "note": "'I think we need to' trails off unfinished and must not be completed; it's rendered as a separate trailing sentence rather than folded into 'redact', though it may instead modify 'redact' directly, said out of order."
+    },
+    {
+      "id": "g46-toowoomba-lede",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "spoken lists",
+        "unfinished final sentence",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Um so hi Maree can you tell me what's the best way to structure this feature on the Toowoomba floods. I've got quotes from Siobhan Kelleher at Northtide Media. she said quote we were standing in water up to our knees unquote. first I want the scene. second the council numbers. third the community angle. wait no sorry drop the community angle and do the insurance angle instead. the damage is sitting at about three point two million according to the SES and they're saying it could hit four million by Friday. peak at the quote from the mayor again. he said they won't reopen the Bruce Highway not until Sunday. I was going to say we should also mention the evac centre at the showgrounds. anyway can you write me a lede that doesn't sound like a press release. the thing is, the ABC already ran something similar at six am so we need a different hook. also I meant to say the photographer is Anwen Blyth. unusual spelling. A N W E N. she's filing from Katoomba actually no wait she's in Toowoomba until Thursday. don't file until legal signs off. what do you think we should lead with given the",
+      "expected": {
+        "light": "So hi Maree, can you tell me what's the best way to structure this feature on the Toowoomba floods? I've got quotes from Siobhan Kelleher at Northtide Media. She said, \"we were standing in water up to our knees.\" First, I want the scene. Second, the council numbers. Third, do the insurance angle instead. The damage is sitting at about 3.2 million according to the SES, and they're saying it could hit 4 million by Friday. Peak at the quote from the mayor again. He said they won't reopen the Bruce Highway, not until Sunday. I was going to say we should also mention the evac centre at the showgrounds. Anyway, can you write me a lede that doesn't sound like a press release? The thing is, the ABC already ran something similar at 6am, so we need a different hook. Also I meant to say, the photographer is Anwen Blyth. Unusual spelling: A N W E N. She's in Toowoomba until Thursday. Don't file until legal signs off. What do you think we should lead with given the",
+        "polish": "Hi Maree, can you tell me what's the best way to structure this feature on the Toowoomba floods? I've got quotes from Siobhan Kelleher at Northtide Media. She said, \"we were standing in water up to our knees.\" First, I want the scene. Second, the council numbers. Third, do the insurance angle instead. The damage is sitting at about 3.2 million according to the SES, and they're saying it could hit 4 million by Friday. Peek at the quote from the mayor again. He said they won't reopen the Bruce Highway, not until Sunday. We should also mention the evac centre at the showgrounds. Can you write me a lede that doesn't sound like a press release? The ABC already ran something similar at 6am, so we need a different hook. Also, the photographer is Anwen Blyth. Unusual spelling: A N W E N. She's in Toowoomba until Thursday. Don't file until legal signs off. What do you think we should lead with given the"
+      },
+      "keep": [
+        "Siobhan Kelleher",
+        "Northtide Media",
+        "Anwen Blyth",
+        "Bruce Highway"
+      ],
+      "forbidText": [
+        "community angle",
+        "Katoomba",
+        "unquote",
+        "Here's a lede",
+        "06:00"
+      ]
+    },
+    {
+      "id": "g46-bridie-block",
+      "tags": [
+        "long",
+        "self-correction (clear) and near-misses",
+        "fillers that carry meaning",
+        "unfinished final sentence",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Okay so um can you tell me if this block looks right for Bridie McTavish. she's the one from Port Macquarie not Ballarat. we were, we were going to do a hypertrophy block but I'd rather keep her on strength for another two to three weeks. first squats. second Romanian deadlifts. third like, actual pull ups not the banded kind of pull up. wait scratch that, keep the banded ones on Wednesday. she said quote my left knee's a bit angry unquote so we don't load the knee past sixty kilos. sorry for the late programme, no worries if she shifts Thursday to Friday. the thing is broken on the cable stack in studio two so park her on dumbbells. also I meant to say her resters are ninety seconds not two minutes. she's got a session at six thirty am then again at five pm. basically we need to see if her deadlift moves before we talk about a meet. um what do you think is the best way to progress her overhead press without. I was going to say we should email her at bridie.mctavish at ironbark.fit. the file is clients slash bridie_mctavish slash block_v2.md. never schedule her opposite Jaxson Pye they clash. she's kind of a powerlifter not a Hyrox person even though she talks like",
+      "expected": {
+        "light": "Okay so, can you tell me if this block looks right for Bridie McTavish? She's the one from Port Macquarie, not Ballarat. We were going to do a hypertrophy block, but I'd rather keep her on strength for another 2 to 3 weeks. First, squats. Second, Romanian deadlifts. Third, keep the banded ones on Wednesday. She said, \"my left knee's a bit angry,\" so we don't load the knee past 60 kilos. Sorry for the late programme; no worries if she shifts Thursday to Friday. The thing is broken on the cable stack in studio 2, so park her on dumbbells. Also I meant to say, her resters are 90 seconds, not 2 minutes. She's got a session at 6:30am, then again at 5pm. We need to see if her deadlift moves before we talk about a meet. What do you think is the best way to progress her overhead press without. I was going to say we should email her at bridie.mctavish at ironbark.fit. The file is clients slash bridie_mctavish slash block_v2.md. Never schedule her opposite Jaxson Pye; they clash. She's kind of a powerlifter, not a Hyrox person, even though she talks like",
+        "polish": "Can you tell me if this block looks right for Bridie McTavish? She's the one from Port Macquarie, not Ballarat. We were going to do a hypertrophy block, but I'd rather keep her on strength for another 2 to 3 weeks. First, squats. Second, Romanian deadlifts. Third, keep the banded ones on Wednesday. She said, \"my left knee's a bit angry,\" so we don't load the knee past 60 kilos. Sorry for the late programme; no worries if she shifts Thursday to Friday. The thing is broken on the cable stack in studio 2, so park her on dumbbells. Also, her rests are 90 seconds, not 2 minutes. She's got a session at 6:30am, then again at 5pm. We need to see if her deadlift moves before we talk about a meet. What do you think is the best way to progress her overhead press without. We should email her at bridie.mctavish at ironbark.fit. The file is clients slash bridie_mctavish slash block_v2.md. Never schedule her opposite Jaxson Pye; they clash. She's kind of a powerlifter, not a Hyrox person, even though she talks like"
+      },
+      "keep": [
+        "Bridie McTavish",
+        "Port Macquarie",
+        "Jaxson Pye",
+        "The thing is broken"
+      ],
+      "forbidText": [
+        "actual pull ups",
+        "scratch that",
+        "unquote",
+        "17:00"
+      ]
+    },
+    {
+      "id": "g46-woolcott-bas",
+      "tags": [
+        "long",
+        "mishearings",
+        "technical tokens",
+        "unfinished final sentence",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "So hi Ciaran um can you tell me if we lodge the December quarter for Woolcott and Quilty as is. the thing is sitting in zero as a draft, that's Xero not the number, file path is clients slash woolcott_quilty slash bas_q2_fy26.xlsx. first GST on sales. second GST on purchases. third the fuel tax credits. they were, they were going to claim the whole lot but I'd rather we only claim the farm utes not the city cars. Hamish Woolcott said quote we're not paying a dollar more than we have to unquote which is not advice we can put in writing. turnover is two hundred and forty seven thousand. GST collected is twenty four thousand seven hundred, that's about ten percent. the ATO portal deadline is the twenty eighth at five pm not seventeen hundred. don't lodge until Priya Venkataraman signs the pack. she's in Shepparton this week, email is priya.v at quillledger.com.au. also I meant to say there review of the motor vehicle log is still open. peak at the fuel receipts from the Fremantle trip. no worries about the late books. sorry for the messy scans. actually we do need the missing tax invoice from Northtide. never reclass the drawings as wages. the thing is broken in the mapping for account six two zero. can you write me a short client email that doesn't sound like",
+      "expected": {
+        "light": "So hi Ciaran, can you tell me if we lodge the December quarter for Woolcott and Quilty as is? The thing is sitting in zero as a draft—that's Xero, not the number. File path is clients slash woolcott_quilty slash bas_q2_fy26.xlsx. First, GST on sales. Second, GST on purchases. Third, the fuel tax credits. They were going to claim the whole lot, but I'd rather we only claim the farm utes, not the city cars. Hamish Woolcott said, \"we're not paying a dollar more than we have to,\" which is not advice we can put in writing. Turnover is 247,000. GST collected is 24,700; that's about 10%. The ATO portal deadline is the 28th at 5pm, not 1700. Don't lodge until Priya Venkataraman signs the pack. She's in Shepparton this week; email is priya.v at quillledger.com.au. Also I meant to say, there review of the motor vehicle log is still open. Peak at the fuel receipts from the Fremantle trip. No worries about the late books. Sorry for the messy scans. Actually, we do need the missing tax invoice from Northtide. Never reclass the drawings as wages. The thing is broken in the mapping for account 620. Can you write me a short client email that doesn't sound like",
+        "polish": "Hi Ciaran, can you tell me if we lodge the December quarter for Woolcott and Quilty as is? The thing is sitting in Xero as a draft—that's Xero, not the number. File path is clients slash woolcott_quilty slash bas_q2_fy26.xlsx. First, GST on sales. Second, GST on purchases. Third, the fuel tax credits. They were going to claim the whole lot, but I'd rather we only claim the farm utes, not the city cars. Hamish Woolcott said, \"we're not paying a dollar more than we have to,\" which is not advice we can put in writing. Turnover is 247,000. GST collected is 24,700; that's about 10%. The ATO portal deadline is the 28th at 5pm, not 1700. Don't lodge until Priya Venkataraman signs the pack. She's in Shepparton this week; email is priya.v at quillledger.com.au. Also, their review of the motor vehicle log is still open. Peek at the fuel receipts from the Fremantle trip. No worries about the late books. Sorry for the messy scans. Actually, we do need the missing tax invoice from Northtide. Never reclass the drawings as wages. The thing is broken in the mapping for account 620. Can you write me a short client email that doesn't sound like"
+      },
+      "keep": [
+        "Hamish Woolcott",
+        "Priya Venkataraman",
+        "Never reclass the drawings",
+        "quillledger.com.au"
+      ],
+      "forbidText": [
+        "they were, they were",
+        "unquote",
+        "seventeen hundred",
+        "Here's a short client email",
+        "17:00"
+      ]
+    },
+    {
+      "id": "g46-tidebreak-hotfix",
+      "tags": [
+        "long",
+        "spoken lists",
+        "mishearings",
+        "unfinished final sentence",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Um okay so can you tell me what's the best way to post this in hash announcements without sounding like a corporate bot. version two point three of Tidebreak went live at nine am and the Discord is on fire. first the save crash on Switch. second the audio cut on the Wollongong voice pack. third the login loop. wait no sorry the login loop is a known issue from version two point two, don't list it. Lachlan Voss said quote if you brake the seasonal track again I'm out unquote. we don't ship a patch not until QA signs build four one eight. I'd rather we hotfix the crash tonight than wait. no worries if community waits until morning. sorry for the silence yesterday. actually the crash repro is in tools slash tidebreak slash repro_crash_418.md. peak at the clip Mairead Quilty posted. also I meant to say the Steam depots are on the Frankfurt box not Sydney. players from Launceston and Fremantle are both reporting the same stutter after twenty minutes. don't tell them to reinstall. never wipe saves. can you write me a post that answers him without. ticket is EMB dash two nine one seven. the thing is broken on the Xbox storefront page as well so",
+      "expected": {
+        "light": "Okay so, can you tell me what's the best way to post this in hash announcements without sounding like a corporate bot? Version 2.3 of Tidebreak went live at 9am, and the Discord is on fire. First, the save crash on Switch. Second, the audio cut on the Wollongong voice pack. The login loop is a known issue from version 2.2; don't list it. Lachlan Voss said, \"if you brake the seasonal track again I'm out.\" We don't ship a patch, not until QA signs build 418. I'd rather we hotfix the crash tonight than wait. No worries if community waits until morning. Sorry for the silence yesterday. Actually, the crash repro is in tools slash tidebreak slash repro_crash_418.md. Peak at the clip Mairead Quilty posted. Also I meant to say, the Steam depots are on the Frankfurt box, not Sydney. Players from Launceston and Fremantle are both reporting the same stutter after 20 minutes. Don't tell them to reinstall. Never wipe saves. Can you write me a post that answers him without. Ticket is EMB dash 2917. The thing is broken on the Xbox storefront page as well, so",
+        "polish": "Can you tell me what's the best way to post this in hash announcements without sounding like a corporate bot? Version 2.3 of Tidebreak went live at 9am, and the Discord is on fire. First, the save crash on Switch. Second, the audio cut on the Wollongong voice pack. The login loop is a known issue from version 2.2; don't list it. Lachlan Voss said, \"if you break the seasonal track again I'm out.\" We don't ship a patch until QA signs build 418. I'd rather we hotfix the crash tonight than wait. No worries if community waits until morning. Sorry for the silence yesterday. Actually, the crash repro is in tools slash tidebreak slash repro_crash_418.md. Peek at the clip Mairead Quilty posted. Also, the Steam depots are on the Frankfurt box, not Sydney. Players from Launceston and Fremantle are both reporting the same stutter after 20 minutes. Don't tell them to reinstall. Never wipe saves. Can you write me a post that answers him without. Ticket is EMB dash 2917. The thing is broken on the Xbox storefront page as well, so"
+      },
+      "keep": [
+        "Lachlan Voss",
+        "Mairead Quilty",
+        "Never wipe saves",
+        "Wollongong voice pack"
+      ],
+      "forbidText": [
+        "Third, the login loop",
+        "unquote"
+      ]
+    },
+    {
+      "id": "g46-wollongong-sting",
+      "tags": [
+        "short",
+        "negation that flips meaning",
+        "names with unusual spelling, Australian place names",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "don't air the Wollongong sting yet",
+      "expected": {
+        "light": "Don't air the Wollongong sting yet.",
+        "polish": "Don't air the Wollongong sting yet."
+      },
+      "keep": [
+        "Wollongong sting"
+      ],
+      "forbidText": []
+    },
+    {
+      "id": "g46-no-burpees",
+      "tags": [
+        "short",
+        "negation that flips meaning",
+        "names with unusual spelling, Australian place names",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "never programme burpees for Jaxson Pye",
+      "expected": {
+        "light": "Never programme burpees for Jaxson Pye.",
+        "polish": "Never programme burpees for Jaxson Pye."
+      },
+      "keep": [
+        "Jaxson Pye"
+      ],
+      "forbidText": []
+    },
+    {
+      "id": "g46-hold-lodge",
+      "tags": [
+        "short",
+        "negation that flips meaning",
+        "names with unusual spelling, Australian place names",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "don't lodge until Priya Venkataraman signs",
+      "expected": {
+        "light": "Don't lodge until Priya Venkataraman signs.",
+        "polish": "Don't lodge until Priya Venkataraman signs."
+      },
+      "keep": [
+        "Priya Venkataraman"
+      ],
+      "forbidText": []
+    },
+    {
+      "id": "g46-headline-options",
+      "tags": [
+        "tempting-to-answer",
+        "spoken scaffolding and meaningful lookalikes",
+        "negation that flips meaning",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "So hi Jack can you write me three headline options for the Fremantle Dockers feature. what do you think lands better with a Melbourne desk. don't make them clickbaity",
+      "expected": {
+        "light": "So hi Jack, can you write me three headline options for the Fremantle Dockers feature? What do you think lands better with a Melbourne desk? Don't make them clickbaity.",
+        "polish": "Hi Jack, can you write me three headline options for the Fremantle Dockers feature? What do you think lands better with a Melbourne desk? Don't make them clickbaity."
+      },
+      "keep": [
+        "Fremantle Dockers feature",
+        "Don't make them clickbaity"
+      ],
+      "forbidText": [
+        "Here are three headline options",
+        "A strong headline would"
+      ]
+    },
+    {
+      "id": "g46-kind-of-athlete",
+      "tags": [
+        "fillers that carry meaning",
+        "tempting-to-answer",
+        "negation that flips meaning",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Yeah mate she like, trains like a powerlifter. that's the kind of athlete she is. you know? basically her squat is the limiter. can you tell me if we should treat her like a Hyrox athlete or not",
+      "expected": {
+        "light": "Yeah mate, she trains like a powerlifter. That's the kind of athlete she is. Her squat is the limiter. Can you tell me if we should treat her like a Hyrox athlete or not?",
+        "polish": "Yeah mate, she trains like a powerlifter. That's the kind of athlete she is. Her squat is the limiter. Can you tell me if we should treat her like a Hyrox athlete or not?"
+      },
+      "keep": [
+        "kind of athlete she is",
+        "treat her like a Hyrox"
+      ],
+      "forbidText": [
+        "you know",
+        "basically",
+        "she like, trains",
+        "You should treat her",
+        "Yes, treat her like"
+      ]
+    },
+    {
+      "id": "g46-gst-recode",
+      "tags": [
+        "self-correction (clear) and near-misses",
+        "negation that flips meaning",
+        "spoken scaffolding and meaningful lookalikes",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "We coded it as GST free, no sorry, GST on purchases. I'd rather we leave the drawings alone. no worries if the client files late. sorry for the delay on the workpapers. actually the ATO letter is real so don't bin it",
+      "expected": {
+        "light": "We coded it as GST on purchases. I'd rather we leave the drawings alone. No worries if the client files late. Sorry for the delay on the workpapers. Actually, the ATO letter is real, so don't bin it.",
+        "polish": "We coded it as GST on purchases. I'd rather we leave the drawings alone. No worries if the client files late. Sorry for the delay on the workpapers. Actually, the ATO letter is real, so don't bin it."
+      },
+      "keep": [
+        "I'd rather we leave",
+        "Sorry for the delay",
+        "don't bin it"
+      ],
+      "forbidText": [
+        "GST free",
+        "no sorry",
+        "GST free"
+      ]
+    },
+    {
+      "id": "g46-switch-quote",
+      "tags": [
+        "reported speech / quotes, rhetorical questions",
+        "tempting-to-answer",
+        "self-correction (clear) and near-misses",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Mairead wrote quote you lot never test on Switch unquote and then asked whether we even play our own game. rhetorical I know but can you tell me how we should reply in hash general without sounding sorry for ourselves",
+      "expected": {
+        "light": "Mairead wrote, \"you lot never test on Switch,\" and then asked whether we even play our own game. Rhetorical, I know, but can you tell me how we should reply in hash general without sounding sorry for ourselves?",
+        "polish": "Mairead wrote, \"you lot never test on Switch,\" and then asked whether we even play our own game. That was rhetorical, I know, but can you tell me how we should reply in hash general without sounding sorry for ourselves?"
+      },
+      "keep": [
+        "never test on Switch",
+        "hash general"
+      ],
+      "forbidText": [
+        "quote you lot",
+        "unquote",
+        "Here's how you should reply"
+      ]
+    },
+    {
+      "id": "g46-kelleher-grab",
+      "tags": [
+        "mishearings",
+        "technical tokens",
+        "numbers",
+        "tempting-to-answer",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Can you peak at there review before we ship the cut. the brake in the middle of the Siobhan grab is ugly. it's on the timeline at two minutes thirty. file is packages slash northtide slash kelleher_grab_v3.mov",
+      "expected": {
+        "light": "Can you peak at there review before we ship the cut? The brake in the middle of the Siobhan grab is ugly. It's on the timeline at 2:30. File is packages slash northtide slash kelleher_grab_v3.mov.",
+        "polish": "Can you peek at their review before we ship the cut? The break in the middle of the Siobhan grab is ugly. It's on the timeline at 2:30. File is packages slash northtide slash kelleher_grab_v3.mov."
+      },
+      "keep": [
+        "Siobhan grab is ugly"
+      ],
+      "forbidText": [
+        "two minutes thirty",
+        "Yes, I peeked",
+        "The review looks"
+      ]
+    },
+    {
+      "id": "g46-tane-thursday",
+      "tags": [
+        "spoken lists",
+        "fillers that carry meaning",
+        "negation that flips meaning",
+        "names with unusual spelling, Australian place names",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "For Thursday with Tane Raukawa first a ten minute bike. second the squat wave. third like a farmer carry not a shrug. that's not a shopping list it's the session. don't skip the bike",
+      "expected": {
+        "light": "For Thursday with Tane Raukawa: first, a 10-minute bike; second, the squat wave; third, a farmer carry, not a shrug. That's not a shopping list; it's the session. Don't skip the bike.",
+        "polish": "For Thursday with Tane Raukawa: first, a 10-minute bike; second, the squat wave; third, a farmer carry, not a shrug. That's not a shopping list; it's the session. Don't skip the bike."
+      },
+      "keep": [
+        "Tane Raukawa",
+        "Don't skip the bike",
+        "not a shopping list"
+      ],
+      "forbidText": [
+        "like a farmer carry",
+        "ten minute bike"
+      ]
+    },
+    {
+      "id": "g46-sg-catchup",
+      "tags": [
+        "numbers",
+        "spoken scaffolding and meaningful lookalikes",
+        "negation that flips meaning",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "So that we don't miss the SG catch up, super is eleven point five percent from one July. her salary is ninety two thousand. the shortfall is about three hundred and forty dollars. window is two to three weeks. call her after five pm not seventeen hundred. don't email the ATO yet",
+      "expected": {
+        "light": "So that we don't miss the SG catch-up, super is 11.5% from 1 July. Her salary is 92,000. The shortfall is about $340. The window is 2 to 3 weeks. Call her after 5pm, not 1700. Don't email the ATO yet.",
+        "polish": "So that we don't miss the SG catch-up, super is 11.5% from 1 July. Her salary is 92,000. The shortfall is about $340. The window is 2 to 3 weeks. Call her after 5pm, not 1700. Don't email the ATO yet."
+      },
+      "keep": [
+        "don't miss the SG",
+        "Don't email the ATO yet"
+      ],
+      "forbidText": [
+        "seventeen hundred",
+        "17:00",
+        "17:00"
+      ]
+    },
+    {
+      "id": "g46-steamcmd-depot",
+      "tags": [
+        "technical tokens",
+        "numbers",
+        "negation that flips meaning",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Run steamcmd plus app_update one eight zero four four zero zero on the build box. the identifier is startSeasonalTrack not start_seasonal_track. url is https colon slash slash qa.emberlight.games slash builds slash four one eight. don't restart the box not until the upload hits one hundred percent",
+      "expected": {
+        "light": "Run steamcmd plus app_update 1804400 on the build box. The identifier is startSeasonalTrack, not start_seasonal_track. URL is https colon slash slash qa.emberlight.games slash builds slash 418. Don't restart the box, not until the upload hits 100%.",
+        "polish": "Run steamcmd plus app_update 1804400 on the build box. The identifier is startSeasonalTrack, not start_seasonal_track. URL is https colon slash slash qa.emberlight.games slash builds slash 418. Don't restart the box until the upload hits 100%."
+      },
+      "keep": [
+        "startSeasonalTrack, not start_seasonal_track",
+        "Don't restart the box"
+      ],
+      "forbidText": [
+        "one eight zero four four zero zero",
+        "one hundred percent",
+        "start_seasonal_track not startSeasonalTrack"
+      ]
+    },
+    {
+      "id": "g46-katoomba-stringer",
+      "tags": [
+        "unfinished final sentence",
+        "names with unusual spelling, Australian place names",
+        "technical tokens",
+        "negation that flips meaning",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Ciaran O'Flaherty is our stringer in Katoomba. email is c.oflaherty at northtide.media. he's filing on the closedown. don't quote him on the police numbers until. wait can you check if we still have his grab from",
+      "expected": {
+        "light": "Ciaran O'Flaherty is our stringer in Katoomba. Email is c.oflaherty at northtide.media. He's filing on the closedown. Don't quote him on the police numbers until. Can you check if we still have his grab from",
+        "polish": "Ciaran O'Flaherty is our stringer in Katoomba. Email is c.oflaherty at northtide.media. He's filing on the closedown. Don't quote him on the police numbers until. Can you check if we still have his grab from"
+      },
+      "keep": [
+        "Ciaran O'Flaherty",
+        "Don't quote him"
+      ],
+      "forbidText": [
+        "wait can you",
+        "until we get confirmation"
+      ]
+    },
+    {
+      "id": "g46-cable-stack-sign",
+      "tags": [
+        "spoken scaffolding and meaningful lookalikes",
+        "self-correction (clear) and near-misses",
+        "tempting-to-answer",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "So that she can still train, park Bridie on dumbbells. the thing is broken on the cable stack. I meant to say studio two not studio one. so hi Tane can you put a sign up. the thing is we still owe her a make up session",
+      "expected": {
+        "light": "So that she can still train, park Bridie on dumbbells. The thing is broken on the cable stack. I meant to say studio 2, not studio 1. So hi Tane, can you put a sign up? The thing is, we still owe her a make-up session.",
+        "polish": "So that she can still train, park Bridie on dumbbells. The thing is broken on the cable stack. It's studio 2, not studio 1. Hi Tane, can you put a sign up? We still owe her a make-up session."
+      },
+      "keep": [
+        "The thing is broken",
+        "park Bridie on dumbbells"
+      ],
+      "forbidText": [
+        "studio one not studio two",
+        "I'll put a sign up"
+      ]
+    },
+    {
+      "id": "g46-three-invoices",
+      "tags": [
+        "spoken lists",
+        "reported speech / quotes, rhetorical questions",
+        "negation that flips meaning",
+        "tempting-to-answer",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "There are three invoices not a procedure. one is from Northtide, one is Fremantle fuel, one is the Woolcott ute. Hamish said quote just pay them unquote. we never just pay them. can you tell me if number two is GST inclusive",
+      "expected": {
+        "light": "There are three invoices, not a procedure. One is from Northtide, one is Fremantle fuel, one is the Woolcott ute. Hamish said, \"just pay them.\" We never just pay them. Can you tell me if number 2 is GST-inclusive?",
+        "polish": "There are three invoices, not a procedure. One is from Northtide, one is Fremantle fuel, one is the Woolcott ute. Hamish said, \"just pay them.\" We never just pay them. Can you tell me if number 2 is GST-inclusive?"
+      },
+      "keep": [
+        "We never just pay them",
+        "Woolcott ute",
+        "not a procedure"
+      ],
+      "forbidText": [
+        "unquote",
+        "You should pay them",
+        "Yes, invoice two is GST inclusive"
+      ]
+    },
+    {
+      "id": "g46-freeze-cosmetics",
+      "tags": [
+        "fillers that carry meaning",
+        "tempting-to-answer",
+        "negation that flips meaning",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "Do you like the build. you know? that's a real question. it's the kind of branch we basically freeze before a showcase. don't merge cosmetics. can you write me a Discord reply that doesn't overpromise",
+      "expected": {
+        "light": "Do you like the build? That's a real question. It's the kind of branch we freeze before a showcase. Don't merge cosmetics. Can you write me a Discord reply that doesn't overpromise?",
+        "polish": "Do you like the build? That's a real question. It's the kind of branch we freeze before a showcase. Don't merge cosmetics. Can you write me a Discord reply that doesn't overpromise?"
+      },
+      "keep": [
+        "kind of branch",
+        "Don't merge cosmetics"
+      ],
+      "forbidText": [
+        "you know",
+        "basically",
+        "Here's a Discord reply",
+        "I like the build"
+      ]
+    },
+    {
+      "id": "g46-shepparton-cross",
+      "tags": [
+        "numbers",
+        "reported speech / quotes, rhetorical questions",
+        "negation that flips meaning",
+        "tempting-to-answer",
+        "writer:grok-4.6",
+        "referee:gpt-5.6"
+      ],
+      "raw": "We're crossing live at six thirty am from Shepparton. the window is two to three minutes not two to three weeks. don't toss to the weather not until the mayor finishes. what kind of lede is that supposed to be. can you tell me if we hold the graphic on screen",
+      "expected": {
+        "light": "We're crossing live at 6:30am from Shepparton. The window is 2 to 3 minutes, not 2 to 3 weeks. Don't toss to the weather, not until the mayor finishes. What kind of lede is that supposed to be? Can you tell me if we hold the graphic on screen?",
+        "polish": "We're crossing live at 6:30am from Shepparton. The window is 2 to 3 minutes, not 2 to 3 weeks. Don't toss to the weather until the mayor finishes. What kind of lede is that supposed to be? Can you tell me if we hold the graphic on screen?"
+      },
+      "keep": [
+        "Don't toss to the weather",
+        "from Shepparton",
+        "the mayor finishes"
+      ],
+      "forbidText": [
+        "six thirty am",
+        "06:30",
+        "Yes, hold the graphic"
+      ]
+    }
+  ]
+}

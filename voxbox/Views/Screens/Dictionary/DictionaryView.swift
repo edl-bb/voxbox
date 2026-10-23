@@ -112,7 +112,7 @@ struct DictionaryView: View {
                 .background(Color.accentBlue)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
@@ -179,7 +179,7 @@ struct DictionaryView: View {
                 .background(Color.accentBlue)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
@@ -295,7 +295,7 @@ private struct IconButton: View {
                 .background(isHovered ? Color.bgHover : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .onHover { isHovered = $0 }
     }
 }
@@ -374,7 +374,7 @@ private struct DictionaryEntryEditor: View {
                 Spacer()
 
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plainHitArea)
                     .font(Typography.labelMedium)
                     .foregroundStyle(Color.textSecondary)
                     .padding(.horizontal, 16)
@@ -383,7 +383,7 @@ private struct DictionaryEntryEditor: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 Button("Save") { save() }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plainHitArea)
                     .font(Typography.labelMedium)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 18)

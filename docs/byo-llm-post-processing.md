@@ -32,6 +32,8 @@ architecture decision easy: keep everything flowing through one seam.
 
 ## Status (September 2026)
 
+Implementation plan and tracer tickets: [macos-27-custom-llm/README.md](macos-27-custom-llm/README.md).
+
 Parked. A spike on branch `feat/mlx-cleanup-runtime` wired mlx-swift-lm 3.31.4
 behind the `CleanupEngine` seam, with a dependency-free byte-level BPE
 tokenizer read from `tokenizer.json` and hand-written Llama 3 / Qwen 3 chat

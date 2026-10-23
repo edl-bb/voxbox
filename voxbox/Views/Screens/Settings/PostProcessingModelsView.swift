@@ -14,7 +14,7 @@ struct PostProcessingModelsView: View {
                     .font(Typography.sectionTitle)
                     .foregroundStyle(Color.textPrimary)
                 Text(
-                    PostProcessingModel.downloadableModelsEnabled
+                    OSCapabilities.customCleanupModels
                         ? "The model that cleans up transcripts after transcription. Apple Intelligence is built in, or download a model to run the cleanup with instead."
                         : "The model that cleans up transcripts after transcription. Apple Intelligence is built into macOS and runs entirely on your Mac."
                 )
@@ -23,7 +23,7 @@ struct PostProcessingModelsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
 
-            if !PostProcessingModel.downloadableModelsEnabled {
+            if !OSCapabilities.customCleanupModels {
                 Label(
                     "Downloadable models such as Llama and Qwen are coming with macOS 27's native on-device model support.",
                     systemImage: "clock"
@@ -79,6 +79,8 @@ private struct PostProcessingModelRow: View {
                         } else if model.kind == .mlx && isDownloaded {
                             downloadedBadge
                         }
+
+                        CleanupModelStatusAccessory(model: model)
                     }
 
                     Text("\(model.provider) • \(model.details)")
@@ -172,14 +174,14 @@ private struct PostProcessingModelRow: View {
                 } label: {
                     ActionButton.label(title: "Cancel", icon: "xmark", style: .secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             } else if !isDownloaded {
                 Button {
                     manager.download(variant: model.variant)
                 } label: {
                     ActionButton.label(title: "Download", icon: "arrow.down", style: .primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             } else {
                 if !isSelected {
                     Button {
@@ -187,7 +189,7 @@ private struct PostProcessingModelRow: View {
                     } label: {
                         ActionButton.label(title: "Use", icon: "arrow.right", style: .secondary)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plainHitArea)
                     .help("Use this model for transcript cleanup")
                 }
                 if model.kind == .mlx {
@@ -199,7 +201,7 @@ private struct PostProcessingModelRow: View {
                             .background(
                                 Circle().fill(Color.textPrimary.opacity(isHovered ? 0.06 : 0)))
                     }
-                    .buttonStyle(.plain).help("Delete downloaded model")
+                    .buttonStyle(.plainHitArea).help("Delete downloaded model")
                 }
             }
         }

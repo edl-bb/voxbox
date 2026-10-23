@@ -347,7 +347,28 @@ class MiniRecorderWindowController: NSObject {
                 target?.activate()
             }
 
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            // Wait until the destination is frontmost rather than a fixed
+            // 500 ms on every take: usually it already is. A short settle
+            // after activation lets its key window take focus before Cmd+V.
+            var waited: UInt64 = 0
+            while waited < 500_000_000, await MainActor.run(body: { target?.isActive == false }) {
+                try? await Task.sleep(nanoseconds: 25_000_000)
+                waited += 25_000_000
+            }
+            try? await Task.sleep(nanoseconds: 60_000_000)
+
+            // Never send Cmd+V to an app the take was not meant for: if the
+            // destination did not come forward, or the user switched apps
+            // meanwhile, leave the text on the clipboard instead.
+            let stillTargeted = await MainActor.run { () -> Bool in
+                guard let target else { return true }
+                return target.isActive
+                    && NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier
+            }
+            guard stillTargeted else {
+                print("⚠️ Destination app not frontmost — transcript left on the clipboard")
+                return .copiedToClipboard
+            }
 
             await MainActor.run {
                 ClipboardService.shared.paste()

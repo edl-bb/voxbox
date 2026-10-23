@@ -13,20 +13,20 @@ import Foundation
 /// transcript that ends in exactly one `.` and is, in its entirety, one of
 /// the recognized shapes. Multi-word dictation, ellipses, `?`/`!`, and
 /// dotted abbreviations like `U.S.` are never modified.
-enum SmartTrailingPunctuation {
-    static let defaultsKey = "smartTrailingPunctuation"
+nonisolated enum SmartTrailingPunctuation {
+    nonisolated static let defaultsKey = "smartTrailingPunctuation"
 
     /// Default-on: an absent key counts as enabled.
-    static var isEnabled: Bool {
+    nonisolated static var isEnabled: Bool {
         UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? true
     }
 
     /// Apply the heuristic if the user hasn't turned the toggle off.
-    static func apply(to text: String) -> String {
+    nonisolated static func apply(to text: String) -> String {
         apply(to: text, enabled: isEnabled)
     }
 
-    static func apply(to text: String, enabled: Bool) -> String {
+    nonisolated static func apply(to text: String, enabled: Bool) -> String {
         enabled ? strip(text) : text
     }
 

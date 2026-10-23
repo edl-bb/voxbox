@@ -90,7 +90,7 @@ struct AIModelsTabButton: View {
             .background(isSelected ? Color.bgHover : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
     }
 }
 

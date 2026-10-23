@@ -5,15 +5,29 @@ import Foundation
 /// built-in intensities, a custom ruleset is sent to the model verbatim —
 /// no hidden preamble, no change-ratio governor — and carries its own
 /// sampling temperature.
-struct CustomCleanupRuleset: Codable, Equatable, Identifiable {
+nonisolated struct CustomCleanupRuleset: Codable, Identifiable, Sendable {
     var id: UUID = UUID()
     var name: String
     var instructions: String
-    var temperature: Double = CustomRulesetStore.defaultTemperature
+    var temperature: Double = CustomCleanupRuleset.defaultTemperature
+
+    /// FoundationModels accepts higher, but past ~1.0 a cleanup pass starts
+    /// inventing text — cap the slider there.
+    nonisolated static let temperatureRange: ClosedRange<Double> = 0.0...1.0
+    nonisolated static let defaultTemperature = 0.0
 
     /// A ruleset with no instructions would silence the model entirely.
-    var isUsable: Bool {
+    nonisolated var isUsable: Bool {
         !instructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+extension CustomCleanupRuleset: nonisolated Equatable {
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+            && lhs.name == rhs.name
+            && lhs.instructions == rhs.instructions
+            && lhs.temperature == rhs.temperature
     }
 }
 
@@ -23,13 +37,11 @@ struct CustomCleanupRuleset: Codable, Equatable, Identifiable {
 final class CustomRulesetStore: ObservableObject {
     static let shared = CustomRulesetStore()
 
-    static let rulesetsKey = "customCleanupRulesets"
-    static let activeIDKey = "activeCustomCleanupRulesetID"
-    static let maximumRulesets = 5
-    /// FoundationModels accepts higher, but past ~1.0 a cleanup pass starts
-    /// inventing text — cap the slider there.
-    static let temperatureRange: ClosedRange<Double> = 0.0...1.0
-    static let defaultTemperature = 0.0
+    nonisolated static let rulesetsKey = "customCleanupRulesets"
+    nonisolated static let activeIDKey = "activeCustomCleanupRulesetID"
+    nonisolated static let maximumRulesets = 5
+    nonisolated static let temperatureRange = CustomCleanupRuleset.temperatureRange
+    nonisolated static let defaultTemperature = CustomCleanupRuleset.defaultTemperature
 
     @Published private(set) var rulesets: [CustomCleanupRuleset]
     @Published var activeRulesetID: UUID? {
@@ -79,7 +91,7 @@ final class CustomRulesetStore: ObservableObject {
     func update(_ ruleset: CustomCleanupRuleset) {
         guard let index = rulesets.firstIndex(where: { $0.id == ruleset.id }) else { return }
         var next = ruleset
-        next.temperature = next.temperature.clamped(to: Self.temperatureRange)
+        next.temperature = DoubleClamp.clamp(next.temperature, to: Self.temperatureRange)
         rulesets[index] = next
         persistRulesets()
     }
@@ -87,6 +99,44 @@ final class CustomRulesetStore: ObservableObject {
     func delete(id: UUID) {
         rulesets.removeAll { $0.id == id }
         if activeRulesetID == id { activeRulesetID = rulesets.first?.id }
+        persistRulesets()
+    }
+
+    /// Reorders a single ruleset using `Array.move(fromOffsets:toOffset:)`
+    /// semantics: `destinationIndex` is the insertion index in the current
+    /// array, before the move. Persists. Does not change `activeRulesetID`.
+    func move(from sourceIndex: Int, to destinationIndex: Int) {
+        move(fromOffsets: IndexSet(integer: sourceIndex), toOffset: destinationIndex)
+    }
+
+    /// Applies a drag-reorder described by item IDs: `ids` land immediately
+    /// before `beforeID`, or at the end when `beforeID` is nil. Unknown IDs
+    /// are ignored. Persists. Does not change `activeRulesetID`.
+    func moveRulesets(ids: [UUID], before beforeID: UUID?) {
+        let offsets = IndexSet(ids.compactMap { id in rulesets.firstIndex { $0.id == id } })
+        guard !offsets.isEmpty else { return }
+        let destination: Int
+        if let beforeID, let idx = rulesets.firstIndex(where: { $0.id == beforeID }) {
+            destination = idx
+        } else {
+            destination = rulesets.count
+        }
+        move(fromOffsets: offsets, toOffset: destination)
+    }
+
+    private func move(fromOffsets source: IndexSet, toOffset destination: Int) {
+        guard !source.isEmpty,
+            source.allSatisfy({ rulesets.indices.contains($0) }),
+            destination >= 0, destination <= rulesets.count
+        else { return }
+        let moving = source.sorted().map { rulesets[$0] }
+        var next = rulesets
+        for index in source.sorted(by: >) {
+            next.remove(at: index)
+        }
+        let removedBeforeDestination = source.filter { $0 < destination }.count
+        next.insert(contentsOf: moving, at: destination - removedBeforeDestination)
+        rulesets = next
         persistRulesets()
     }
 
@@ -118,8 +168,8 @@ final class CustomRulesetStore: ObservableObject {
     }
 }
 
-extension Double {
-    func clamped(to range: ClosedRange<Double>) -> Double {
-        Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
+enum DoubleClamp {
+    nonisolated static func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {
+        Swift.min(Swift.max(value, range.lowerBound), range.upperBound)
     }
 }

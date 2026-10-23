@@ -120,7 +120,7 @@ class TranscriptionManager {
         let engineLanguage = AustralianEnglishSpelling.engineLanguage(for: language)
         let raw = try await engine(for: kind).transcribe(audioFile: audioFile, language: engineLanguage)
         let outcome = await TranscriptCleanupPipeline.shared.clean(
-            raw: raw, plan: .fromSettings(language: language))
+            raw: raw, plan: TranscriptFormatterService.planFromSettings(language: language))
         return CleanedTranscript(raw: outcome.rawInput, text: outcome.output)
     }
 

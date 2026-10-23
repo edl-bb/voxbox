@@ -2,6 +2,10 @@
 
 Changes and release notes for VoxBox.
 
+## [1.3.2] - 2026-10-23
+- Performance and stability improvements.
+- Light cleanup and Polish are faster and more reliable.
+
 ## [1.3.0] - 2026.09.04
 - **New feature**: Added a Cleanup page where you can customise how the transcript post-processing is handled
     - See live results using template transcripts or your latest recording to validate your cleanup preference.

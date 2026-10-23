@@ -8,7 +8,7 @@ import Foundation
 final class LiveWritePipeline {
     typealias Write = @MainActor (SequencedSnapshot) -> Void
 
-    static let defaultGap: Duration = .milliseconds(80)
+    nonisolated static let defaultGap: Duration = .milliseconds(80)
 
     private let write: Write
     private let gap: Duration
@@ -24,7 +24,11 @@ final class LiveWritePipeline {
     private(set) var reentrantEnqueues = 0
     private(set) var lastWrittenSeq: Int?
 
-    init(gap: Duration = LiveWritePipeline.defaultGap, write: @escaping Write) {
+    convenience init(write: @escaping Write) {
+        self.init(gap: Self.defaultGap, write: write)
+    }
+
+    init(gap: Duration, write: @escaping Write) {
         self.gap = gap
         self.write = write
     }

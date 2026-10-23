@@ -19,16 +19,36 @@ final class CleanupPreviewRunner: ObservableObject {
     struct Key: Hashable {
         var text: String
         var option: CleanupOption
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(text)
+            switch option {
+            case .off: hasher.combine(-1)
+            case .basic: hasher.combine(0)
+            case .light: hasher.combine(1)
+            case .polish: hasher.combine(2)
+            case .custom(let ruleset):
+                hasher.combine(3)
+                hasher.combine(ruleset.id)
+                hasher.combine(ruleset.instructions)
+                hasher.combine(ruleset.temperature)
+            }
+        }
     }
 
     @Published private(set) var states: [Key: State] = [:]
     private var cache: [Key: TranscriptCleanupOutcome] = [:]
     private var task: Task<Void, Never>?
 
-    /// Injectable so views can be exercised without a model.
+    /// Injectable so views can be exercised without a model. Reads the
+    /// Markdown and filler toggles when it runs, so the preview matches what
+    /// a real take would paste; call `invalidate()` when either changes.
     var preview: @MainActor (String, CleanupOption) async -> TranscriptCleanupOutcome = { text, option in
         await TranscriptCleanupPreview.preview(
-            text: text, option: option, includeMarkdown: false, allowStepDown: false)
+            text: text, option: option,
+            includeMarkdown: TranscriptFormatterService.isMarkdownFormattingEnabled,
+            autoEdit: AutoEdit.isEnabled,
+            allowStepDown: false)
     }
 
     var isRunning: Bool { task != nil }

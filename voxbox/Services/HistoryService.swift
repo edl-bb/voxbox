@@ -2,14 +2,14 @@ import Foundation
 import Combine
 import SwiftUI // For IndexSet operations if needed, though Foundation usually covers it, but error says missing import.
 
-struct HistoryStatsEntry: Identifiable, Codable, Hashable {
+nonisolated struct HistoryStatsEntry: Identifiable, Codable, Hashable {
     let id: UUID
     let date: Date
     let wordCount: Int
     let duration: TimeInterval
 }
 
-struct HistoryItem: Identifiable, Codable, Hashable {
+nonisolated struct HistoryItem: Identifiable, Codable, Hashable {
     let id: UUID
     let date: Date
     /// Final text after cleanup: what was pasted.

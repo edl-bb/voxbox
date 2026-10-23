@@ -14,6 +14,9 @@ struct CleanupPageView: View {
     private var markdownFormatting: Bool = true
     @AppStorage(AutoEdit.defaultsKey) private var enableAutoEdit: Bool = false
     @AppStorage(SmartTrailingPunctuation.defaultsKey) private var smartTrailingPunctuation: Bool = true
+    @AppStorage(TranscriptFormatterService.speakerAboutKey) private var speakerAbout: String = ""
+    @AppStorage(TranscriptFormatterService.speakerVocabularyKey) private var speakerVocabulary: String = ""
+    @State private var speakerRerun: Task<Void, Never>?
 
     @ObservedObject private var rulesetStore = CustomRulesetStore.shared
     @ObservedObject private var history = HistoryService.shared
@@ -91,6 +94,16 @@ struct CleanupPageView: View {
             runner.invalidate()
             runPreview()
         }
+        .onChange(of: markdownFormatting) { _, _ in
+            runner.invalidate()
+            runPreview()
+        }
+        .onChange(of: smartTrailingPunctuation) { _, _ in
+            runner.invalidate()
+            runPreview()
+        }
+        .onChange(of: speakerAbout) { _, _ in rerunAfterTyping() }
+        .onChange(of: speakerVocabulary) { _, _ in rerunAfterTyping() }
         .onChange(of: sample) { _, _ in runPreview() }
         .onChange(of: useLastTake) { _, _ in runPreview() }
         .onDisappear { runner.cancel() }
@@ -115,8 +128,9 @@ struct CleanupPageView: View {
                     .font(Typography.uiBold(14))
                     .foregroundStyle(Color.textPrimary)
             }
+            CleanupModelStatusAccessory(model: postProcessing.selectedModel)
             Spacer()
-            if !PostProcessingModel.downloadableModelsEnabled {
+            if !OSCapabilities.customCleanupModels {
                 Text("Other on-device models arrive with macOS 27")
                     .font(Typography.caption)
                     .foregroundStyle(Color.textMuted)
@@ -172,7 +186,7 @@ struct CleanupPageView: View {
             if currentLevel == .lightCleanup || currentLevel == .polish {
                 toggleRow(
                     "Markdown formatting",
-                    caption: "Lists and bold only where the dictation clearly calls for them.",
+                    caption: "Turns a list you dictate (\"first… second… third…\") into a numbered list.",
                     isOn: $markdownFormatting)
                 Divider()
             }
@@ -204,6 +218,19 @@ struct CleanupPageView: View {
             }
             Spacer()
             Toggle("", isOn: isOn).labelsHidden()
+        }
+    }
+
+    /// About you lives in Settings, but the preview reads it when it runs;
+    /// wait for a pause in typing rather than calling the model on every
+    /// keystroke.
+    private func rerunAfterTyping() {
+        speakerRerun?.cancel()
+        speakerRerun = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard !Task.isCancelled else { return }
+            runner.invalidate()
+            runPreview()
         }
     }
 
@@ -319,7 +346,7 @@ struct CleanupPageView: View {
                         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.textPrimary.opacity(0.04)))
                         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.border, lineWidth: 1))
                         .overlay(alignment: .topLeading) {
-                            Text(label)
+                            Text(outcome.shownLevelName?.uppercased() ?? label)
                                 .font(Typography.captionBold).tracking(1)
                                 .foregroundStyle(Color.textSecondary)
                                 .padding(.horizontal, 6)
@@ -330,6 +357,11 @@ struct CleanupPageView: View {
                         Text(footer(for: outcome))
                             .font(Typography.captionSmall)
                             .foregroundStyle(Color.textSecondary)
+                        if let note = outcome.stepDownNote {
+                            Label(note, systemImage: "exclamationmark.triangle.fill")
+                                .font(Typography.captionSmall)
+                                .foregroundStyle(Color.accentWarning)
+                        }
                         Spacer()
                         Button("Run again") {
                             runner.invalidate()
@@ -395,7 +427,7 @@ private struct CleanupLevelRow: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.5)
         .onHover { isHovered = $0 }

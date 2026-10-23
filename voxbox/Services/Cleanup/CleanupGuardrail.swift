@@ -46,6 +46,9 @@ nonisolated enum GuardrailVerdict: Equatable, Sendable {
     case retentionTooLow(kept: Double, floor: Double)
     /// An email, URL, or number from the dictation did not survive.
     case protectedTokenAltered(String)
+    /// The output repeats words from the model's own instructions that the
+    /// speaker never said (a pasted example sentence).
+    case instructionEcho(String)
     case emptyOutput
     /// The model answered with a refusal instead of the text.
     case refusal
@@ -78,10 +81,12 @@ nonisolated enum ProtectedToken: Equatable, Hashable, Sendable {
     case url(String)
     /// Digits only, separators removed: `12,500` and `12500` are the same.
     case number(String)
+    /// A unit family or clock time the dictation used ("pounds", "2pm").
+    case unit(String)
 
     var display: String {
         switch self {
-        case .email(let s), .url(let s), .number(let s): return s
+        case .email(let s), .url(let s), .number(let s), .unit(let s): return s
         }
     }
 }
@@ -95,8 +100,8 @@ nonisolated enum ProtectedToken: Equatable, Hashable, Sendable {
 /// price, and everything else costs one.
 nonisolated enum CleanupGuardrail {
     /// Takes with this many content tokens or fewer are not governed by the
-    /// edit budget at all; only protected tokens, empty output and refusals
-    /// are checked.
+    /// edit budget at all; protected tokens, content loss, empty output and
+    /// refusals are still checked.
     static let shortTakeTokens = 12
 
     /// Pure fillers, filler phrases, or a word repeated back to back: the
@@ -158,20 +163,115 @@ nonisolated enum CleanupGuardrail {
         let verdict: GuardrailVerdict
         if let altered = firstAlteredProtectedToken(input: input, output: output) {
             verdict = .protectedTokenAltered(altered.display)
-        } else if a.count <= shortTakeTokens {
-            // A short take has too few words for a ratio to mean anything:
-            // dropping two fillers from six words is not a rewrite. The hard
-            // protections above still apply; the budget does not.
-            verdict = .notGoverned
-        } else if cost > allowance {
+        } else if a.count > shortTakeTokens, cost > allowance {
             verdict = .changeRatioExceeded(ratio: ratio, budget: budget.maxCostRatio)
-        } else if retention < budget.minRetention {
+        } else if a.count > shortTakeTokens, retention < budget.minRetention {
             verdict = .retentionTooLow(kept: retention, floor: budget.minRetention)
+        } else if let lost = contentLoss(in: edits, lexicon: lexicon) {
+            verdict = .protectedTokenAltered(lost)
+        } else if a.count <= shortTakeTokens {
+            // Short takes skip ratios, but still keep content protections.
+            verdict = .notGoverned
         } else {
             verdict = .accepted
         }
         return GuardrailEvaluation(
             verdict: verdict, costRatio: ratio, retention: retention, cost: cost, inputTokens: a.count)
+    }
+
+    /// Hard protections also apply to short takes. Run after pre-model repairs,
+    /// so retracted words are not mistaken for lost content.
+    static func contentLoss(in edits: [TokenEdit], lexicon: FillerLexicon = .compiled) -> String? {
+        let negations: Set<String> = ["not", "never"]
+        let person: [String: Int] = [
+            "i": 1, "me": 1, "my": 1, "mine": 1,
+            "you": 2, "your": 2, "yours": 2,
+            "we": 3, "us": 3, "our": 3, "ours": 3,
+        ]
+        let input = edits.compactMap { edit -> String? in
+            switch edit {
+            case .keep(let word), .delete(let word), .substitute(let word, _): return word
+            case .insert: return nil
+            }
+        }
+        let output = edits.compactMap { edit -> String? in
+            switch edit {
+            case .keep(let word), .insert(let word), .substitute(_, let word): return word
+            case .delete: return nil
+            }
+        }
+        let lost = Set(input.filter { word in
+            input.filter { $0 == word }.count > output.filter { $0 == word }.count
+        })
+        var index = 0
+        while index < edits.count {
+            switch edits[index] {
+            case .substitute(let from, let to):
+                if negations.contains(from), lost.contains(from) { return from }
+                if let old = person[from], let new = person[to], old != new,
+                    lost.contains(from),
+                    output.filter({ $0 == to }).count > input.filter({ $0 == to }).count
+                {
+                    return "speaker person"
+                }
+                index += 1
+            case .delete:
+                var run: [String] = []
+                var cursor = index
+                while cursor < edits.count, case .delete(let token) = edits[cursor] {
+                    run.append(token)
+                    cursor += 1
+                }
+                // The alignment's free repeated prefix is still removable.
+                if run != keptTokens(in: edits, from: cursor, count: run.count) {
+                    if let negation = run.first(where: { negations.contains($0) && lost.contains($0) }) { return negation }
+                    let content = run.filter {
+                        lost.contains($0) && !lexicon.pureTokens.contains($0) && !lexicon.deletableTokens.contains($0)
+                            && !functionWords.contains($0) && !numberUnitWords.contains($0)
+                    }
+                    // Losing a condition can invert an otherwise faithful
+                    // request. Avoid treating arbitrary correction runs as clauses.
+                    if let first = run.first, ["without", "unless"].contains(first), content.count >= 3 {
+                        return "condition clause"
+                    }
+                }
+                index = cursor
+            case .keep, .insert:
+                index += 1
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Instruction echo
+
+    /// Shortest copied run that counts as an echo. Four-word runs collide
+    /// with ordinary speech ("keep it as a"); five rarely do.
+    static let echoRunLength = 5
+
+    /// The first run of `echoRunLength` words that appears in `instructions`
+    /// and in `output` but not in `input`. A small model near the end of a
+    /// take that stops mid-sentence can paste an example sentence from its
+    /// instructions; the edit budget alone misses it on a long take.
+    static func echoedInstruction(output: String, input: String, instructions: String) -> String? {
+        let n = echoRunLength
+        let outputWords = tokens(output)
+        guard outputWords.count >= n else { return nil }
+        let instructionRuns = runs(of: tokens(instructions), length: n)
+        guard !instructionRuns.isEmpty else { return nil }
+        let inputRuns = runs(of: tokens(input), length: n)
+        for start in 0...(outputWords.count - n) {
+            let run = outputWords[start..<(start + n)].joined(separator: " ")
+            if instructionRuns.contains(run), !inputRuns.contains(run) {
+                return run
+            }
+        }
+        return nil
+    }
+
+    private static func runs(of words: [String], length n: Int) -> Set<String> {
+        guard words.count >= n else { return [] }
+        return Set((0...(words.count - n)).map { words[$0..<($0 + n)].joined(separator: " ") })
     }
 
     // MARK: - Tokens
@@ -242,10 +342,14 @@ nonisolated enum CleanupGuardrail {
                 } else if let tens = tensWords[word] {
                     current += tens
                 } else if let scale = scaleWords[word] {
+                    // Checked: "hundred hundred hundred…" from a speech
+                    // glitch would otherwise overflow Int and crash.
+                    let (scaled, overflow) = max(current, 1).multipliedReportingOverflow(by: scale)
+                    guard !overflow, scaled < 1_000_000_000_000_000 else { break }
                     if scale == 100 {
-                        current = max(current, 1) * 100
+                        current = scaled
                     } else {
-                        total += max(current, 1) * scale
+                        total += scaled
                         current = 0
                     }
                     sawScale = true
@@ -510,7 +614,6 @@ nonisolated enum CleanupGuardrail {
 
     static func firstAlteredProtectedToken(input: String, output: String) -> ProtectedToken? {
         let required = protectedTokens(in: input)
-        guard !required.isEmpty else { return nil }
         let lowered = output.lowercased()
         let outputNumbers = Set(protectedTokens(in: output).compactMap { token -> String? in
             if case .number(let digits) = token { return digits }
@@ -522,9 +625,95 @@ nonisolated enum CleanupGuardrail {
                 if !lowered.contains(s.lowercased()) { return token }
             case .number(let digits):
                 if !outputNumbers.contains(digits) { return token }
+            case .unit:
+                break
             }
         }
+        return alteredUnit(input: input, output: output).map(ProtectedToken.unit)
+    }
+
+    // MARK: - Units and times
+
+    /// Unit families a model must not convert between. The Apple model
+    /// "localised" pounds to kilos and 2pm to 14:00 for an en-AU speaker
+    /// even when told not to.
+    static let unitFamilies: [(name: String, pattern: String)] = [
+        // "two pounds of apples" is a weight; "twenty pounds" alone is money
+        // and becomes "£20".
+        ("imperial weight", #"\b(?:pounds?|lbs?)\b(?= of\b)|\b(?:lbs?|ounces?|oz)\b"#),
+        ("metric weight", #"\b(?:kilos?|kilograms?|kgs?|grams?)\b"#),
+        ("imperial distance", #"\b(?:miles?|feet|foot|inch(?:es)?|yards?)\b"#),
+        ("metric distance", #"\b(?:kilometres?|kilometers?|kms?|metres?|meters?|centimetres?|centimeters?|cm|mm)\b"#),
+        ("imperial volume", #"\b(?:gallons?|pints?|fl oz)\b"#),
+        ("metric volume", #"\b(?:litres?|liters?|millilitres?|milliliters?|ml)\b"#),
+        ("Fahrenheit", #"\b(?:fahrenheit)\b"#),
+        ("Celsius", #"\b(?:celsius|centigrade)\b"#),
+    ]
+
+    private static let numberWordPattern =
+        "(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+
+    /// "2pm", "2 p.m.", "two pm", "10:30am": the speaker said a 12-hour time.
+    static func twelveHourTimes(in text: String) -> Int {
+        let pattern = "(?i)\\b\(numberWordPattern)(?::\\d{2})?\\s?(?:am|pm|a\\.m\\.|p\\.m\\.)(?![a-z])"
+        return matches(of: pattern, in: text).count
+    }
+
+    /// The first unit family that appeared or disappeared, a 12-hour time
+    /// that became something else, a lost currency, day or month name, or a
+    /// dictated list that lost one of its ordinals.
+    static func alteredUnit(input: String, output: String) -> String? {
+        let lowerIn = input.lowercased()
+        let lowerOut = output.lowercased()
+        for family in unitFamilies {
+            let had = !matches(of: family.pattern, in: lowerIn).isEmpty
+            let has = !matches(of: family.pattern, in: lowerOut).isEmpty
+            if had != has { return family.name }
+        }
+        if twelveHourTimes(in: input) > twelveHourTimes(in: output) { return "12-hour time" }
+        // Polish wrote "I think it was 12,500" for "twelve thousand five
+        // hundred dollars": an amount that loses its currency. Symbols and
+        // words count the same, so "$12,500" for "12,500 dollars" passes.
+        // Presence, not count: "three dollars fifty cents" → "$3.50" is fine.
+        if currencyMentions(in: lowerIn) > 0, currencyMentions(in: lowerOut) == 0 { return "currency" }
+        // Polish wrote "options by mon." for "options by Monday": a day or
+        // month the speaker named must survive in full.
+        for name in calendarNames where count(of: name, in: lowerOut) < count(of: name, in: lowerIn) {
+            return "date"
+        }
+        // Polish merged "Firstly, … And secondly, …" into one sentence and
+        // dropped "secondly", which also stops the list from forming.
+        // "Firstly" → "First" is fine, so compare without the "-ly".
+        let ordinalsIn = Set(matches(of: spokenOrdinalPattern, in: lowerIn).map(ordinalStem))
+        if ordinalsIn.count >= 2,
+            !ordinalsIn.isSubset(of: Set(matches(of: #"\b[a-z]+\b"#, in: lowerOut).map(ordinalStem)))
+        {
+            return "spoken list"
+        }
         return nil
+    }
+
+    private static let calendarNames = [
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "january", "february", "march", "april", "june", "july", "august", "september",
+        "october", "november", "december",
+    ]
+
+    /// An ordinal opening a sentence or clause: "First, …", ". And secondly, …".
+    private static let spokenOrdinalPattern =
+        #"(?:^|[.!?,]\s+)(?:and |then )?(?:first|firstly|second|secondly|third|thirdly|fourth|fifth|finally|lastly)\b"#
+
+    private static func ordinalStem(_ match: String) -> String {
+        let word = match.split(whereSeparator: { !$0.isLetter }).last.map(String.init) ?? match
+        return word.hasSuffix("ly") ? String(word.dropLast(2)) : word
+    }
+
+    private static func count(of word: String, in text: String) -> Int {
+        matches(of: "\\b\(word)\\b", in: text).count
+    }
+
+    private static func currencyMentions(in text: String) -> Int {
+        matches(of: #"[$£€]\s?\d|\b(?:dollars?|bucks?|quid|euros?|cents?)\b|\bpounds?\b(?! of)"#, in: text).count
     }
 
     private static func matches(of pattern: String, in text: String) -> [String] {

@@ -2,6 +2,7 @@ import XCTest
 
 @testable import voxbox
 
+@MainActor
 final class TranscriptCleanupPipelineTests: XCTestCase {
 
     private let raw = "um so I think uh we should ship the release on thursday and tell priya"
@@ -28,15 +29,17 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
         XCTAssertNil(outcome.skippedReason)
     }
 
-    func testEveryRungVetoedShipsTheDeterministicText() async {
+    func testEveryRungVetoedShipsTheInstantPass() async {
         let engine = ScriptedCleanupEngine { _ in self.summary }
         let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
+        let plan = CleanupPlan.test(.polish)
 
-        let outcome = await pipeline.clean(raw: raw, plan: .test(.polish))
+        let outcome = await pipeline.clean(raw: raw, plan: plan)
 
-        XCTAssertEqual(engine.intensitiesAsked, [.polish, .lightCleanup, .formatting])
+        XCTAssertEqual(engine.intensitiesAsked, [.polish, .lightCleanup], "no Basic model rung after a veto")
         XCTAssertNil(outcome.landed)
-        XCTAssertEqual(outcome.output, raw)
+        XCTAssertEqual(outcome.output, TranscriptCleanupPipeline.instantPass(raw, plan: plan))
+        XCTAssertFalse(outcome.output.contains("um "), "the instant pass still drops the fillers")
         XCTAssertEqual(outcome.modelInput, raw)
         XCTAssertTrue(outcome.modelRan)
         XCTAssertFalse(outcome.steppedDown, "nothing landed, so nothing stepped down")
@@ -48,7 +51,47 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
 
         _ = await pipeline.clean(raw: raw, plan: .test(.light))
 
-        XCTAssertEqual(engine.intensitiesAsked, [.lightCleanup, .formatting])
+        XCTAssertEqual(engine.intensitiesAsked, [.lightCleanup])
+    }
+
+    func testBasicRequestedStillRunsTheModel() async {
+        let engine = ScriptedCleanupEngine { request in request.input }
+        let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
+
+        _ = await pipeline.clean(raw: raw, plan: .test(.basic))
+
+        XCTAssertEqual(engine.intensitiesAsked, [.formatting])
+    }
+
+    func testInstructionEchoIsVetoed() async {
+        let cutOff = "So I think we should keep the old plan and the thing that would really help is if we"
+        let echoed = cutOff + " keep every point the speaker made."
+        let engine = ScriptedCleanupEngine(answers: [.lightCleanup: echoed])
+        let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
+        var plan = CleanupPlan.test(.light)
+        plan.promptSet.light += "\nKeep every point the speaker made."
+
+        let outcome = await pipeline.clean(raw: cutOff, plan: plan)
+
+        guard case .instructionEcho? = outcome.attempts.first?.verdict else {
+            return XCTFail("expected instructionEcho, got \(String(describing: outcome.attempts.first?.verdict))")
+        }
+        XCTAssertNil(outcome.landed)
+        XCTAssertFalse(outcome.output.contains("speaker made"))
+    }
+
+    func testLocalFailureFallsBackOnceForTheWholeLadder() async {
+        let local = ScriptedCleanupEngine(displayName: "Qwen 3 1.7B") { _ in
+            throw ScriptedCleanupEngine.Failure(message: "weights missing")
+        }
+        let system = ScriptedCleanupEngine(displayName: "Apple Intelligence") { _ in self.summary }
+        let selected = PostProcessingModel.catalog.first { $0.variant == "mlx-qwen3-1.7b-4bit" }!
+        let pipeline = TranscriptCleanupPipeline.scripted(engine: local, fallback: system, selected: selected)
+
+        _ = await pipeline.clean(raw: raw, plan: .test(.polish))
+
+        XCTAssertEqual(local.requests.count, 1, "the broken local model is tried once, not once per rung")
+        XCTAssertEqual(system.requests.count, 2)
     }
 
     func testStepDownDisabledMakesOneAttempt() async {
@@ -84,7 +127,7 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
         XCTAssertEqual(outcome.attempts.count, 1)
         XCTAssertEqual(outcome.attempts.first?.verdict, .appleContentFilter)
         XCTAssertNil(outcome.landed)
-        XCTAssertEqual(outcome.output, raw)
+        XCTAssertEqual(outcome.output, TranscriptCleanupPipeline.instantPass(raw, plan: .test(.polish)))
         XCTAssertEqual(outcome.error, "Apple Intelligence declined this text.")
     }
 
@@ -107,6 +150,10 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
 
     // MARK: - Fallback engine
 
+    /// Ticket 05: `FoundationModelsMLXCleanupEngine` throwing
+    /// `runtimeUnavailable` (missing weights) is this same path — the
+    /// pipeline already retries on Apple Intelligence. Do not special-case
+    /// the MLX engine here.
     func testLocalModelFailureRetriesOnTheSystemModel() async {
         let local = ScriptedCleanupEngine(displayName: "Qwen 3 1.7B") { _ in
             throw ScriptedCleanupEngine.Failure(message: "weights missing")
@@ -244,27 +291,49 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
         let engine = ScriptedCleanupEngine { $0.input }
         let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
 
-        _ = await pipeline.clean(raw: raw, plan: .test(.basic, markdown: true))
-        _ = await pipeline.clean(raw: raw, plan: .test(.light, markdown: true))
+        // The 1.3 prompts carry a Markdown stage; v3 has none.
+        var basic = CleanupPlan.test(.basic, markdown: true)
+        basic.promptSet = .v2
+        var light = CleanupPlan.test(.light, markdown: true)
+        light.promptSet = .v2
+        _ = await pipeline.clean(raw: raw, plan: basic)
+        _ = await pipeline.clean(raw: raw, plan: light)
 
-        let markdown = CleanupPromptSet.compiled.markdown
+        let markdown = CleanupPromptSet.v2.markdown
         XCTAssertEqual(engine.requests.count, 2)
         XCTAssertFalse(engine.requests[0].instructionStages.contains(markdown))
         XCTAssertTrue(engine.requests[1].instructionStages.contains(markdown))
     }
 
-    func testPolishSeesFlattenedSentenceBreaksAndLightDoesNot() async {
+    func testV2PolishSeesFlattenedSentenceBreaksAndLightDoesNot() async {
         let engine = ScriptedCleanupEngine { $0.input }
         let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
         let text = "It should be. Based on the model. There are things I think so."
+        var plan = CleanupPlan.test(.polish, stepDown: false)
+        plan.promptSet = .v2
 
-        let polish = await pipeline.clean(raw: text, plan: .test(.polish, stepDown: false))
+        let polish = await pipeline.clean(raw: text, plan: plan)
         XCTAssertEqual(engine.requests.last?.input, "It should be based on the model there are things I think so.")
         XCTAssertEqual(polish.modelInput, text, "History and diagnostics keep the engine text")
         XCTAssertEqual(polish.landed, .polish, "punctuation-only differences cost nothing")
 
-        _ = await pipeline.clean(raw: text, plan: .test(.light, stepDown: false))
+        plan.option = .light
+        _ = await pipeline.clean(raw: text, plan: plan)
         XCTAssertEqual(engine.requests.last?.input, text)
+    }
+
+    /// v3 Polish keeps the engine's full stops: flattening them turned real
+    /// sentence ends into comma splices.
+    func testV3PolishKeepsSentenceBreaks() async {
+        let engine = ScriptedCleanupEngine { $0.input }
+        let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)
+        let text = "Following up on yesterday. Can you send the deck by Thursday. Also the logo is old."
+        var plan = CleanupPlan.test(.polish, stepDown: false)
+        plan.promptSet = .v3
+
+        _ = await pipeline.clean(raw: text, plan: plan)
+        XCTAssertTrue(engine.requests.last?.input.contains("yesterday. Can you") == true)
+        XCTAssertTrue(engine.requests.last?.input.contains("Thursday. Also") == true)
     }
 
     func testCustomRulesetIsVerbatimWrappedAndUngoverned() async {
@@ -280,7 +349,7 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
         XCTAssertEqual(request.intensity, .custom)
         XCTAssertNil(request.budget)
         XCTAssertEqual(request.temperature, 0.6, accuracy: 0.0001)
-        XCTAssertTrue(request.userPrompt.contains("DICTATION:\n" + raw))
+        XCTAssertEqual(request.userPrompt, CleanupPromptSet.compiled.userPrompt(for: raw, intensity: nil))
         XCTAssertFalse(request.userPrompt.contains("REMEMBER:"))
 
         XCTAssertEqual(outcome.attempts.first?.verdict, .notGoverned)
@@ -294,13 +363,15 @@ final class TranscriptCleanupPipelineTests: XCTestCase {
         XCTAssertEqual(CleanupOption(intensity: .custom, ruleset: empty), .light)
         XCTAssertEqual(CleanupOption(intensity: .custom, ruleset: nil), .light)
         XCTAssertEqual(TranscriptCleanupPipeline.ladder(for: .test(.custom(empty))), [.custom])
-        XCTAssertEqual(TranscriptCleanupPipeline.ladder(for: .test(.light)), [.lightCleanup, .formatting])
+        XCTAssertEqual(TranscriptCleanupPipeline.ladder(for: .test(.light)), [.lightCleanup])
+        XCTAssertEqual(TranscriptCleanupPipeline.ladder(for: .test(.polish)), [.polish, .lightCleanup])
         XCTAssertEqual(TranscriptCleanupPipeline.ladder(for: .test(.light, stepDown: false)), [.lightCleanup])
         XCTAssertEqual(TranscriptCleanupPipeline.ladder(for: .test(.off)), [])
     }
 
     // MARK: - Recording
 
+    @MainActor
     func testRealTakesRecordTheOutcomeAndPreviewsDoNot() async {
         let engine = ScriptedCleanupEngine { $0.input }
         let pipeline = TranscriptCleanupPipeline.scripted(engine: engine)

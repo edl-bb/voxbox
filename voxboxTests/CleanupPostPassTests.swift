@@ -148,7 +148,9 @@ final class CleanupPostPassTests: XCTestCase {
             "I had had enough by then.",
             "I know that that is true.",
             "It was very very late.",
-            "Basically it looks like rain.",
+            "It's basically done, it looks like rain.",
+            "I like it, it looks like the old one.",
+            "Thank you, you legend.",
         ] {
             XCTAssertEqual(CleanupPostPass.stripSpokenFillers(text), text)
         }

@@ -7,10 +7,19 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     case recordingMode
     case permissions
     case cleanup
+    case aboutYou
     case model
 
     var next: OnboardingStep? {
         OnboardingStep(rawValue: rawValue + 1)
+    }
+
+    /// The step after this one for the cleanup level just chosen: About you
+    /// only matters to Light and Polish, so other levels skip it.
+    func next(cleanup: OnboardingCleanupChoice) -> OnboardingStep? {
+        guard let step = next else { return nil }
+        if step == .aboutYou, !cleanup.usesSpeakerContext { return step.next }
+        return step
     }
 
     var isLast: Bool { next == nil }
@@ -50,7 +59,8 @@ nonisolated enum OnboardingReplay {
 }
 
 /// The five cards on the cleanup step, mapped onto the formatter settings.
-nonisolated enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable, Sendable {
+/// Main-actor by default: `apply` and `previewOption` touch `CustomRulesetStore`.
+enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable {
     case off
     case basic
     case lightCleanup
@@ -81,10 +91,27 @@ nonisolated enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable, Senda
         }
     }
 
+    /// Light and Polish read Settings › About you; the other levels never see it.
+    var usesSpeakerContext: Bool {
+        self == .lightCleanup || self == .polish
+    }
+
     var intensity: FormattingIntensity? {
         switch self {
         case .off: return nil
         case .basic: return .formatting
+        case .lightCleanup: return .lightCleanup
+        case .polish: return .polish
+        case .custom: return .custom
+        }
+    }
+
+    /// The card that matches the stored settings. Fresh installs land on Off.
+    static func current(in defaults: UserDefaults = .standard) -> OnboardingCleanupChoice {
+        guard defaults.bool(forKey: TranscriptFormatterService.enabledKey) else { return .off }
+        let raw = defaults.object(forKey: TranscriptFormatterService.intensityKey) as? Int
+        switch raw.flatMap(FormattingIntensity.init(rawValue:)) ?? .lightCleanup {
+        case .formatting: return .basic
         case .lightCleanup: return .lightCleanup
         case .polish: return .polish
         case .custom: return .custom
@@ -100,18 +127,6 @@ nonisolated enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable, Senda
         case .lightCleanup: return .light
         case .polish: return .polish
         case .custom: return rulesetStore.usableActiveRuleset.map { .custom($0) }
-        }
-    }
-
-    /// The card that matches the stored settings. Fresh installs land on Off.
-    static func current(in defaults: UserDefaults = .standard) -> OnboardingCleanupChoice {
-        guard defaults.bool(forKey: TranscriptFormatterService.enabledKey) else { return .off }
-        let raw = defaults.object(forKey: TranscriptFormatterService.intensityKey) as? Int
-        switch raw.flatMap(FormattingIntensity.init(rawValue:)) ?? .lightCleanup {
-        case .formatting: return .basic
-        case .lightCleanup: return .lightCleanup
-        case .polish: return .polish
-        case .custom: return .custom
         }
     }
 

@@ -1,10 +1,9 @@
 import Foundation
-import FoundationModels
 
 /// A backend that can execute one transcript-cleanup request. The pipeline
 /// picks an engine per request via `CleanupEngineFactory`, so runtimes can
 /// be added or swapped without touching the cleanup chain.
-protocol CleanupEngine {
+nonisolated protocol CleanupEngine {
     /// Whether the engine can run right now (model present, OS support, …).
     var isAvailable: Bool { get }
     /// Human name for outcomes and previews ("Apple Intelligence").
@@ -12,91 +11,69 @@ protocol CleanupEngine {
     /// Runs the request and returns the raw model output (the caller strips
     /// preambles, tidies, and applies the guardrail).
     func cleanup(_ request: FormattingRequest) async throws -> String
+    /// Loads the model and caches `request`'s instructions so the next
+    /// `cleanup` with the same instructions starts warm. Best effort.
+    func prewarm(_ request: FormattingRequest) async
+}
+
+extension CleanupEngine {
+    func prewarm(_ request: FormattingRequest) async {}
 }
 
 nonisolated enum CleanupEngineError: Error, Equatable {
     /// The model's own content filter rejected the request. Stepping down
     /// will not help: the input is what was rejected.
     case contentFilter
+    /// No reply within the take's deadline. A safety net: if the model
+    /// service hangs, the take ships the instant pass instead of waiting.
+    case timedOut
 }
 
-/// Apple FoundationModels — the ~3B system model that ships with macOS 26.
-struct AppleIntelligenceCleanupEngine: CleanupEngine {
-    var isAvailable: Bool {
-        if case .available = SystemLanguageModel.default.availability { return true }
-        return false
-    }
-
-    var displayName: String {
-        PostProcessingModel.catalog.first { $0.variant == PostProcessingModel.appleSystemVariant }?.name
-            ?? "Apple Intelligence"
-    }
-
-    /// Built-in levels are deterministic: `temperature: 0` alone is not
-    /// documented as greedy, so ask for greedy sampling explicitly. Custom
-    /// rulesets keep their own temperature. Never cap response tokens: a
-    /// cap truncates silently.
-    static func generationOptions(for request: FormattingRequest) -> GenerationOptions {
-        if request.temperature <= 0 {
-            return GenerationOptions(sampling: .greedy)
-        }
-        return GenerationOptions(temperature: request.temperature)
-    }
-
-    /// Cleanup edits the user's own words, which is exactly what Apple's
-    /// `permissiveContentTransformations` guardrail is for. The default
-    /// guardrail refuses ordinary dictation that merely mentions a sensitive
-    /// word ("look at this pill").
-    static var systemModel: SystemLanguageModel {
-        SystemLanguageModel(guardrails: .permissiveContentTransformations)
-    }
-
-    func cleanup(_ request: FormattingRequest) async throws -> String {
-        let session = LanguageModelSession(model: Self.systemModel) {
-            request.instructionStages
-        }
-        do {
-            let response = try await session.respond(
-                to: request.userPrompt,
-                options: Self.generationOptions(for: request)
-            )
-            return response.content
-        } catch let error as LanguageModelSession.GenerationError {
-            switch error {
-            case .guardrailViolation, .refusal:
-                throw CleanupEngineError.contentFilter
-            default:
-                throw error
+/// Races an async call against a timer without needing the call to honour
+/// cancellation: a stalled `respond` is abandoned, not awaited. The pooled
+/// session it holds stays leased until it finishes, so later takes get a
+/// fresh one.
+nonisolated enum CleanupDeadline {
+    static func run<T: Sendable>(
+        seconds: Double, _ operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            let gate = ResumeOnce(continuation)
+            // Detached: a timer that inherits the main actor cannot fire while
+            // the main thread is busy.
+            let work = Task.detached {
+                do { gate.resume(.success(try await operation())) } catch { gate.resume(.failure(error)) }
             }
+            let timer = Task.detached {
+                try? await Task.sleep(nanoseconds: UInt64(max(0, seconds) * 1_000_000_000))
+                if !Task.isCancelled, gate.resume(.failure(CleanupEngineError.timedOut)) {
+                    work.cancel()
+                }
+            }
+            gate.onResume = { timer.cancel() }
         }
     }
-}
 
-/// Chooses the engine for the selected post-processing model.
-///
-/// macOS 27 note: FoundationModels there opens a public `LanguageModel`
-/// protocol with an Apple-provided MLX implementation. Once the app can
-/// build against the macOS 27 SDK, add a bridged engine here and prefer it
-/// under `#available(macOS 27, *)` for `.mlx` models; the direct
-/// `MLXCleanupEngine` stays as the macOS 26 path. Only this factory should
-/// need to change.
-enum CleanupEngineFactory {
-    static func engine(
-        for model: PostProcessingModel,
-        manager: PostProcessingModelManager = .shared
-    ) -> CleanupEngine {
-        switch model.kind {
-        case .appleSystem:
-            return AppleIntelligenceCleanupEngine()
-        case .mlx:
-            guard manager.isDownloaded(model.variant) else {
-                // Selected but not on disk (deleted externally, fresh Mac):
-                // fall back to the system model rather than fail cleanup.
-                return AppleIntelligenceCleanupEngine()
-            }
-            return MLXCleanupEngine(
-                model: model,
-                directory: PostProcessingModelManager.storageDir(for: model.variant))
+    private final class ResumeOnce<T: Sendable>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<T, Error>?
+        var onResume: (() -> Void)?
+
+        init(_ continuation: CheckedContinuation<T, Error>) {
+            self.continuation = continuation
+        }
+
+        @discardableResult
+        func resume(_ result: Result<T, Error>) -> Bool {
+            lock.lock()
+            let pending = continuation
+            continuation = nil
+            let after = onResume
+            lock.unlock()
+            guard let pending else { return false }
+            pending.resume(with: result)
+            after?()
+            return true
         }
     }
 }

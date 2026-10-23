@@ -106,8 +106,20 @@ The asymmetric edit budget that vetoes a model pass when it changed too much. Fi
 _Avoid_: Change ratio (the 1.2.0 symmetric measure); guide rails; safety filter; Apple `guardrailViolation` / `refusal` (the system model's content filter)
 
 **Step-down**:
-What happens after a veto: Polish → Light cleanup → Basic → raw, one rung per attempt, so a heavy Polish pass lands as Light rather than as the raw transcript. Previews and the ruleset test panel run a single rung.
+What happens after a veto: Polish → Light cleanup → instant pass, one rung per attempt, so a heavy Polish pass lands as Light rather than as the raw transcript. When no model rung lands, Light and Polish ship the instant pass (fillers, repeats, numerals, punctuation tidy) instead of calling the model for Basic. Basic requested is a single rung. Previews and the ruleset test panel run a single rung.
 _Avoid_: Fallback (when meaning the engine retry on Apple Intelligence); retry
+
+**Instruction echo**:
+Model output that repeats a run of five or more words from its own instructions that the speaker never said, such as a pasted example sentence. Vetoed like a guardrail breach.
+_Avoid_: Leak (unqualified); hallucination
+
+**Self-correction**:
+The speaker replacing something they just said ("Tuesday, no, sorry, Wednesday"; "we were, we were going"). Light and Polish keep only the final version. Unambiguous ones are resolved deterministically before the model (`SpokenRepairs`); anything less certain is left for the model, because deleting meant words is worse than leaving a correction in.
+_Avoid_: Disfluency (too broad: includes fillers); repair (the code's term for the edit, not the speech)
+
+**Speaker context**:
+What the speaker writes under Settings › About you: a short description of who they are and the names and terms they use. Light and Polish read it to spell sound-alikes ("zero bills" heard for "Xero bills"). It never adds content. Basic and custom rulesets do not get it.
+_Avoid_: Profile; persona; custom vocabulary (when meaning the dictionary's replacement rules)
 
 **Post-pass**:
 Deterministic repairs to model output before the guardrail: preamble and refusal strip, punctuation and whitespace tidy outside emails and URLs, casing repair against the dictation, sentence-initial capitals.
@@ -116,6 +128,10 @@ _Avoid_: Tidy (unqualified); formatting
 **Preview**:
 Running text through the same cleanup pipeline a take uses, without the enabled gate or minimum word count. Onboarding, the ruleset test panel and the eval harness all preview.
 _Avoid_: Dry run; simulate; test cleanup (in user-facing copy)
+
+**Cleanup eval**:
+`scripts/cleanup-eval.sh`: runs eval cases through the cleanup pipeline on Apple Intelligence and scores them against reference outputs. Synthetic cases are committed; a gold set built from your own History stays in gitignored `*.local.json` files.
+_Avoid_: Benchmark (see Published benchmark); probe (the AppleCleanupProbeTests print-only run)
 
 **DEBUG tuner**:
 A development-only in-app editor for cleanup instructions and guardrail budgets. Release builds use the compiled values.

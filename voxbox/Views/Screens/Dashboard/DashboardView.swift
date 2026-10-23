@@ -114,7 +114,7 @@ struct DashboardView: View {
                                 }
                                 .foregroundStyle(Color.textSecondary)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
                         }
                     }
 

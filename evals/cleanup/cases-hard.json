@@ -1,0 +1,1617 @@
+{
+  "language": "en-AU",
+  "contexts": {},
+  "cases": [
+    {
+      "id": "gpt-family-week-shuffle",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "self-correction",
+        "numbers",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "um so hi Maree can you work out the least chaotic way to do next week because I thought I had it sorted but I don't. Otis has swimming on Tuesday. no sorry Wednesday at five thirty and the lesson runs for forty five minutes, then Pippa needs collecting from drama at six fifteen in the opposite direction. Mum said she can take one of them but not until after her appointment in Wagga Wagga, which she reckons finishes around four. I've also got the plumber coming sometime between eight and twelve on Thursday and they won't give me a narrower window. Could you check whether it makes more sense for Mum to collect Pippa or wait at our place for the plumber if he's late, and tell me what I should ask Jono to cover? also we need two litres of milk, the blue lunchbox is still at Dad's, and the school wants the excursion payment by Friday. It was eighty four dollars. eighty nine dollars actually. Please don't move the dentist booking on Monday because that took three weeks to get, and don't assume Otis can walk home alone even though he keeps saying everyone else does. I can leave work at four forty if absolutely necessary but I'd rather not because I've already used sixty percent of my flex time this month.",
+      "expected": {
+        "light": "So hi Maree, can you work out the least chaotic way to do next week because I thought I had it sorted but I don't? Otis has swimming on Wednesday at 5:30 and the lesson runs for 45 minutes, then Pippa needs collecting from drama at 6:15 in the opposite direction. Mum said she can take one of them but not until after her appointment in Wagga Wagga, which she reckons finishes around 4. I've also got the plumber coming sometime between 8 and 12 on Thursday and they won't give me a narrower window. Could you check whether it makes more sense for Mum to collect Pippa or wait at our place for the plumber if he's late, and tell me what I should ask Jono to cover? Also, we need 2 litres of milk, the blue lunchbox is still at Dad's, and the school wants the excursion payment by Friday. It was $89 actually. Please don't move the dentist booking on Monday because that took 3 weeks to get, and don't assume Otis can walk home alone even though he keeps saying everyone else does. I can leave work at 4:40 if absolutely necessary but I'd rather not because I've already used 60% of my flex time this month.",
+        "polish": "Hi Maree, can you work out the least chaotic way to do next week because I thought I had it sorted but I don't? Otis has swimming on Wednesday at 5:30 and the lesson runs for 45 minutes. Then Pippa needs collecting from drama at 6:15 in the opposite direction. Mum said she can take one of them but not until after her appointment in Wagga Wagga, which she reckons finishes around 4. I've also got the plumber coming sometime between 8 and 12 on Thursday and they won't give me a narrower window. Could you check whether it makes more sense for Mum to collect Pippa or wait at our place for the plumber if he's late, and tell me what I should ask Jono to cover? Also, we need 2 litres of milk, the blue lunchbox is still at Dad's, and the school wants the excursion payment by Friday. It was $89, actually. Please don't move the dentist booking on Monday because that took 3 weeks to get, and don't assume Otis can walk home alone even though he keeps saying everyone else does. I can leave work at 4:40 if absolutely necessary, but I'd rather not because I've already used 60% of my flex time this month."
+      },
+      "keep": [
+        "the blue lunchbox",
+        "school wants the excursion payment",
+        "walk home alone",
+        "used 60% of my flex time"
+      ],
+      "forbidText": [
+        "$84",
+        "Tuesday",
+        "16:40",
+        "The best option is",
+        "17:30"
+      ],
+      "note": "Swimming day corrected to Wednesday and the amount to $89. Bare hours are digits with no added am/pm."
+    },
+    {
+      "id": "gpt-school-newsletter-notes",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "spoken lists",
+        "reported speech / quotes",
+        "writer:gpt-5.6",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "Okay so can you write me a note to the year four parents that sounds warm but not gushy. first remind them that the bush classroom morning is on the eighteenth of November and children need a hat, closed shoes and a water bottle. second explain that family helpers must sign in at the front office even if Miss Orlaith already knows them. third say we still need four volunteers for the veggie garden, but don't make it sound like people are being guilted into it. Mr Dacey said, \"we'll cancel if the fire rating reaches severe,\" and I think that exact condition needs to stay because last time everyone assumed light rain meant cancellation. also mention the gold coin donation for the Winyarra Wildlife Group. actually make that optional gold coin donation, because one family queried it. Um the thing is, there's also a separate reminder about the reading picnic on Friday and I don't know whether that belongs in the same note or not. What do you think is clearest? Parents can email cedar.admin@example.org if they can help. Oh and don't say kids, use children, but keep Mr Dacey's quote exactly, and please don't promise that siblings can attend because the school hasn't decided.",
+      "expected": {
+        "light": "Okay so can you write me a note to the year 4 parents that sounds warm but not gushy. First, remind them that the bush classroom morning is on the 18th of November and children need a hat, closed shoes and a water bottle. Second, explain that family helpers must sign in at the front office even if Miss Orlaith already knows them. Third, say we still need 4 volunteers for the veggie garden, but don't make it sound like people are being guilted into it. Mr Dacey said, \"we'll cancel if the fire rating reaches severe,\" and I think that exact condition needs to stay because last time everyone assumed light rain meant cancellation. Also, mention the optional gold coin donation for the Winyarra Wildlife Group, because one family queried it. The thing is, there's also a separate reminder about the reading picnic on Friday and I don't know whether that belongs in the same note or not. What do you think is clearest? Parents can email cedar.admin@example.org if they can help. Oh and don't say kids, use children, but keep Mr Dacey's quote exactly, and please don't promise that siblings can attend because the school hasn't decided.",
+        "polish": "Can you write me a note to the year 4 parents that sounds warm but not gushy?\n1. Remind them that the bush classroom morning is on the 18th of November and children need a hat, closed shoes and a water bottle.\n2. Explain that family helpers must sign in at the front office even if Miss Orlaith already knows them.\n3. Say we still need 4 volunteers for the veggie garden, but don't make it sound like people are being guilted into it.\nMr Dacey said, \"we'll cancel if the fire rating reaches severe,\" and I think that exact condition needs to stay because last time everyone assumed light rain meant cancellation. Also, mention the optional gold coin donation for the Winyarra Wildlife Group, because one family queried it. There's also a separate reminder about the reading picnic on Friday and I don't know whether that belongs in the same note or not. What do you think is clearest? Parents can email cedar.admin@example.org if they can help. And don't say kids, use children, but keep Mr Dacey's quote exactly, and please don't promise that siblings can attend because the school hasn't decided."
+      },
+      "keep": [
+        "sounds warm but not gushy",
+        "sign in at the front office",
+        "separate reminder",
+        "school hasn't decided"
+      ],
+      "forbidText": [
+        "Dear parents",
+        "Here's a note",
+        "Here is the note",
+        "The clearest option is"
+      ],
+      "note": "Gold-coin line collapsed to the final optional wording; it could stay as two instructions. Polish list is allowed but prose first/second/third is also allowed. Quote stays exact.",
+      "markdown": true
+    },
+    {
+      "id": "gpt-wedding-venue-run-sheet",
+      "tags": [
+        "long",
+        "spoken scaffolding",
+        "negation",
+        "unfinished final sentence",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "So hi Tahlia, I meant to say, can we go over the run sheet before you send it to Cloudfern Pavilion. The thing is, the celebrant arrives at two but the string duo isn't booked until two forty five, and I don't want guests being sent down to the lawn before three ten because there is no shade there. We were going to put cold water by the chairs. scratch that, the venue is supplying water near the gate, so ours should stay in the getting ready room. Please never announce the speeches before Uncle Bede is seated; he uses a walking frame and hates people waiting while he crosses the room. Dinner is at six twenty, speeches at seven fifteen, and the first dance was eight. no, eight thirty after the dessert carts. Also, the photographer asked for twelve minutes alone with us just after sunset, which their app says is seven fifty three. That can't overlap with Niamh's toast. Could you tell me if this sequence is realistic and flag any gap longer than forty minutes? Don't add a bouquet toss because we're definitely not doing one. We probably need someone to collect the cards, the spare shoes and the little framed photo from the welcome table, but I haven't asked anyone yet. If Sacha leaves on the nine forty shuttle then maybe she could, unless the driver needs the front seat kept clear because the",
+      "expected": {
+        "light": "So hi Tahlia, I meant to say, can we go over the run sheet before you send it to Cloudfern Pavilion? The thing is, the celebrant arrives at 2 but the string duo isn't booked until 2:45, and I don't want guests being sent down to the lawn before 3:10 because there is no shade there. The venue is supplying water near the gate, so ours should stay in the getting ready room. Please never announce the speeches before Uncle Bede is seated; he uses a walking frame and hates people waiting while he crosses the room. Dinner is at 6:20, speeches at 7:15, and the first dance was 8:30 after the dessert carts. Also, the photographer asked for 12 minutes alone with us just after sunset, which their app says is 7:53. That can't overlap with Niamh's toast. Could you tell me if this sequence is realistic and flag any gap longer than 40 minutes? Don't add a bouquet toss because we're definitely not doing one. We probably need someone to collect the cards, the spare shoes and the little framed photo from the welcome table, but I haven't asked anyone yet. If Sacha leaves on the 9:40 shuttle then maybe she could, unless the driver needs the front seat kept clear because the",
+        "polish": "Hi Tahlia, can we go over the run sheet before you send it to Cloudfern Pavilion? The celebrant arrives at 2 but the string duo isn't booked until 2:45, and I don't want guests being sent down to the lawn before 3:10 because there is no shade there. The venue is supplying water near the gate, so ours should stay in the getting ready room. Please never announce the speeches before Uncle Bede is seated; he uses a walking frame and hates people waiting while he crosses the room. Dinner is at 6:20, speeches at 7:15, and the first dance was 8:30 after the dessert carts. Also, the photographer asked for 12 minutes alone with us just after sunset, which their app says is 7:53. That can't overlap with Niamh's toast. Could you tell me if this sequence is realistic and flag any gap longer than 40 minutes? Don't add a bouquet toss because we're definitely not doing one. We probably need someone to collect the cards, the spare shoes and the little framed photo from the welcome table, but I haven't asked anyone yet. If Sacha leaves on the 9:40 shuttle, then maybe she could, unless the driver needs the front seat kept clear because the"
+      },
+      "keep": [
+        "the venue is supplying water",
+        "he uses a walking frame",
+        "collect the cards",
+        "front seat kept clear"
+      ],
+      "forbidText": [
+        "cold water by the chairs",
+        "scratch that",
+        "20:30",
+        "The sequence is realistic",
+        "because the driver requested it"
+      ],
+      "note": "Scratch-that removes the chair-water plan. Dance time corrected to 8:30. Left unfinished at because the."
+    },
+    {
+      "id": "gpt-dont-cancel-dentist",
+      "tags": [
+        "short",
+        "negation",
+        "numbers",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Don't cancel the dentist, move physio to two thirty.",
+      "expected": {
+        "light": "Don't cancel the dentist, move physio to 2:30.",
+        "polish": "Don't cancel the dentist. Move physio to 2:30."
+      },
+      "keep": [
+        "Don't cancel the dentist",
+        "move physio"
+      ],
+      "forbidText": [
+        "14:30",
+        "14:30"
+      ],
+      "note": "Comma splice split only at Polish. No am/pm added."
+    },
+    {
+      "id": "gpt-skywattle-connection",
+      "tags": [
+        "tempting-to-answer",
+        "mishearings",
+        "numbers",
+        "names with unusual spelling",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Hi can you peak at the SkyWattle Air quote for Aoibhe and tell me whether the fifty eight dollar flex fair is worth it. the flight from Mudgee lands at six oh five and there connection to Hobart leaves at six forty, so I'm worried thirty five minutes isn't enough with a checked bag. Her surname is Ní Bhraonáin, capital N small i space capital B, and the booking page keeps dropping the accent. We need twenty three kilos checked, not thirty two, and don't change the aisle seat unless the connection is impossible.",
+      "expected": {
+        "light": "Hi, can you peak at the SkyWattle Air quote for Aoibhe and tell me whether the $58 flex fair is worth it? The flight from Mudgee lands at 6:05 and there connection to Hobart leaves at 6:40, so I'm worried 35 minutes isn't enough with a checked bag. Her surname is Ní Bhraonáin, capital N small i space capital B, and the booking page keeps dropping the accent. We need 23 kilos checked, not 32, and don't change the aisle seat unless the connection is impossible.",
+        "polish": "Hi, can you peek at the SkyWattle Air quote for Aoibhe and tell me whether the $58 flex fare is worth it? The flight from Mudgee lands at 6:05 and their connection to Hobart leaves at 6:40, so I'm worried 35 minutes isn't enough with a checked bag. Her surname is Ní Bhraonáin, capital N small i space capital B, and the booking page keeps dropping the accent. We need 23 kilos checked, not 32, and don't change the aisle seat unless the connection is impossible."
+      },
+      "keep": [
+        "with a checked bag",
+        "keeps dropping the accent",
+        "don't change the aisle seat"
+      ],
+      "forbidText": [
+        "18:05",
+        "18:40",
+        "Yes, it is",
+        "The flex fare is worth it",
+        "18:05"
+      ],
+      "note": "peak, fair and there fixed only in Polish. Surname spelling instruction stays. Both weights stay."
+    },
+    {
+      "id": "gpt-clinic-preferences",
+      "tags": [
+        "self-correction",
+        "fillers that carry meaning",
+        "numbers",
+        "writer:gpt-5.6",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "I'd like an appointment with Doctor Verran on the fourteenth. no sorry the fifteenth, after nine thirty if possible. I like the early sessions because the waiting room is quieter, but I'd rather see another doctor than wait two to three weeks. It's for a kind of skin rash, not the cough from last month, and the cream is zero point five percent.",
+      "expected": {
+        "light": "I'd like an appointment with Doctor Verran on the 15th, after 9:30 if possible. I like the early sessions because the waiting room is quieter, but I'd rather see another doctor than wait 2 to 3 weeks. It's for a kind of skin rash, not the cough from last month, and the cream is 0.5%.",
+        "polish": "I'd like an appointment with Doctor Verran on the 15th, after 9:30 if possible. I like the early sessions because the waiting room is quieter, but I'd rather see another doctor than wait 2 to 3 weeks. It's for a kind of skin rash, not the cough from last month, and the cream is 0.5%."
+      },
+      "keep": [
+        "the waiting room is quieter",
+        "see another doctor",
+        "the cough from last month"
+      ],
+      "forbidText": [
+        "14th",
+        "fourteenth",
+        "Xero",
+        "the fourteenth",
+        "wait two to three weeks"
+      ],
+      "note": "Date corrected to the 15th. kind of kept as a type of rash; it could be read as filler and dropped."
+    },
+    {
+      "id": "gpt-club-registration-checklist",
+      "tags": [
+        "technical tokens",
+        "spoken lists",
+        "negation",
+        "numbers",
+        "writer:gpt-5.6",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "Can you send the under twelve coaches these steps. first open https://harbourfox.example/register, second enter seasonCode spring_27, third run the check called verifyBlueCard before assigning a team. Don't share the admin token in email. Registrations close at eleven fifty nine pm on the sixth of August and the fee is one hundred and forty five dollars, with a fifteen percent sibling discount. Ticket HFC-284 is only about the missing medical field, not the payment error.",
+      "expected": {
+        "light": "Can you send the under 12 coaches these steps? First, open https://harbourfox.example/register, second, enter seasonCode spring_27, third, run the check called verifyBlueCard before assigning a team. Don't share the admin token in email. Registrations close at 11:59pm on the 6th of August and the fee is $145, with a 15% sibling discount. Ticket HFC-284 is only about the missing medical field, not the payment error.",
+        "polish": "Can you send the under 12 coaches these steps?\n1. Open https://harbourfox.example/register.\n2. Enter seasonCode spring_27.\n3. Run the check called verifyBlueCard before assigning a team.\nDon't share the admin token in email. Registrations close at 11:59pm on the 6th of August and the fee is $145, with a 15% sibling discount. Ticket HFC-284 is only about the missing medical field, not the payment error."
+      },
+      "keep": [
+        "Don't share the admin token",
+        "missing medical field",
+        "the payment error"
+      ],
+      "forbidText": [
+        "23:59",
+        "Dear coaches",
+        "00:00",
+        "The fee is $123.25"
+      ],
+      "note": "Identifiers and the URL stay exact. A numbered list is allowed at Polish; prose first/second/third is also allowed.",
+      "markdown": true
+    },
+    {
+      "id": "gpt-grandad-pickup-message",
+      "tags": [
+        "reported speech / quotes",
+        "self-correction",
+        "negation",
+        "writer:gpt-5.6",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "Tell Grandad that Leni said, \"I can carry my own bag,\" but please don't let her bring the cello on the bus. Pick her up outside the library at four. wait, outside the aquatic centre, and don't go to the junior campus because she'll never be there on Thursdays. No worries if you're ten minutes late; she can wait with Farouk's mum.",
+      "expected": {
+        "light": "Tell Grandad that Leni said, \"I can carry my own bag,\" but please don't let her bring the cello on the bus. Pick her up outside the aquatic centre at 4, and don't go to the junior campus because she'll never be there on Thursdays. No worries if you're 10 minutes late; she can wait with Farouk's mum.",
+        "polish": "Tell Grandad that Leni said, \"I can carry my own bag,\" but please don't let her bring the cello on the bus. Pick her up outside the aquatic centre at 4, and don't go to the junior campus because she'll never be there on Thursdays. No worries if you're 10 minutes late; she can wait with Farouk's mum."
+      },
+      "keep": [
+        "carry my own bag",
+        "bring the cello",
+        "wait with Farouk's mum"
+      ],
+      "forbidText": [
+        "the library",
+        "16:00"
+      ],
+      "note": "Place corrected to the aquatic centre and 4 kept. The time may have been retracted with the library."
+    },
+    {
+      "id": "gpt-know-yass-minibus",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "fillers that carry meaning",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Do you know whether the Yass minibus takes surfboards?",
+      "expected": {
+        "light": "Do you know whether the Yass minibus takes surfboards?",
+        "polish": "Do you know whether the Yass minibus takes surfboards?"
+      },
+      "keep": [
+        "Yass minibus takes surfboards"
+      ],
+      "forbidText": [
+        "Yes, it does",
+        "No, it",
+        "Yes, it does",
+        "No, it doesn't"
+      ],
+      "note": "Already clean. Do not answer."
+    },
+    {
+      "id": "gpt-broken-cubby-hinge",
+      "tags": [
+        "spoken scaffolding",
+        "meaningful lookalike",
+        "fillers that carry meaning",
+        "mishearings",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "I was going to say the thing is broken, not that the whole cubby house is unsafe. It's a kind of hinge that folds flat, like the one on the art shed door. Could maintenance take a peak before recess and tell Miss Xanthe whether the children should use the other entrance? there tools were left beside the sandpit yesterday.",
+      "expected": {
+        "light": "I was going to say the thing is broken, not that the whole cubby house is unsafe. It's a kind of hinge that folds flat, like the one on the art shed door. Could maintenance take a peak before recess and tell Miss Xanthe whether the children should use the other entrance? There tools were left beside the sandpit yesterday.",
+        "polish": "The thing is broken, not that the whole cubby house is unsafe. It's a kind of hinge that folds flat, like the one on the art shed door. Could maintenance take a peek before recess and tell Miss Xanthe whether the children should use the other entrance? Their tools were left beside the sandpit yesterday."
+      },
+      "keep": [
+        "the whole cubby house",
+        "folds flat",
+        "use the other entrance",
+        "beside the sandpit"
+      ],
+      "forbidText": [
+        "Yes, they should",
+        "It is unsafe",
+        "The cubby house is unsafe",
+        "Yes, maintenance can inspect it"
+      ],
+      "note": "the thing is broken is the claim, not a discourse marker. kind of hinge is a type. peak and there fixed only in Polish."
+    },
+    {
+      "id": "gpt-luggage-reference-path",
+      "tags": [
+        "technical tokens",
+        "numbers",
+        "negation",
+        "unfinished final sentence",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "The lost luggage reference is SWA_70419 and the receipt photo is in /Users/guest/Trips/Kununurra/bag.jpg. The case weighs nineteen point six kilos and has a yellow strap. Don't close the claim until SkyWattle confirms delivery to room three twelve, because if they leave it at reception while we're out on the Ord River then",
+      "expected": {
+        "light": "The lost luggage reference is SWA_70419 and the receipt photo is in /Users/guest/Trips/Kununurra/bag.jpg. The case weighs 19.6 kilos and has a yellow strap. Don't close the claim until SkyWattle confirms delivery to room 312, because if they leave it at reception while we're out on the Ord River then",
+        "polish": "The lost luggage reference is SWA_70419 and the receipt photo is in /Users/guest/Trips/Kununurra/bag.jpg. The case weighs 19.6 kilos and has a yellow strap. Don't close the claim until SkyWattle confirms delivery to room 312, because if they leave it at reception while we're out on the Ord River then"
+      },
+      "keep": [
+        "has a yellow strap",
+        "Don't close the claim",
+        "leave it at reception",
+        "the Ord River"
+      ],
+      "forbidText": [
+        "kg",
+        "room 3:12",
+        "because it may be stolen"
+      ],
+      "note": "Reference and path stay exact. Left unfinished after then."
+    },
+    {
+      "id": "gpt-wedding-allergy-quote",
+      "tags": [
+        "reported speech / quotes",
+        "negation",
+        "mishearings",
+        "numbers",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Mireya said, \"please make sure mine has no almonds,\" and there caterer replied that the pear tart may contain traces. We can't serve it to her, even if they remove the garnish. Order one chocolate pot at twelve dollars fifty, not the fifteen dollar cheese plate, and label it for table seven. Don't write nut free unless Bramble & Sedge confirms there kitchen is safe.",
+      "expected": {
+        "light": "Mireya said, \"please make sure mine has no almonds,\" and there caterer replied that the pear tart may contain traces. We can't serve it to her, even if they remove the garnish. Order one chocolate pot at $12.50, not the $15 cheese plate, and label it for table 7. Don't write nut free unless Bramble & Sedge confirms there kitchen is safe.",
+        "polish": "Mireya said, \"please make sure mine has no almonds,\" and their caterer replied that the pear tart may contain traces. We can't serve it to her, even if they remove the garnish. Order one chocolate pot at $12.50, not the $15 cheese plate, and label it for table 7. Don't write nut free unless Bramble & Sedge confirms their kitchen is safe."
+      },
+      "keep": [
+        "mine has no almonds",
+        "remove the garnish",
+        "kitchen is safe"
+      ],
+      "forbidText": [
+        "fifteen",
+        "twelve dollars",
+        "We can serve the pear tart",
+        "Order the cheese plate"
+      ],
+      "note": "there caterer and there kitchen fixed only in Polish. Quote stays lowercase. Both the pot and the rejected cheese plate stay."
+    },
+    {
+      "id": "gpt-goalie-kit-count",
+      "tags": [
+        "self-correction",
+        "near-miss correction cue",
+        "numbers",
+        "names with unusual spelling",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "We need nine orange bibs. no, ten because Pádraig joined, plus two goalie shirts in youth medium. Actually the green kit looks better under lights, but that's not a change to the order. I'd rather collect from the Marrangaroo clubhouse than pay eighteen dollars delivery, and no worries if the cones arrive next week.",
+      "expected": {
+        "light": "We need 10 orange bibs because Pádraig joined, plus 2 goalie shirts in youth medium. Actually the green kit looks better under lights, but that's not a change to the order. I'd rather collect from the Marrangaroo clubhouse than pay $18 delivery, and no worries if the cones arrive next week.",
+        "polish": "We need 10 orange bibs because Pádraig joined, plus 2 goalie shirts in youth medium. Actually, the green kit looks better under lights, but that's not a change to the order. I'd rather collect from the Marrangaroo clubhouse than pay $18 delivery, and no worries if the cones arrive next week."
+      },
+      "keep": [
+        "the green kit looks better",
+        "that's not a change",
+        "collect from the Marrangaroo clubhouse",
+        "cones arrive next week"
+      ],
+      "forbidText": [
+        "nine orange",
+        "9 orange",
+        "Order the green kit",
+        "nine orange bibs"
+      ],
+      "note": "Bib count corrected to 10. The green-kit sentence is an aside, not a retraction."
+    },
+    {
+      "id": "gpt-specialist-referral-question",
+      "tags": [
+        "tempting-to-answer",
+        "spoken scaffolding",
+        "numbers",
+        "negation",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Okay so what's the best way to ask Doctor Quresh for a new referral without sounding pushy? The old one expires on the ninth of March and the specialist can't see me until the twenty seventh. I just need the request cleaned up; don't write the doctor's answer or say the referral will definitely be accepted.",
+      "expected": {
+        "light": "Okay so what's the best way to ask Doctor Quresh for a new referral without sounding pushy? The old one expires on the 9th of March and the specialist can't see me until the 27th. I just need the request cleaned up; don't write the doctor's answer or say the referral will definitely be accepted.",
+        "polish": "What's the best way to ask Doctor Quresh for a new referral without sounding pushy? The old one expires on the 9th of March and the specialist can't see me until the 27th. I just need the request cleaned up; don't write the doctor's answer or say the referral will definitely be accepted."
+      },
+      "keep": [
+        "without sounding pushy",
+        "the specialist can't see me",
+        "don't write the doctor's answer"
+      ],
+      "forbidText": [
+        "Dear Doctor",
+        "Certainly",
+        "The best way is",
+        "Your referral will be accepted"
+      ],
+      "note": "Do not draft the request or an answer."
+    },
+    {
+      "id": "gpt-sorry-for-caoilfhionn",
+      "tags": [
+        "short",
+        "near-miss correction cue",
+        "names with unusual spelling",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Sorry for Caoilfhionn missing choir; her hearing aid failed.",
+      "expected": {
+        "light": "Sorry for Caoilfhionn missing choir; her hearing aid failed.",
+        "polish": "Sorry for Caoilfhionn missing choir; her hearing aid failed."
+      },
+      "keep": [
+        "missing choir",
+        "her hearing aid failed"
+      ],
+      "forbidText": [
+        "Caitlin"
+      ],
+      "note": "Name stays exact."
+    },
+    {
+      "id": "gpt-fete-stall-details",
+      "tags": [
+        "technical tokens",
+        "numbers",
+        "enumeration that is NOT a list",
+        "negation",
+        "writer:gpt-5.6",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "For the fete I've got three cake stands, two eskies and one striped gazebo, but that's just a count, not a numbered checklist. Email stall.team@example.org with permit PSF-771 and put the map at https://peppergum.example/fete-map. Set-up is from six forty five to eight fifteen am. Don't tell volunteers to park on Kurrajong Lane because the crossing supervisor needs it clear.",
+      "expected": {
+        "light": "For the fete I've got 3 cake stands, 2 eskies and 1 striped gazebo, but that's just a count, not a numbered checklist. Email stall.team@example.org with permit PSF-771 and put the map at https://peppergum.example/fete-map. Set-up is from 6:45 to 8:15am. Don't tell volunteers to park on Kurrajong Lane because the crossing supervisor needs it clear.",
+        "polish": "For the fete I've got 3 cake stands, 2 eskies and 1 striped gazebo, but that's just a count, not a numbered checklist. Email stall.team@example.org with permit PSF-771 and put the map at https://peppergum.example/fete-map. Set-up is from 6:45 to 8:15am. Don't tell volunteers to park on Kurrajong Lane because the crossing supervisor needs it clear."
+      },
+      "keep": [
+        "that's just a count",
+        "crossing supervisor needs it clear"
+      ],
+      "forbidText": [
+        "20:15",
+        "coolers",
+        "1. Three cake stands",
+        "06:45"
+      ],
+      "note": "Counts are digits here but may stay words. Do not turn them into a numbered list. eskies stays."
+    },
+    {
+      "id": "gpt-family-recipe-call",
+      "tags": [
+        "fillers that carry meaning",
+        "reported speech / quotes",
+        "unfinished final sentence",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "You know which kind of rice Nan likes, don't you? She said, \"the one that smells like popcorn,\" and I basically doubled the stock last time, meaning I used four cups instead of two. I like it softer than the packet says. If you're shopping, get the same green bag and not the quick cook one, because when we make it for her birthday on Sunday I want it to",
+      "expected": {
+        "light": "You know which kind of rice Nan likes, don't you? She said, \"the one that smells like popcorn,\" and I doubled the stock last time, meaning I used 4 cups instead of 2. I like it softer than the packet says. If you're shopping, get the same green bag and not the quick cook one, because when we make it for her birthday on Sunday I want it to",
+        "polish": "You know which kind of rice Nan likes, don't you? She said, \"the one that smells like popcorn,\" and I doubled the stock last time, meaning I used 4 cups instead of 2. I like it softer than the packet says. If you're shopping, get the same green bag and not the quick cook one, because when we make it for her birthday on Sunday I want it to"
+      },
+      "keep": [
+        "the one that smells like popcorn",
+        "get the same green bag",
+        "not the quick cook one"
+      ],
+      "forbidText": [
+        "basmati",
+        "I want it to taste",
+        "Nan likes basmati rice",
+        "I want it to be perfect"
+      ],
+      "note": "You know is the question, not filler. basically removed. Left unfinished at I want it to."
+    },
+    {
+      "id": "gpt-campcloud-access-request",
+      "tags": [
+        "tempting-to-answer",
+        "technical tokens",
+        "negation",
+        "names with unusual spelling",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Can you tell me why Ngarie can't open the CampCloud permission form at https://campcloud.example/forms/CC-918? It says accessDenied after she signs in with ngarie.parent@example.org. Don't suggest making a second account because her payment receipt is tied to this one, and never paste her password into the support ticket.",
+      "expected": {
+        "light": "Can you tell me why Ngarie can't open the CampCloud permission form at https://campcloud.example/forms/CC-918? It says accessDenied after she signs in with ngarie.parent@example.org. Don't suggest making a second account because her payment receipt is tied to this one, and never paste her password into the support ticket.",
+        "polish": "Can you tell me why Ngarie can't open the CampCloud permission form at https://campcloud.example/forms/CC-918? It says accessDenied after she signs in with ngarie.parent@example.org. Don't suggest making a second account because her payment receipt is tied to this one, and never paste her password into the support ticket."
+      },
+      "keep": [
+        "permission form",
+        "her payment receipt",
+        "never paste her password",
+        "support ticket"
+      ],
+      "forbidText": [
+        "access denied",
+        "password is",
+        "Create a second account",
+        "The error occurs because"
+      ],
+      "note": "URL, email and accessDenied stay exact. Do not explain the error or invent a password."
+    },
+    {
+      "id": "gpt-quantas-brakefast",
+      "tags": [
+        "short",
+        "mishearings",
+        "numbers",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Does the Quantas fair include brakefast on flight seven twenty six?",
+      "expected": {
+        "light": "Does the Quantas fair include brakefast on flight 726?",
+        "polish": "Does the Qantas fare include breakfast on flight 726?"
+      },
+      "keep": [
+        "include",
+        "flight"
+      ],
+      "forbidText": [
+        "7:26",
+        "Yes, it includes",
+        "Yes, breakfast is included",
+        "No, breakfast costs extra",
+        "07:26"
+      ],
+      "note": "Quantas, fair and brakefast fixed only in Polish. 726 is the flight number, not a time."
+    },
+    {
+      "id": "gpt-scan-results-call",
+      "tags": [
+        "self-correction",
+        "tempting-to-answer",
+        "negation",
+        "numbers",
+        "writer:gpt-5.6",
+        "referee:grok-4.7"
+      ],
+      "raw": "Could you help me phrase a message asking whether my scan results are ready? The ultrasound was Monday the twelfth. sorry, Tuesday the thirteenth at eight twenty, and the clinic said results usually take three to five business days. I don't want medical advice and I don't want to imply anything is urgent, but can you make the request polite and direct? Ask them to call after four thirty, not during my school pickup.",
+      "expected": {
+        "light": "Could you help me phrase a message asking whether my scan results are ready? The ultrasound was Tuesday the 13th at 8:20, and the clinic said results usually take 3 to 5 business days. I don't want medical advice and I don't want to imply anything is urgent, but can you make the request polite and direct? Ask them to call after 4:30, not during my school pickup.",
+        "polish": "Could you help me phrase a message asking whether my scan results are ready? The ultrasound was Tuesday the 13th at 8:20, and the clinic said results usually take 3 to 5 business days. I don't want medical advice and I don't want to imply anything is urgent, but can you make the request polite and direct? Ask them to call after 4:30, not during my school pickup."
+      },
+      "keep": [
+        "my scan results are ready",
+        "I don't want medical advice",
+        "during my school pickup"
+      ],
+      "forbidText": [
+        "Monday",
+        "12th",
+        "16:30",
+        "Your results should be ready",
+        "This may be urgent",
+        "16:30"
+      ],
+      "note": "Date corrected to Tuesday the 13th at 8:20. Do not draft the message or give advice."
+    },
+    {
+      "id": "grok-niamh-pour",
+      "tags": [
+        "short",
+        "negation",
+        "spoken-scaffolding",
+        "unusual-name",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "um so hi Niamh don't start the pour",
+      "expected": {
+        "light": "So hi Niamh, don't start the pour.",
+        "polish": "Hi Niamh, don't start the pour."
+      },
+      "keep": [
+        "don't start the pour"
+      ],
+      "forbidText": [
+        "um",
+        "Please start the pour",
+        "Niamh should start the pour",
+        "Hi Neve"
+      ],
+      "note": "Polish drops the opener 'So'."
+    },
+    {
+      "id": "grok-hold-navy",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "numbers",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "um can you hold the navy size fourteen for Mara",
+      "expected": {
+        "light": "Can you hold the navy size 14 for Mara?",
+        "polish": "Can you hold the navy size 14 for Mara?"
+      },
+      "keep": [
+        "hold the navy",
+        "for Mara"
+      ],
+      "forbidText": [
+        "size fourteen",
+        "I can hold the navy",
+        "The navy size 14 is held"
+      ],
+      "note": "Sizes are written as digits. This is a request, so it must not be answered."
+    },
+    {
+      "id": "grok-side-bay",
+      "tags": [
+        "short",
+        "meaningful-lookalike",
+        "near-miss",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "sorry the thing is broken in the side bay",
+      "expected": {
+        "light": "Sorry, the thing is broken in the side bay.",
+        "polish": "Sorry, the thing is broken in the side bay."
+      },
+      "keep": [
+        "the thing is broken",
+        "the side bay"
+      ],
+      "forbidText": [
+        "the thing is, broken",
+        "Sorry about the side bay"
+      ],
+      "note": "Here 'the thing is' is the subject of the sentence, not scaffolding, so it stays. 'Sorry' is an apology with nothing before it to retract."
+    },
+    {
+      "id": "grok-quince-formwork",
+      "tags": [
+        "long",
+        "self-correction",
+        "mishearing",
+        "technical-token",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "um the formwork on the Quince Street job is still. waiting on a signature and the crew is pouring tomorrow no sorry Wednesday. because the engineer is still walking there inspection and. the bars along the east edge are the bars along the east edge are sitting low. we had a look at the sight diary this morning and. the last entry is out of line with the setout pins on the north corner by the stair void. the pump is already booked through Ironbark Concreting and. if we miss Wednesday they roll to the next free day after the long weekend. the crew can swing to the retaining wall in the meantime while the card is outstanding and the concrete is still at the plant. the latest card is at jobs/quince-street/pour-card.pdf and. the open ticket is IRN-4418. also the penetrations for the hydraulics are still. loose in the crate by the stairs next to the pier cages and the chair spacers. Wednesday needs a signed card before anyone. starts the pour and the rain plan is to pause and cover the steel with the heavy plastic from the container out the front",
+      "expected": {
+        "light": "The formwork on the Quince Street job is still waiting on a signature and the crew is pouring Wednesday because the engineer is still walking there inspection and the bars along the east edge are sitting low. We had a look at the sight diary this morning and the last entry is out of line with the setout pins on the north corner by the stair void. The pump is already booked through Ironbark Concreting and if we miss Wednesday they roll to the next free day after the long weekend. The crew can swing to the retaining wall in the meantime while the card is outstanding and the concrete is still at the plant. The latest card is at jobs/quince-street/pour-card.pdf and the open ticket is IRN-4418. Also the penetrations for the hydraulics are still loose in the crate by the stairs next to the pier cages and the chair spacers. Wednesday needs a signed card before anyone starts the pour and the rain plan is to pause and cover the steel with the heavy plastic from the container out the front.",
+        "polish": "The formwork on the Quince Street job is still waiting on a signature, and the crew is pouring Wednesday because the engineer is still walking their inspection. The bars along the east edge are sitting low. We had a look at the site diary this morning, and the last entry is out of line with the setout pins on the north corner by the stair void. The pump is already booked through Ironbark Concreting, and if we miss Wednesday, they roll to the next free day after the long weekend. The crew can swing to the retaining wall in the meantime while the card is outstanding and the concrete is still at the plant. The latest card is at jobs/quince-street/pour-card.pdf, and the open ticket is IRN-4418. Also, the penetrations for the hydraulics are still loose in the crate by the stairs, next to the pier cages and the chair spacers. Wednesday needs a signed card before anyone starts the pour, and the rain plan is to pause and cover the steel with the heavy plastic from the container out the front."
+      },
+      "keep": [
+        "Ironbark Concreting",
+        "starts the pour",
+        "the open ticket",
+        "signed card"
+      ],
+      "forbidText": [
+        "tomorrow",
+        "no sorry",
+        "east edge are the bars",
+        "pouring tomorrow",
+        "IRN-4419",
+        "safety inspection"
+      ],
+      "note": "'tomorrow no sorry Wednesday' becomes 'Wednesday'. Polish fixes 'there' to 'their' and 'sight' to 'site'. The file path and the ticket ID stay exactly as spoken."
+    },
+    {
+      "id": "grok-bracken-booking",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "negation",
+        "numbers",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "um hi it's the front desk at Bracken Lane Clinic. can you tell me the best way to handle this booking without. double booking the morning list. Mrs Ellison rang about her review with Doctor Fenwick and. she wants nine thirty not. ten and she said the gap fee last time was one hundred and forty dollars which. she reckons is wrong. we don't take a new patient slot for her until. the referral from her usual GP lands in the inbox. not until then even if she keeps ringing. the recall letter said her iron was low and. she wants the bloods done before the review and. please don't tell her she can just walk in on the day. the phone she left is oh four one two six six eight nine one four and. there is a two hundred dollar bond on the file from March. plus a note that she missed two of the last four visits. what do you think we should say when she calls back at. two pm about the fee and the wait. I think we hold the nine thirty as a maybe and. we never confirm it until the referral is already sitting in the inbox",
+      "expected": {
+        "light": "Hi, it's the front desk at Bracken Lane Clinic. Can you tell me the best way to handle this booking without double booking the morning list? Mrs Ellison rang about her review with Doctor Fenwick and she wants 9:30, not 10, and she said the gap fee last time was $140, which she reckons is wrong. We don't take a new patient slot for her until the referral from her usual GP lands in the inbox, not until then, even if she keeps ringing. The recall letter said her iron was low and she wants the bloods done before the review, and please don't tell her she can just walk in on the day. The phone she left is 0412 668 914 and there is a $200 bond on the file from March, plus a note that she missed two of the last four visits. What do you think we should say when she calls back at 2pm about the fee and the wait? I think we hold the 9:30 as a maybe and we never confirm it until the referral is already sitting in the inbox.",
+        "polish": "Hi, it's the front desk at Bracken Lane Clinic. Can you tell me the best way to handle this booking without double booking the morning list? Mrs Ellison rang about her review with Doctor Fenwick. She wants 9:30, not 10, and she said the gap fee last time was $140, which she reckons is wrong. We don't take a new patient slot for her until the referral from her usual GP lands in the inbox, not until then, even if she keeps ringing. The recall letter said her iron was low, and she wants the bloods done before the review. Please don't tell her she can just walk in on the day. The phone she left is 0412 668 914, and there is a $200 bond on the file from March, plus a note that she missed two of the last four visits. What do you think we should say when she calls back at 2pm about the fee and the wait? I think we hold the 9:30 as a maybe, and we never confirm it until the referral is already sitting in the inbox."
+      },
+      "keep": [
+        "don't take a new patient",
+        "never confirm it",
+        "Doctor Fenwick",
+        "do you think we"
+      ],
+      "forbidText": [
+        "14:00",
+        "one hundred and forty",
+        "The best way is",
+        "14:00",
+        "their is a bond"
+      ],
+      "note": "This contains questions to a person and must not be answered. '9:30' and '9.30' are both acceptable. The phone number is grouped as 0412 668 914."
+    },
+    {
+      "id": "grok-harlow-affidavit",
+      "tags": [
+        "long",
+        "spoken-list",
+        "reported-speech",
+        "unfinished",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "um this is the Harlow Voss file at Quill and Mace. the affidavit is ready for signing and. the annexures are printed on the bench in the war room. first we need Helen Crowe to settle the draft before it goes anywhere. second we send it to the client for signing on Friday afternoon. third we file it before the registry closes on Friday. the client said quote I will only sign once the recitals match the heads of agreement unquote. the recitals have to stay word for word with the version he initialled. he also said the mediation should stay in the boardroom here. with the same bundle we used last time and the same seating. Pender Holdings asked for a copy of the chronology and. I told them it goes out with the brief to counsel. there is also the costs letter sitting in the tray. which still needs the disbursement page attached before it is posted. the brief goes to counsel this afternoon and. the mediation bundle can follow once the affidavit is sworn at the front counter. if the registry clerk rings about the filing fee. accounts arranged it yesterday morning. the recitals get a quiet read before anyone couriers the bundle to the other side and if Pender's solicitor pushes back on the date we",
+      "expected": {
+        "light": "This is the Harlow Voss file at Quill and Mace. The affidavit is ready for signing and the annexures are printed on the bench in the war room. First, we need Helen Crowe to settle the draft before it goes anywhere. Second, we send it to the client for signing on Friday afternoon. Third, we file it before the registry closes on Friday. The client said, \"I will only sign once the recitals match the heads of agreement.\" The recitals have to stay word for word with the version he initialled. He also said the mediation should stay in the boardroom here with the same bundle we used last time and the same seating. Pender Holdings asked for a copy of the chronology and I told them it goes out with the brief to counsel. There is also the costs letter sitting in the tray, which still needs the disbursement page attached before it is posted. The brief goes to counsel this afternoon and the mediation bundle can follow once the affidavit is sworn at the front counter. If the registry clerk rings about the filing fee, accounts arranged it yesterday morning. The recitals get a quiet read before anyone couriers the bundle to the other side and if Pender's solicitor pushes back on the date we",
+        "polish": "This is the Harlow Voss file at Quill and Mace. The affidavit is ready for signing, and the annexures are printed on the bench in the war room. First, we need Helen Crowe to settle the draft before it goes anywhere. Second, we send it to the client for signing on Friday afternoon. Third, we file it before the registry closes on Friday. The client said, \"I will only sign once the recitals match the heads of agreement.\" The recitals have to stay word for word with the version he initialled. He also said the mediation should stay in the boardroom here, with the same bundle we used last time and the same seating. Pender Holdings asked for a copy of the chronology, and I told them it goes out with the brief to counsel. There is also the costs letter sitting in the tray, which still needs the disbursement page attached before it is posted. The brief goes to counsel this afternoon, and the mediation bundle can follow once the affidavit is sworn at the front counter. If the registry clerk rings about the filing fee, accounts arranged it yesterday morning. The recitals get a quiet read before anyone couriers the bundle to the other side, and if Pender's solicitor pushes back on the date, we"
+      },
+      "keep": [
+        "Harlow Voss",
+        "Helen Crowe",
+        "I will only sign",
+        "Pender Holdings"
+      ],
+      "forbidText": [
+        "unquote",
+        "quote I will",
+        "You will only sign",
+        "we will oppose Pender",
+        "I have reviewed the recitals"
+      ],
+      "note": "Because the speaker numbered the steps explicitly, Polish could also turn first/second/third into a numbered list. Single quotation marks (Australian Government style) are also valid. The trailing sentence is unfinished and must stay that way."
+    },
+    {
+      "id": "grok-brake-seal",
+      "tags": [
+        "mishearing",
+        "negation",
+        "meaningful-filler",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "um yeah mate don't brake the seal on the kind of joint we used along the balcony. that bead is basically the only waterproofing on the wall and. I like the copper flashing where it sits",
+      "expected": {
+        "light": "Yeah mate, don't brake the seal on the kind of joint we used along the balcony. That bead is the only waterproofing on the wall and I like the copper flashing where it sits.",
+        "polish": "Yeah mate, don't break the seal on the kind of joint we used along the balcony. That bead is the only waterproofing on the wall, and I like the copper flashing where it sits."
+      },
+      "keep": [
+        "kind of joint",
+        "the only waterproofing",
+        "I like the copper"
+      ],
+      "forbidText": [
+        "the joint we used along the balcony",
+        "You should break the seal"
+      ],
+      "note": "'kind of joint' means a type of joint, not filler, so it stays. The spec lists 'basically' as filler without any 'as filler' condition, so it is removed and the keep list was corrected. An editor might instead treat it as a qualifier and keep it. Polish could arguably drop the opener 'Yeah', but it is kept here for voice. Polish fixes 'brake' to 'break'."
+    },
+    {
+      "id": "grok-caoimhe-list",
+      "tags": [
+        "meaningful-filler",
+        "rhetorical-question",
+        "unusual-name",
+        "tempting-to-answer",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "um do you know whether Caoimhe from Mullumbimby is still on the cancellation list. who else would we ring at this hour",
+      "expected": {
+        "light": "Do you know whether Caoimhe from Mullumbimby is still on the cancellation list? Who else would we ring at this hour?",
+        "polish": "Do you know whether Caoimhe from Mullumbimby is still on the cancellation list? Who else would we ring at this hour?"
+      },
+      "keep": [
+        "Caoimhe from Mullumbimby",
+        "the cancellation list",
+        "else would we ring"
+      ],
+      "forbidText": [
+        "Call her usual GP",
+        "Caoimhe is off the list"
+      ],
+      "note": "These are two questions. Do not answer them."
+    },
+    {
+      "id": "grok-zero-ledger",
+      "tags": [
+        "mishearing",
+        "technical-token",
+        "numbers",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "um the balance sitting in zero for Vyne Holdings is four thousand two hundred dollars and fifty cents and. there reconciliation is short by twelve percent against the March pack. the export lives at finance/vyne-holdings/ledger_export.csv and. version two point three is the file we actually send to audit@vyne-holdings.example",
+      "expected": {
+        "light": "The balance sitting in zero for Vyne Holdings is $4,200.50 and there reconciliation is short by 12% against the March pack. The export lives at finance/vyne-holdings/ledger_export.csv and version 2.3 is the file we actually send to audit@vyne-holdings.example.",
+        "polish": "The balance sitting in Xero for Vyne Holdings is $4,200.50, and their reconciliation is short by 12% against the March pack. The export lives at finance/vyne-holdings/ledger_export.csv, and version 2.3 is the file we actually send to audit@vyne-holdings.example."
+      },
+      "keep": [
+        "Vyne Holdings",
+        "the March pack",
+        "the file we actually send"
+      ],
+      "forbidText": [
+        "four thousand",
+        "twelve percent",
+        "two point three",
+        "balance sitting in 0",
+        "version 23",
+        "short by 0.12"
+      ],
+      "note": "Polish fixes 'zero' to 'Xero' and 'there' to 'their'. The path and email stay exactly as spoken."
+    },
+    {
+      "id": "grok-bryony-pallet",
+      "tags": [
+        "mishearing",
+        "spoken-scaffolding",
+        "near-miss",
+        "unusual-name",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "so hi Bryony no worries about the late truck. sorry for the wait on the dock. I had a peak at the stationary order before. the doors open and that pallet is actually ours",
+      "expected": {
+        "light": "So hi Bryony, no worries about the late truck. Sorry for the wait on the dock. I had a peak at the stationary order before the doors open and that pallet is actually ours.",
+        "polish": "Hi Bryony, no worries about the late truck. Sorry for the wait on the dock. I had a peek at the stationery order before the doors open, and that pallet is actually ours."
+      },
+      "keep": [
+        "no worries about the late truck",
+        "for the wait on",
+        "that pallet is actually ours"
+      ],
+      "forbidText": [
+        "that pallet is yours",
+        "cancel the late truck",
+        "Hi Briony"
+      ],
+      "note": "'before. the doors open' is joined as a pause. An editor might instead read 'before' as 'earlier' and start a new sentence, or change 'open' to 'opened' at Polish. Polish fixes 'peak' to 'peek' and 'stationary' to 'stationery'."
+    },
+    {
+      "id": "grok-glaze-dispatch",
+      "tags": [
+        "negation",
+        "tempting-to-answer",
+        "self-correction",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "can you write me a note for the customer. we can ship the lamp tonight no sorry Friday and. don't dispatch it until the glaze is checked",
+      "expected": {
+        "light": "Can you write me a note for the customer? We can ship the lamp Friday and don't dispatch it until the glaze is checked.",
+        "polish": "Can you write me a note for the customer? We can ship the lamp Friday, and don't dispatch it until the glaze is checked."
+      },
+      "keep": [
+        "write me a note",
+        "don't dispatch it",
+        "the glaze is checked"
+      ],
+      "forbidText": [
+        "tonight",
+        "Dear",
+        "Here's",
+        "ship the lamp tonight",
+        "Dear customer, your lamp",
+        "Please dispatch it today"
+      ],
+      "note": "This asks for a note to be written. Do not write the note. 'tonight no sorry Friday' becomes 'Friday', and 'on' must not be added."
+    },
+    {
+      "id": "grok-wagga-split",
+      "tags": [
+        "non-list-enumeration",
+        "numbers",
+        "unusual-name",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "Tadhg and Eilidh and the apprentice are split across the Wagga Wagga job, the Orange job and the Dubbo job. the steel lead time is two to three weeks and. the crane on site reaches twelve point five metres",
+      "expected": {
+        "light": "Tadhg and Eilidh and the apprentice are split across the Wagga Wagga job, the Orange job and the Dubbo job. The steel lead time is two to three weeks and the crane on site reaches 12.5 metres.",
+        "polish": "Tadhg and Eilidh and the apprentice are split across the Wagga Wagga job, the Orange job and the Dubbo job. The steel lead time is two to three weeks, and the crane on site reaches 12.5 metres."
+      },
+      "keep": [
+        "Tadhg and Eilidh",
+        "Wagga Wagga",
+        "the Orange job",
+        "the Dubbo job"
+      ],
+      "forbidText": [
+        "twelve point five",
+        "1. Wagga Wagga",
+        "5 weeks",
+        "12.5m"
+      ],
+      "note": "'two to three weeks' may stay in words because the numbers are small; '2 to 3 weeks' is also acceptable. 'Tadhg and Eilidh and' is kept as spoken, not restyled."
+    },
+    {
+      "id": "grok-caveat-quote",
+      "tags": [
+        "reported-speech",
+        "meaningful-lookalike",
+        "negation",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "counsel said quote do not settle until the caveat is withdrawn unquote. so that the title stays clean for the purchaser. the thing is registered on the title as of this morning",
+      "expected": {
+        "light": "Counsel said, \"Do not settle until the caveat is withdrawn,\" so that the title stays clean for the purchaser. The thing is registered on the title as of this morning.",
+        "polish": "Counsel said, \"Do not settle until the caveat is withdrawn,\" so that the title stays clean for the purchaser. The thing is registered on the title as of this morning."
+      },
+      "keep": [
+        "not settle until the",
+        "the caveat is withdrawn",
+        "that the title stays",
+        "thing is registered on"
+      ],
+      "forbidText": [
+        "unquote",
+        "settle the file today",
+        "the thing is, registered",
+        "so the title stays"
+      ],
+      "note": "The 'so that' fragment joins the quote sentence. 'The thing is' is a literal subject here (the caveat), not scaffolding."
+    },
+    {
+      "id": "grok-slab-revision",
+      "tags": [
+        "numbers",
+        "technical-token",
+        "self-correction",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "um grab the layer SlabSetout from revision two point four no sorry two point five. the file is projects/harrowfield/slab_setout.dwg and. the bars are the bars are sixteen millimetres at two hundred centres",
+      "expected": {
+        "light": "Grab the layer SlabSetout from revision 2.5. The file is projects/harrowfield/slab_setout.dwg and the bars are 16 millimetres at 200 centres.",
+        "polish": "Grab the layer SlabSetout from revision 2.5. The file is projects/harrowfield/slab_setout.dwg, and the bars are 16 millimetres at 200 centres."
+      },
+      "keep": [
+        "the layer SlabSetout",
+        "file is projects/harrowfield/slab_setout.dwg"
+      ],
+      "forbidText": [
+        "2.4",
+        "two point four",
+        "the bars are the bars",
+        "revision 2.4",
+        "16mm",
+        "200 centers"
+      ],
+      "note": "The self-correction gives 2.5, and the repeated 'the bars are' is removed. The identifier and path stay exactly as spoken."
+    },
+    {
+      "id": "grok-myfanwy-cushion",
+      "tags": [
+        "self-correction",
+        "meaningful-filler",
+        "unusual-name",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "Myfanwy wanted the cushion in forest green scratch that charcoal. she likes the linen weave and. it is basically the last one in her size",
+      "expected": {
+        "light": "Myfanwy wanted the cushion in charcoal. She likes the linen weave and it is the last one in her size.",
+        "polish": "Myfanwy wanted the cushion in charcoal. She likes the linen weave, and it is the last one in her size."
+      },
+      "keep": [
+        "Myfanwy wanted the cushion",
+        "likes the linen weave",
+        "the last one"
+      ],
+      "forbidText": [
+        "forest green",
+        "scratch that",
+        "forest green",
+        "she does not like the linen"
+      ],
+      "note": "'scratch that' retracts 'forest green'. The spec lists 'basically' as filler, so it is removed and the keep list was corrected. An editor might instead keep it as a qualifier."
+    },
+    {
+      "id": "grok-potassium-trail",
+      "tags": [
+        "unfinished",
+        "spoken-scaffolding",
+        "near-miss",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "so hi Doctor Ellison I meant to say the bloods for the side room are back. I'd rather you saw them before lunch. actually the potassium is the result that worries me and. she was going to",
+      "expected": {
+        "light": "So hi Doctor Ellison, I meant to say the bloods for the side room are back. I'd rather you saw them before lunch. Actually the potassium is the result that worries me and she was going to",
+        "polish": "Hi Doctor Ellison, the bloods for the side room are back. I'd rather you saw them before lunch. Actually, the potassium is the result that worries me, and she was going to"
+      },
+      "keep": [
+        "bloods for the side room",
+        "I'd rather you saw them",
+        "the potassium is the result",
+        "she was going to"
+      ],
+      "forbidText": [
+        "she was going to faint",
+        "I'd rather see them",
+        "the potassium is fine"
+      ],
+      "note": "Polish drops 'So' and the self-narration 'I meant to say'. 'Actually' is a qualifier and stays. The ending is unfinished and must not be completed."
+    },
+    {
+      "id": "grok-lien-mind",
+      "tags": [
+        "rhetorical-question",
+        "mishearing",
+        "negation",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "um yeah don't release the lean on the principle loan. who in there right mind would sign off before council has read the deed",
+      "expected": {
+        "light": "Yeah, don't release the lean on the principle loan. Who in there right mind would sign off before council has read the deed?",
+        "polish": "Yeah, don't release the lien on the principal loan. Who in their right mind would sign off before counsel has read the deed?"
+      },
+      "keep": [
+        "don't release the",
+        "sign off before",
+        "has read the deed",
+        "right mind would"
+      ],
+      "forbidText": [
+        "Do release the lien",
+        "Counsel already read the deed",
+        "in your right mind"
+      ],
+      "note": "Polish fixes 'lean' to 'lien', 'principle' to 'principal' and 'there' to 'their'. Because this is about a deed in a legal context, 'council' probably means 'counsel', but a local council is possible. The question is rhetorical and must not be answered."
+    },
+    {
+      "id": "grok-finchley-mobile",
+      "tags": [
+        "numbers",
+        "technical-token",
+        "tempting-to-answer",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "can you check whether oh four one two eight one seven five five zero is the right mobile for the two pm recall. the portal note is at https://rooms.finchley-clinic.example/recall and. the fee quoted was eighty nine dollars and fifty cents",
+      "expected": {
+        "light": "Can you check whether 0412 817 550 is the right mobile for the 2pm recall? The portal note is at https://rooms.finchley-clinic.example/recall and the fee quoted was $89.50.",
+        "polish": "Can you check whether 0412 817 550 is the right mobile for the 2pm recall? The portal note is at https://rooms.finchley-clinic.example/recall, and the fee quoted was $89.50."
+      },
+      "keep": [
+        "the right mobile",
+        "portal note is",
+        "fee quoted was"
+      ],
+      "forbidText": [
+        "14:00",
+        "eighty nine",
+        "14:00",
+        "Yes, that mobile is right",
+        "finchley-clinic.com"
+      ],
+      "note": "This is a request and must not be answered. The URL stays exactly as spoken."
+    },
+    {
+      "id": "grok-saoirse-stock",
+      "tags": [
+        "spoken-list",
+        "numbers",
+        "unusual-name",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "first move the woollen throws for Saoirse. second mark the linen down by fifteen percent. third count the candles in box twelve before. the Geelong delivery hits the dock at four thirty",
+      "expected": {
+        "light": "First move the woollen throws for Saoirse. Second mark the linen down by 15%. Third count the candles in box 12 before the Geelong delivery hits the dock at 4:30.",
+        "polish": "First, move the woollen throws for Saoirse. Second, mark the linen down by 15%. Third, count the candles in box 12 before the Geelong delivery hits the dock at 4:30."
+      },
+      "keep": [
+        "woollen throws for Saoirse",
+        "the linen down by",
+        "the candles in",
+        "the Geelong delivery"
+      ],
+      "forbidText": [
+        "16:30",
+        "fifteen percent",
+        "16:30",
+        "woolen throws",
+        "50%"
+      ],
+      "note": "The speaker numbered the steps explicitly, so Polish could also become a numbered list. '4:30' gets no am/pm because none was spoken."
+    },
+    {
+      "id": "grok-library-scaffold",
+      "tags": [
+        "unfinished",
+        "meaningful-lookalike",
+        "unusual-name",
+        "writer:grok-4.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "the scaffold at the Wagga Wagga library is up. so that the south elevation can be sheeted and. the thing is tied to the slab at every other bay. we still need the engineer before. anyone drops the",
+      "expected": {
+        "light": "The scaffold at the Wagga Wagga library is up so that the south elevation can be sheeted and the thing is tied to the slab at every other bay. We still need the engineer before anyone drops the",
+        "polish": "The scaffold at the Wagga Wagga library is up so that the south elevation can be sheeted, and the thing is tied to the slab at every other bay. We still need the engineer before anyone drops the"
+      },
+      "keep": [
+        "Wagga Wagga library",
+        "that the south elevation",
+        "the thing is tied"
+      ],
+      "forbidText": [
+        "anyone drops the boards",
+        "the thing is, tied",
+        "so the south elevation"
+      ],
+      "note": "Here 'the thing is' is a literal subject (the scaffold), not scaffolding. The ending is unfinished and must not be completed or punctuated."
+    },
+    {
+      "id": "gem-git-reset-agent",
+      "tags": [
+        "short",
+        "technical tokens",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6",
+        "ambiguous"
+      ],
+      "raw": "can you run. Git reset hard head tilde one for me",
+      "expected": {
+        "light": "Can you run git reset hard head tilde 1 for me?",
+        "polish": "Can you run git reset hard head tilde 1 for me?"
+      },
+      "keep": [
+        "run git reset",
+        "for me"
+      ],
+      "forbidText": [
+        "I have run git reset",
+        "Sure, running git reset",
+        "git reset --hard HEAD~1 has been executed"
+      ],
+      "note": "A careful editor might interpret “hard head tilde one” as spoken shell syntax and render “--hard HEAD~1”, but the spec does not explicitly permit that conversion."
+    },
+    {
+      "id": "gem-agent-refactor-pipeline",
+      "tags": [
+        "long",
+        "spoken scaffolding",
+        "numbers",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "so hey agent. I was going to say, can we look at `Services/DataIngestionPipeline.swift` because we're getting memory spikes. When processing twenty thousand events. The thing is, the batch size is currently set to five hundred. But in production under load. It should never exceed two hundred and fifty items per chunk. Um, could you first check the `processEventBatch` method on line eighty four. And refactor it so we use `AsyncStream` instead of loading everything into memory at once. Also, make sure you don't drop the telemetry events in `AnalyticsTracker.ts` when an error occurs during parsing. We need to retain at least ninety eight point five percent of dropped batches in local storage. Oh and before running tests. Make sure the timeout is bumped from ten seconds to forty five seconds. Because the staging database in Sydney takes around three point two seconds to respond.",
+      "expected": {
+        "light": "So hey agent, I was going to say, can we look at Services/DataIngestionPipeline.swift because we're getting memory spikes when processing 20,000 events? The thing is, the batch size is currently set to 500, but in production under load, it should never exceed 250 items per chunk. Could you first check the processEventBatch method on line 84 and refactor it so we use AsyncStream instead of loading everything into memory at once? Also, make sure you don't drop the telemetry events in AnalyticsTracker.ts when an error occurs during parsing. We need to retain at least 98.5% of dropped batches in local storage. Oh, and before running tests, make sure the timeout is bumped from 10 seconds to 45 seconds because the staging database in Sydney takes around 3.2 seconds to respond.",
+        "polish": "Hey agent, can we look at Services/DataIngestionPipeline.swift because we're getting memory spikes when processing 20,000 events? The batch size is currently set to 500, but in production under load, it should never exceed 250 items per chunk. Could you first check the processEventBatch method on line 84 and refactor it so we use AsyncStream instead of loading everything into memory at once? Also, make sure you don't drop the telemetry events in AnalyticsTracker.ts when an error occurs during parsing. We need to retain at least 98.5% of dropped batches in local storage. Before running tests, make sure the timeout is bumped from 10 seconds to 45 seconds because the staging database in Sydney takes around 3.2 seconds to respond."
+      },
+      "keep": [
+        "memory spikes",
+        "AnalyticsTracker.ts",
+        "staging database in Sydney"
+      ],
+      "forbidText": [
+        "I have refactored",
+        "should exceed",
+        "24-hour"
+      ]
+    },
+    {
+      "id": "gem-api-route-cache",
+      "tags": [
+        "tempting-to-answer",
+        "mishearings",
+        "negation",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "can you check there cache headers on the slash users route. Because we should never cash authenticated responses without a private directive",
+      "expected": {
+        "light": "Can you check there cache headers on the slash users route because we should never cash authenticated responses without a private directive?",
+        "polish": "Can you check the cache headers on the slash users route because we should never cache authenticated responses without a private directive?"
+      },
+      "keep": [
+        "cache headers",
+        "slash users route",
+        "authenticated responses",
+        "private directive"
+      ],
+      "forbidText": [
+        "Yes, here are the cache headers",
+        "their review",
+        "we should cache"
+      ]
+    },
+    {
+      "id": "gem-churn-metric-drop",
+      "tags": [
+        "short",
+        "numbers",
+        "negation",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "monthly churn did not drop below four point two percent",
+      "expected": {
+        "light": "Monthly churn did not drop below 4.2%.",
+        "polish": "Monthly churn did not drop below 4.2%."
+      },
+      "keep": [
+        "monthly churn",
+        "did not drop below"
+      ],
+      "forbidText": [
+        "dropped below",
+        "4.2% dropped"
+      ]
+    },
+    {
+      "id": "gem-docker-compose-ports",
+      "tags": [
+        "self-correction",
+        "technical tokens",
+        "mishearings",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "please update docker-compose.yml to expose port eight zero eight zero. No sorry, port eight four four three for there auth service",
+      "expected": {
+        "light": "Please update docker-compose.yml to expose port 8443 for there auth service.",
+        "polish": "Please update docker-compose.yml to expose port 8443 for their auth service."
+      },
+      "keep": [
+        "update docker-compose.yml",
+        "auth service"
+      ],
+      "forbidText": [
+        "8080",
+        "8080"
+      ]
+    },
+    {
+      "id": "gem-product-board-feedback",
+      "tags": [
+        "long",
+        "spoken scaffolding",
+        "reported speech",
+        "fillers that carry meaning",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6",
+        "ambiguous"
+      ],
+      "raw": "so hi Sarah. What I'm trying to say is, the feedback from the enterprise trial with Canva in Sydney last week was kind of mixed. Lachlan literally said to me, quote, your export feature feels like a prototype, unquote. And honestly, the thing is, he is basically right because the CSV generator crashes whenever an export has more than fifty columns. We kind of need a proper background worker queue for exports. But you know how hard it is to prioritize infrastructure work right before the quarterly board meeting. I don't want us to rewrite the entire data ingestion layer from scratch. But if we just stream the rows directly to S3 bucket storage. It would fix eighty percent of the enterprise customer complaints. Can you talk to Dave about whether we can squeeze this into sprint forty two. Before we ship the onboarding redesign?",
+      "expected": {
+        "light": "So hi Sarah, what I'm trying to say is the feedback from the enterprise trial with Canva in Sydney last week was kind of mixed. Lachlan literally said to me, quote, “Your export feature feels like a prototype,” unquote. And honestly, the thing is: he is basically right because the CSV generator crashes whenever an export has more than 50 columns. We kind of need a proper background worker queue for exports. But you know how hard it is to prioritise infrastructure work right before the quarterly board meeting. I don't want us to rewrite the entire data ingestion layer from scratch. But if we just stream the rows directly to S3 bucket storage, it would fix 80% of the enterprise customer complaints. Can you talk to Dave about whether we can squeeze this into sprint 42 before we ship the onboarding redesign?",
+        "polish": "Hi Sarah, the feedback from the enterprise trial with Canva in Sydney last week was kind of mixed. Lachlan literally said to me, quote, “Your export feature feels like a prototype,” unquote. And honestly, he is basically right because the CSV generator crashes whenever an export has more than 50 columns. We kind of need a proper background worker queue for exports. But you know how hard it is to prioritise infrastructure work right before the quarterly board meeting. I don't want us to rewrite the entire data ingestion layer from scratch. But if we just stream the rows directly to S3 bucket storage, it would fix 80% of the enterprise customer complaints. Can you talk to Dave about whether we can squeeze this into sprint 42 before we ship the onboarding redesign?"
+      },
+      "keep": [
+        "enterprise trial with Canva",
+        "Lachlan literally said to me",
+        "CSV generator crashes",
+        "onboarding redesign"
+      ],
+      "forbidText": [
+        "Hi Sarah, here is my feedback",
+        "Sarah:",
+        "he said your export feature"
+      ],
+      "note": "The spec does not say whether spoken “quote” and “unquote” are content or punctuation commands; a careful editor could instead remove those words and retain only quotation marks."
+    },
+    {
+      "id": "gem-python-venv-switch",
+      "tags": [
+        "short",
+        "self-correction",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "can you activate python three point eleven. Scratch that, python three point twelve?",
+      "expected": {
+        "light": "Can you activate Python 3.12?",
+        "polish": "Can you activate Python 3.12?"
+      },
+      "keep": [
+        "activate Python"
+      ],
+      "forbidText": [
+        "3.11",
+        "I have activated",
+        "Python 3.11",
+        "Sure, activating"
+      ]
+    },
+    {
+      "id": "gem-migration-steps-cli",
+      "tags": [
+        "spoken lists",
+        "numbers",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "first run `pnpm db:migrate` on staging. Second apply the seed data in `seeds/tenants.sql`. And third verify that tenant four zero nine can authenticate",
+      "expected": {
+        "light": "First, run pnpm db:migrate on staging. Second, apply the seed data in seeds/tenants.sql. And third, verify that tenant 409 can authenticate.",
+        "polish": "First, run pnpm db:migrate on staging. Second, apply the seed data in seeds/tenants.sql. And third, verify that tenant 409 can authenticate."
+      },
+      "keep": [
+        "run pnpm db:migrate",
+        "seed data in seeds/tenants.sql",
+        "can authenticate"
+      ],
+      "forbidText": [
+        "First, I will run",
+        "tenant 409 cannot"
+      ]
+    },
+    {
+      "id": "gem-sql-join-filtering",
+      "tags": [
+        "fillers that carry meaning",
+        "negation",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "do you know which kind of join we used in the cohort analysis query. Because we must not exclude users who signed up without an invite code",
+      "expected": {
+        "light": "Do you know which kind of join we used in the cohort analysis query because we must not exclude users who signed up without an invite code?",
+        "polish": "Do you know which kind of join we used in the cohort analysis query because we must not exclude users who signed up without an invite code?"
+      },
+      "keep": [
+        "cohort analysis query",
+        "must not exclude users",
+        "without an invite code"
+      ],
+      "forbidText": [
+        "The kind of join used is",
+        "we must exclude users",
+        "users were excluded"
+      ]
+    },
+    {
+      "id": "gem-woollongong-trial-metrics",
+      "tags": [
+        "mishearings",
+        "names with unusual spelling, Australian place names",
+        "numbers",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "take a peak at the conversion numbers for the trial in Wollongong. Siobhan said revenue rose by fourteen percent between nine am and five pm",
+      "expected": {
+        "light": "Take a peak at the conversion numbers for the trial in Wollongong. Siobhan said revenue rose by 14% between 9am and 5pm.",
+        "polish": "Take a peek at the conversion numbers for the trial in Wollongong. Siobhan said revenue rose by 14% between 9am and 5pm."
+      },
+      "keep": [
+        "conversion numbers",
+        "trial in Wollongong",
+        "Siobhan said revenue rose"
+      ],
+      "forbidText": [
+        "14:00",
+        "17:00"
+      ]
+    },
+    {
+      "id": "gem-agent-multi-step-refactor",
+      "tags": [
+        "long",
+        "self-correction",
+        "spoken lists",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "hey Claude. Can you refactor our authentication middleware in `src/auth/jwt.ts` according to these steps. First deprecate the legacy HS256 verification function. And replace it with RS256 using the public key from `jwks.json`. Second update the session TTL from sixty minutes. No sorry, from twenty four hours to twelve hours. Third add structured logging with `pino` so every failed token verification logs the user ID, timestamp, and error code. Actually don't log the user ID if the token is malformed. Just log the IP address and request path. Fourth make sure that `AuthGuard.test.ts` passes with one hundred percent coverage across all ten edge cases. The thing is, we cannot afford any regressions because over forty thousand active users in Melbourne will be hitting the login endpoint at eight am tomorrow. Tell me what files you need to modify before you begin.",
+      "expected": {
+        "light": "Hey Claude, can you refactor our authentication middleware in src/auth/jwt.ts according to these steps? First, deprecate the legacy HS256 verification function and replace it with RS256 using the public key from jwks.json. Second, update the session TTL from 24 hours to 12 hours. Third, add structured logging with pino so every failed token verification logs the user ID, timestamp, and error code. Actually, don't log the user ID if the token is malformed. Just log the IP address and request path. Fourth, make sure that AuthGuard.test.ts passes with 100% coverage across all 10 edge cases. The thing is, we cannot afford any regressions because over 40,000 active users in Melbourne will be hitting the login endpoint at 8am tomorrow. Tell me what files you need to modify before you begin.",
+        "polish": "Hey Claude, can you refactor our authentication middleware in src/auth/jwt.ts according to these steps? First, deprecate the legacy HS256 verification function and replace it with RS256 using the public key from jwks.json. Second, update the session TTL from 24 hours to 12 hours. Third, add structured logging with pino so every failed token verification logs the user ID, timestamp, and error code. Actually, don't log the user ID if the token is malformed. Just log the IP address and request path. Fourth, make sure that AuthGuard.test.ts passes with 100% coverage across all 10 edge cases. We cannot afford any regressions because over 40,000 active users in Melbourne will be hitting the login endpoint at 8am tomorrow. Tell me what files you need to modify before you begin."
+      },
+      "keep": [
+        "authentication middleware in src/auth/jwt.ts",
+        "public key from jwks.json",
+        "AuthGuard.test.ts",
+        "active users in Melbourne"
+      ],
+      "forbidText": [
+        "60 minutes",
+        "I will refactor",
+        "Here are the files I will modify:",
+        "60 minutes"
+      ]
+    },
+    {
+      "id": "gem-k8s-pod-crash",
+      "tags": [
+        "unfinished final sentence",
+        "technical tokens",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "why is the `billing-worker` pod crashing in namespace `prod-syd` right after we deployed commit `8f2a1c`. It looks like the environment variable `STRIPE_WEBHOOK_SECRET` is",
+      "expected": {
+        "light": "Why is the billing-worker pod crashing in namespace prod-syd right after we deployed commit 8f2a1c? It looks like the environment variable STRIPE_WEBHOOK_SECRET is",
+        "polish": "Why is the billing-worker pod crashing in namespace prod-syd right after we deployed commit 8f2a1c? It looks like the environment variable STRIPE_WEBHOOK_SECRET is"
+      },
+      "keep": [
+        "billing-worker pod crashing",
+        "namespace prod-syd",
+        "environment variable STRIPE_WEBHOOK_SECRET"
+      ],
+      "forbidText": [
+        "is missing.",
+        "is undefined.",
+        "The billing-worker pod is crashing because"
+      ]
+    },
+    {
+      "id": "gem-churn-rate-breakdown",
+      "tags": [
+        "spoken scaffolding",
+        "mishearings",
+        "numbers",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "so anyway, I was going to say, there quarterly churn rate reached three point seven five percent. Which caused a brake in our net revenue retention target of one hundred and ten percent",
+      "expected": {
+        "light": "So anyway, I was going to say, there quarterly churn rate reached 3.75%, which caused a brake in our net revenue retention target of 110%.",
+        "polish": "The quarterly churn rate reached 3.75%, which caused a break in our net revenue retention target of 110%."
+      },
+      "keep": [
+        "quarterly churn rate",
+        "net revenue retention target"
+      ],
+      "forbidText": []
+    },
+    {
+      "id": "gem-bypass-rls-rule",
+      "tags": [
+        "short",
+        "technical tokens",
+        "negation",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "do not enable `bypass_rls` on table `organisations`",
+      "expected": {
+        "light": "Do not enable bypass_rls on table organisations.",
+        "polish": "Do not enable bypass_rls on table organisations."
+      },
+      "keep": [
+        "do not enable",
+        "bypass_rls on table organisations"
+      ],
+      "forbidText": [
+        "bypass_rls on table organisations has been enabled"
+      ]
+    },
+    {
+      "id": "gem-user-interview-parramatta",
+      "tags": [
+        "fillers that carry meaning",
+        "reported speech",
+        "names with unusual spelling, Australian place names",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6",
+        "ambiguous"
+      ],
+      "raw": "Aoife from the Parramatta clinic asked me, quote, do you like the new patient intake flow?, unquote. And I told her we basically built it like a multi-step form to reduce drop-off",
+      "expected": {
+        "light": "Aoife from the Parramatta clinic asked me, quote, “Do you like the new patient intake flow?” unquote. And I told her we built it like a multi-step form to reduce drop-off.",
+        "polish": "Aoife from the Parramatta clinic asked me, quote, “Do you like the new patient intake flow?” unquote. And I told her we built it like a multi-step form to reduce drop-off."
+      },
+      "keep": [
+        "Aoife from the Parramatta clinic",
+        "multi-step form to reduce drop-off"
+      ],
+      "forbidText": [
+        "basically",
+        "Aoife:"
+      ],
+      "note": "The spec does not say whether spoken “quote” and “unquote” are content or punctuation commands; a careful editor could instead remove those words and retain only quotation marks."
+    },
+    {
+      "id": "gem-rate-limit-redis",
+      "tags": [
+        "self-correction",
+        "numbers",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "set the Redis key `rate_limit:user:123` expiry to three hundred seconds. No wait, six hundred seconds",
+      "expected": {
+        "light": "Set the Redis key rate_limit:user:123 expiry to 600 seconds.",
+        "polish": "Set the Redis key rate_limit:user:123 expiry to 600 seconds."
+      },
+      "keep": [
+        "Redis key rate_limit:user:123"
+      ],
+      "forbidText": [
+        "300 seconds",
+        "300 seconds",
+        "300s",
+        "expiry set to"
+      ]
+    },
+    {
+      "id": "gem-prompt-system-instruction",
+      "tags": [
+        "spoken scaffolding",
+        "negation",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "okay so can you update the system prompt in `prompts/coder.md` so the model never hallucinates imported module paths that do not exist in `package.json`?",
+      "expected": {
+        "light": "Okay so, can you update the system prompt in prompts/coder.md so the model never hallucinates imported module paths that do not exist in package.json?",
+        "polish": "Can you update the system prompt in prompts/coder.md so the model never hallucinates imported module paths that do not exist in package.json?"
+      },
+      "keep": [
+        "system prompt in prompts/coder.md",
+        "imported module paths",
+        "exist in package.json"
+      ],
+      "forbidText": [
+        "Sure! I have updated the system prompt",
+        "the model hallucinates",
+        "I will update"
+      ]
+    },
+    {
+      "id": "gem-xero-webhook-sync",
+      "tags": [
+        "mishearings",
+        "technical tokens",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "could you check why the zero webhook in `app/integrations/accounting.py` is failing to parse there payload",
+      "expected": {
+        "light": "Could you check why the zero webhook in app/integrations/accounting.py is failing to parse there payload?",
+        "polish": "Could you check why the Xero webhook in app/integrations/accounting.py is failing to parse their payload?"
+      },
+      "keep": [
+        "app/integrations/accounting.py",
+        "failing to parse"
+      ],
+      "forbidText": [
+        "The webhook is failing because"
+      ]
+    },
+    {
+      "id": "gem-deploy-checklist-incomplete",
+      "tags": [
+        "spoken lists",
+        "unfinished final sentence",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6"
+      ],
+      "raw": "first check PR forty nine. Second run the smoke tests with `npm test -- --grep e2e`. And third if the build in Buildkite fails because",
+      "expected": {
+        "light": "First, check PR 49. Second, run the smoke tests with npm test -- --grep e2e. And third, if the build in Buildkite fails because",
+        "polish": "First, check PR 49. Second, run the smoke tests with npm test -- --grep e2e. And third, if the build in Buildkite fails because"
+      },
+      "keep": [
+        "check PR",
+        "smoke tests with npm test",
+        "build in Buildkite fails"
+      ],
+      "forbidText": [
+        "fails because of a timeout.",
+        "fails because the tests are broken."
+      ]
+    },
+    {
+      "id": "gem-investor-update-toowoomba",
+      "tags": [
+        "long",
+        "reported speech",
+        "names with unusual spelling, Australian place names",
+        "self-correction",
+        "writer:gemini-3.7",
+        "referee:gpt-5.6",
+        "ambiguous"
+      ],
+      "raw": "here is the draft for our monthly investor update for October. We completed the pilot across three regional clinics in Toowoomba, Dubbo, and Wagga Wagga. Dr Niamh Gallagher told our team, quote, the automated transcription has saved us roughly twelve hours each week per clinician, unquote. Total annual recurring revenue grew from eighty five thousand dollars to ninety seven thousand dollars. No sorry, ninety nine thousand five hundred dollars. Representing a month on month increase of fourteen point eight percent. Our customer acquisition cost in Sydney fell to four hundred and twenty dollars per clinic. While net retention across thirty four active healthcare accounts held steady at one hundred and twelve percent. We are planning to expand into four new hospitals across New South Wales next quarter. If our SOC two compliance audit wraps up by November fifteenth.",
+      "expected": {
+        "light": "Here is the draft for our monthly investor update for October. We completed the pilot across 3 regional clinics in Toowoomba, Dubbo, and Wagga Wagga. Dr Niamh Gallagher told our team, quote, “The automated transcription has saved us roughly 12 hours each week per clinician,” unquote. Total annual recurring revenue grew from $85,000 to $99,500, representing a month-on-month increase of 14.8%. Our customer acquisition cost in Sydney fell to $420 per clinic, while net retention across 34 active healthcare accounts held steady at 112%. We are planning to expand into 4 new hospitals across New South Wales next quarter if our SOC 2 compliance audit wraps up by November 15th.",
+        "polish": "Here is the draft for our monthly investor update for October. We completed the pilot across 3 regional clinics in Toowoomba, Dubbo, and Wagga Wagga. Dr Niamh Gallagher told our team, quote, “The automated transcription has saved us roughly 12 hours each week per clinician,” unquote. Total annual recurring revenue grew from $85,000 to $99,500, representing a month-on-month increase of 14.8%. Our customer acquisition cost in Sydney fell to $420 per clinic, while net retention across 34 active healthcare accounts held steady at 112%. We are planning to expand into 4 new hospitals across New South Wales next quarter if our SOC 2 compliance audit wraps up by November 15th."
+      },
+      "keep": [
+        "Toowoomba, Dubbo, and Wagga Wagga",
+        "Dr Niamh Gallagher told our team",
+        "annual recurring revenue"
+      ],
+      "forbidText": [
+        "$97,000",
+        "$85,000 to $97,000",
+        "97000",
+        "Niamh said"
+      ],
+      "note": "The spec does not say whether spoken “quote” and “unquote” are content or punctuation commands; a careful editor could instead remove those words and retain only quotation marks."
+    }
+  ]
+}

@@ -48,7 +48,7 @@ final class CleanupPromptSetTests: XCTestCase {
 
     func testUserPromptForCustomHasNoSuffix() {
         let set = CleanupPromptSet.compiled
-        XCTAssertEqual(set.userPrompt(for: "hello", intensity: nil), "Clean up this dictation. Reply with only the cleaned text.\n\nDICTATION:\nhello")
+        XCTAssertEqual(set.userPrompt(for: "hello", intensity: nil), "<dictation>\nhello\n</dictation>")
         XCTAssertTrue(set.userPrompt(for: "hello", intensity: .polish).hasSuffix(set.repeatSuffixes[.polish]!))
     }
 

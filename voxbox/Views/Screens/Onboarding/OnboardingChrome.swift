@@ -41,7 +41,7 @@ struct OnboardingSkipButton: View {
                 .font(Typography.labelMedium)
                 .foregroundStyle(Color.textSecondary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
     }
 }
 
@@ -100,7 +100,7 @@ struct OnboardingSelectableCard: View {
             .scaleEffect(isHovered ? 1.02 : 1.0)
             .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isHovered)
         .animation(.easeOut(duration: 0.15), value: isSelected)
         .onHover { isHovered = $0 }

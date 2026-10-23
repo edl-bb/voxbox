@@ -4,14 +4,9 @@ import XCTest
 
 final class PostProcessingModelTests: XCTestCase {
 
-    /// Downloadable (Llama, Qwen) models are parked until macOS 27. Tests that
-    /// exercise them skip rather than run against a hidden feature, and come
-    /// back the moment `downloadableModelsEnabled` flips. Apple Intelligence
-    /// tests are unaffected.
-    private func skipUnlessDownloadableModels() throws {
-        try XCTSkipUnless(
-            PostProcessingModel.downloadableModelsEnabled,
-            "downloadable MLX models are parked until macOS 27")
+    override func tearDown() {
+        OSCapabilities.testOverride = nil
+        super.tearDown()
     }
 
     // MARK: - Catalog
@@ -28,8 +23,7 @@ final class PostProcessingModelTests: XCTestCase {
         XCTAssertNil(first.huggingFaceRepo)
     }
 
-    func testDownloadableModelsHaveReposAndSizes() throws {
-        try skipUnlessDownloadableModels()
+    func testDownloadableModelsHaveReposAndSizes() {
         for model in PostProcessingModel.catalog where model.kind == .mlx {
             XCTAssertNotNil(model.huggingFaceRepo, "\(model.variant) needs a repo")
             XCTAssertGreaterThan(model.approxSizeBytes, 0)
@@ -37,10 +31,29 @@ final class PostProcessingModelTests: XCTestCase {
         }
     }
 
+    func testOfferedCatalogIsAppleOnlyWhenCustomCleanupModelsAreOff() {
+        OSCapabilities.withTestOverride(false) {
+            XCTAssertEqual(PostProcessingModel.offered.map(\.kind), [.appleSystem])
+            XCTAssertEqual(PostProcessingModel.offered.count, 1)
+            XCTAssertFalse(OSCapabilities.customCleanupModels)
+            XCTAssertFalse(PostProcessingModel.downloadableModelsEnabled)
+        }
+    }
+
+    func testOfferedCatalogIncludesDownloadableModelsWhenGateIsOn() {
+        OSCapabilities.withTestOverride(true) {
+            XCTAssertTrue(OSCapabilities.customCleanupModels)
+            XCTAssertEqual(PostProcessingModel.offered, PostProcessingModel.catalog)
+            XCTAssertTrue(PostProcessingModel.offered.contains { $0.kind == .mlx })
+            XCTAssertGreaterThanOrEqual(
+                PostProcessingModel.offered.filter { $0.kind == .mlx }.count, 4,
+                "Llama/Qwen rows must appear when the OS gate is on")
+        }
+    }
+
     // MARK: - Hugging Face API helpers
 
-    func testMetadataAndFileURLs() throws {
-        try skipUnlessDownloadableModels()
+    func testMetadataAndFileURLs() {
         XCTAssertEqual(
             HuggingFaceRepoAPI.metadataURL(repo: "mlx-community/Qwen3-1.7B-4bit").absoluteString,
             "https://huggingface.co/api/models/mlx-community/Qwen3-1.7B-4bit?blobs=true")
@@ -51,8 +64,7 @@ final class PostProcessingModelTests: XCTestCase {
             "https://huggingface.co/mlx-community/Qwen3-1.7B-4bit/resolve/main/model.safetensors")
     }
 
-    func testModelFileFilterSkipsRepoHousekeeping() throws {
-        try skipUnlessDownloadableModels()
+    func testModelFileFilterSkipsRepoHousekeeping() {
         XCTAssertTrue(HuggingFaceRepoAPI.isModelFile("model.safetensors"))
         XCTAssertTrue(HuggingFaceRepoAPI.isModelFile("config.json"))
         XCTAssertTrue(HuggingFaceRepoAPI.isModelFile("tokenizer.model"))
@@ -62,7 +74,6 @@ final class PostProcessingModelTests: XCTestCase {
     }
 
     func testModelFilesParsesBlobsMetadata() throws {
-        try skipUnlessDownloadableModels()
         let json = """
             {
               "siblings": [
@@ -93,8 +104,7 @@ final class PostProcessingModelTests: XCTestCase {
         XCTAssertEqual(manager.selectedModel.kind, .appleSystem)
     }
 
-    func testDownloadableSelectionPersists() throws {
-        try skipUnlessDownloadableModels()
+    func testDownloadableSelectionPersists() {
         let suite = "voxbox.tests.postprocessing.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -112,17 +122,31 @@ final class PostProcessingModelTests: XCTestCase {
 
         let manager = PostProcessingModelManager(defaults: defaults)
         manager.selectedVariant = "mlx-qwen3-1.7b-4bit"
-        if PostProcessingModel.downloadableModelsEnabled {
-            XCTAssertEqual(manager.selectedModel.variant, "mlx-qwen3-1.7b-4bit")
-        } else {
-            XCTAssertEqual(manager.selectedModel.kind, .appleSystem, "a 1.2 choice must not silently pick a parked model")
+        OSCapabilities.withTestOverride(false) {
+            XCTAssertEqual(
+                manager.selectedModel.kind, .appleSystem,
+                "a 1.2 choice must not silently pick a parked model")
             XCTAssertEqual(PostProcessingModel.offered.map(\.kind), [.appleSystem])
+            XCTAssertEqual(
+                manager.selectedVariant, "mlx-qwen3-1.7b-4bit",
+                "the stored choice is kept for when the rows return")
         }
-        XCTAssertEqual(manager.selectedVariant, "mlx-qwen3-1.7b-4bit", "the stored choice is kept for when the rows return")
     }
 
-    func testDeleteFallsBackToAppleSystemSelection() throws {
-        try skipUnlessDownloadableModels()
+    func testStoredDownloadableSelectionIsHonoredWhenGateIsOn() {
+        let suite = "voxbox.tests.postprocessing.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let manager = PostProcessingModelManager(defaults: defaults)
+        manager.selectedVariant = "mlx-qwen3-1.7b-4bit"
+        OSCapabilities.withTestOverride(true) {
+            XCTAssertEqual(manager.selectedModel.variant, "mlx-qwen3-1.7b-4bit")
+            XCTAssertEqual(manager.selectedModel.kind, .mlx)
+        }
+    }
+
+    func testDeleteFallsBackToAppleSystemSelection() {
         let suite = "voxbox.tests.postprocessing.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }

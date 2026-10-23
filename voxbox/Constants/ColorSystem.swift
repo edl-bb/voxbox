@@ -346,6 +346,7 @@ struct STButtonPrimary: ButtonStyle {
             .padding(.vertical, 10)
             .background(Color.accentPrimary)
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
@@ -359,6 +360,7 @@ struct STButtonSecondary: ButtonStyle {
             .padding(.vertical, 10)
             .background(Color.bgHover)
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
@@ -372,7 +374,27 @@ struct STButtonGhost: ButtonStyle {
             .padding(.vertical, 6)
             .background(configuration.isPressed ? Color.bgHover : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 6))
+            // The background is clear until pressed, so without this only
+            // the text itself takes clicks.
+            .contentShape(RoundedRectangle(cornerRadius: 6))
     }
+}
+
+/// `.plain`, but the whole label frame takes clicks. SwiftUI hit-tests a
+/// plain button only where its label draws, so padding, spacers and clear
+/// backgrounds miss and a row seems to work only on its text. Wraps the
+/// system plain style, so pressed and disabled looks are unchanged.
+struct PlainHitAreaButtonStyle: PrimitiveButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button(role: configuration.role, action: configuration.trigger) {
+            configuration.label.contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+extension PrimitiveButtonStyle where Self == PlainHitAreaButtonStyle {
+    static var plainHitArea: PlainHitAreaButtonStyle { PlainHitAreaButtonStyle() }
 }
 
 extension ButtonStyle where Self == STButtonPrimary {

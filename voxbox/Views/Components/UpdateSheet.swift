@@ -147,6 +147,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .padding(.vertical, 10)
             .background(Color.brandAccent)
             .cornerRadius(8)
+            .contentShape(RoundedRectangle(cornerRadius: 8))
             .opacity(configuration.isPressed ? 0.8 : 1.0)
     }
 }
@@ -160,6 +161,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .padding(.vertical, 10)
             .background(Color(nsColor: .controlBackgroundColor))
             .cornerRadius(8)
+            .contentShape(RoundedRectangle(cornerRadius: 8))
             .opacity(configuration.isPressed ? 0.8 : 1.0)
     }
 }

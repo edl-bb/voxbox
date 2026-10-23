@@ -37,7 +37,7 @@ struct OnboardingView: View {
                                     .padding(.vertical, 6)
                                     .background(Capsule().fill(Color.textPrimary.opacity(0.06)))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
                             .keyboardShortcut(.cancelAction)
                         }
                     }
@@ -78,6 +78,9 @@ struct OnboardingView: View {
                     case .cleanup:
                         CleanupOnboardingPage(continueAction: advance, skipAction: advance)
                             .transition(.opacity)
+                    case .aboutYou:
+                        AboutYouOnboardingPage(continueAction: advance, skipAction: advance)
+                            .transition(.opacity)
                     case .model:
                         ModelOnboardingPage(finishAction: completeOnboarding, skipAction: completeOnboarding)
                             .transition(.opacity)
@@ -86,7 +89,7 @@ struct OnboardingView: View {
     }
 
     private func advance() {
-        guard let next = step.next else {
+        guard let next = step.next(cleanup: .current()) else {
             completeOnboarding()
             return
         }
@@ -189,7 +192,7 @@ struct GetStartedButton: View {
             )
             .scaleEffect(isPressed ? 0.97 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .animation(.easeOut(duration: 0.15), value: isHovered)
         .animation(.easeOut(duration: 0.1), value: isPressed)
         .onHover { hovering in
@@ -272,7 +275,7 @@ struct PermissionsPage: View {
                             .font(Typography.labelMedium)
                             .foregroundStyle(Color.textSecondary)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plainHitArea)
                     .help("You can enable Accessibility later from the sidebar. Transcripts will copy to the clipboard until then.")
                 }
             }
@@ -498,7 +501,7 @@ struct OnboardingPermissionRow: View {
                                 .fill(Color.textPrimary)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             }
         }
         .padding(.horizontal, 20)
@@ -545,7 +548,7 @@ struct ContinueButton: View {
             )
             .scaleEffect(isPressed ? 0.97 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .disabled(!isEnabled)
         .animation(.easeOut(duration: 0.15), value: isHovered)
         .animation(.easeOut(duration: 0.1), value: isPressed)
@@ -602,7 +605,7 @@ struct GlobeKeyOptimizationPage: View {
                             .fill(Color.textPrimary)
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             }
             .padding(.top, 40)
 
@@ -664,7 +667,7 @@ struct ModelOnboardingPage: View {
                         .font(Typography.labelMedium)
                         .foregroundStyle(Color.textSecondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             }
             .padding(.top, 12)
             .padding(.bottom, 8)

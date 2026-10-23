@@ -79,7 +79,7 @@ private struct PermissionStatusChip: View {
                     )
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .help(helpText)
         .onHover { isHovered = $0 }
     }
