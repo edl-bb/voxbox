@@ -91,7 +91,7 @@ struct MenuBarDashboardView: View {
                 .background(Color.bgHover)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
         }
     }
 
@@ -177,7 +177,7 @@ struct MenuBarDashboardView: View {
                     .background(Color.bgHover)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
 
             Button(action: quit) {
                 Label("Quit", systemImage: "xmark.circle")
@@ -188,7 +188,7 @@ struct MenuBarDashboardView: View {
                     .background(Color.bgHover)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
         }
     }
 
@@ -312,7 +312,7 @@ private struct MenuBarTranscriptRow: View {
                     .stroke(Color.border, lineWidth: 1)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
     }
 
     private func copyTranscript() {

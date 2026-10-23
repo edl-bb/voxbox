@@ -51,7 +51,7 @@ struct AudioInputView: View {
                             .background(Color.bgHover)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plainHitArea)
                     }
                     
                     Text("Note: VoxBox will use the selected device for all recordings.")

@@ -40,10 +40,15 @@ final class CleanupPreviewRunner: ObservableObject {
     private var cache: [Key: TranscriptCleanupOutcome] = [:]
     private var task: Task<Void, Never>?
 
-    /// Injectable so views can be exercised without a model.
+    /// Injectable so views can be exercised without a model. Reads the
+    /// Markdown and filler toggles when it runs, so the preview matches what
+    /// a real take would paste; call `invalidate()` when either changes.
     var preview: @MainActor (String, CleanupOption) async -> TranscriptCleanupOutcome = { text, option in
         await TranscriptCleanupPreview.preview(
-            text: text, option: option, includeMarkdown: false, allowStepDown: false)
+            text: text, option: option,
+            includeMarkdown: TranscriptFormatterService.isMarkdownFormattingEnabled,
+            autoEdit: AutoEdit.isEnabled,
+            allowStepDown: false)
     }
 
     var isRunning: Bool { task != nil }

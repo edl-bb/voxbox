@@ -148,7 +148,7 @@ final class FoundationModelsMLXCleanupEngineTests: XCTestCase {
         XCTAssertEqual(engine.displayName, "Llama 3.2 1B Instruct")
         XCTAssertEqual(
             outcome.engineName, "Llama 3.2 1B Instruct",
-            "cleanup must run on the catalog model, not fall back: \(outcome.error ?? "no error")")
+            "cleanup must run on the catalog model, not fall back: \(outcome.error ?? "no error"); attempts: \(outcome.attempts)")
         XCTAssertFalse(outcome.fellBackToSystemModel)
     }
 

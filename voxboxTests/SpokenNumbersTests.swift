@@ -16,7 +16,7 @@ final class SpokenNumbersTests: XCTestCase {
         XCTAssertEqual(render("one hundred and five people came"), "105 people came")
         XCTAssertEqual(render("forty-two answers"), "42 answers")
         XCTAssertEqual(render("two point five million dollars"), "$2,500,000")
-        XCTAssertEqual(render("three pounds fifty"), "£3 fifty")
+        XCTAssertEqual(render("three pounds fifty"), "£3.50")
         XCTAssertEqual(render("fifty cents"), "50 cents")
         XCTAssertEqual(render("move the retro to two pm"), "move the retro to 2pm")
         XCTAssertEqual(render("one dollar"), "$1")

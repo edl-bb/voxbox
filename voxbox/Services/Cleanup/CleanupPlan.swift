@@ -85,6 +85,13 @@ nonisolated struct CleanupPlan: Sendable {
     /// Real takes record `lastOutcome` and post `.transcriptCleanupFinished`.
     var isPreview: Bool = false
     var promptSet: CleanupPromptSet = .resolved()
+    /// Settings › About you. Light and Polish only.
+    var speaker: SpeakerContext? = nil
+    /// Light and Polish resolve unambiguous self-corrections and restarts
+    /// before the model (`SpokenRepairs`). Off only to measure it.
+    var resolveSelfCorrections: Bool = true
+    /// Off only to measure it.
+    var renderNumbersBeforeModel: Bool = true
 }
 
 /// Raw engine text and what the chain turned it into.

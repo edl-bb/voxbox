@@ -124,7 +124,7 @@ struct PermissionRow: View {
                     .background(Color.bgHover)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
             
             if isGranted {
                 Image(systemName: "checkmark.seal.fill")

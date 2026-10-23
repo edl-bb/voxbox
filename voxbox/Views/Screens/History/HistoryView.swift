@@ -44,7 +44,7 @@ struct HistoryView: View {
                             .background(Color.bgHover)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plainHitArea)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -360,7 +360,7 @@ struct HistoryCard: View {
                 .padding(20)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
             
             // Expanded content
             if isExpanded {
@@ -391,7 +391,7 @@ struct HistoryCard: View {
                                 .background(Color.bgHover)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
 
                             if let onCopyRaw {
                                 Button(action: onCopyRaw) {
@@ -407,7 +407,7 @@ struct HistoryCard: View {
                                     .background(Color.bgHover)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.plainHitArea)
                                 .help("The transcript as the speech engine heard it, before any cleanup")
                             }
 
@@ -424,7 +424,7 @@ struct HistoryCard: View {
                                 .background(Color.bgHover)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
                             
                             if let audioURL = item.audioFileURL, audioFileExists, let audioPlayer {
                                 HistoryCardPlaybackControls(audioPlayer: audioPlayer, audioURL: audioURL)
@@ -519,7 +519,7 @@ private struct HistoryCardPlaybackControls: View {
                 .background(Color.bgHover)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
 
             Button(action: {
                 NSWorkspace.shared.activateFileViewerSelecting([audioURL])
@@ -536,7 +536,7 @@ private struct HistoryCardPlaybackControls: View {
                 .background(Color.bgHover)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
         }
     }
 }

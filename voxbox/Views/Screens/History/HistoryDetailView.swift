@@ -122,7 +122,7 @@ struct HistoryDetailView: View {
                                     .font(.title3)
                                     .foregroundStyle(.orange)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
                             .help("Show in Finder")
                             
                             Spacer()
@@ -133,7 +133,7 @@ struct HistoryDetailView: View {
                                     .font(.title2)
                                     .foregroundStyle(Color.brandAccent)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
                             
                             Spacer()
                             
@@ -145,7 +145,7 @@ struct HistoryDetailView: View {
                                     .font(.title3)
                                     .foregroundStyle(.green)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
                             .help("Restart")
                         }
                         .padding(.vertical, 8)
@@ -270,7 +270,7 @@ struct HistoryDetailView: View {
             .foregroundStyle(.white)
             .cornerRadius(12)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
     }
 
     private func copyToClipboard(text: String) {

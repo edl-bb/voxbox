@@ -827,6 +827,10 @@ struct MiniRecorderView: View {
 
         cancelCommit = false
         debugLog("Starting recording...")
+        // Load the cleanup model for this take's exact instructions while the
+        // speaker talks, so stop → paste does not pay the cold start.
+        TranscriptCleanupPipeline.prewarm(
+            plan: TranscriptFormatterService.planFromSettings(language: transcriptionLanguage))
 
         if StreamingMode.isEnabled(), StreamingMode.modelSupportsLive(selectedModel) {
             Task {

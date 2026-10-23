@@ -123,7 +123,7 @@ final class CustomRulesetTests: XCTestCase {
             for: "some dictated text here", ruleset: ruleset)
 
         XCTAssertEqual(request.instructionStages, ["Rewrite the transcript as a haiku."])
-        XCTAssertFalse(request.instructions.contains(CleanupPromptSet.compiled.markdown))
+        XCTAssertFalse(request.instructions.contains(CleanupPromptSet.v2.markdown))
         XCTAssertFalse(request.instructions.contains(CleanupPromptSet.compiled.outputOnly))
         XCTAssertEqual(request.temperature, 0.7, accuracy: 0.0001)
         XCTAssertNil(request.maximumChangeRatio, "custom rulesets run ungoverned")

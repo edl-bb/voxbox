@@ -32,21 +32,16 @@ nonisolated struct FoundationModelsMLXCleanupEngine: CleanupEngine {
         guard isAvailable else { throw MLXCleanupEngineError.runtimeUnavailable }
         let stages = request.instructionStages
         let languageModel = makeLanguageModel()
-        do {
-            return try await CleanupSessionPool.shared.respond(
-                request: request,
-                variant: model.variant
-            ) {
-                LanguageModelSession(model: languageModel) {
-                    stages
-                }
-            }
-        } catch let error as LanguageModelSession.GenerationError {
-            switch error {
-            case .guardrailViolation, .refusal:
-                throw CleanupEngineError.contentFilter
-            default:
-                throw error
+        // A catalog model's refusal is not Apple's content filter, so it is
+        // not mapped to `CleanupEngineError.contentFilter`: as an ordinary
+        // engine error it makes the pipeline retry on the system model
+        // instead of abandoning cleanup for the take.
+        return try await CleanupSessionPool.shared.respond(
+            request: request,
+            variant: model.variant
+        ) {
+            LanguageModelSession(model: languageModel) {
+                stages
             }
         }
     }

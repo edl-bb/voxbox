@@ -13,6 +13,7 @@ enum TranscriptCleanupPreview {
         autoEdit: Bool = false,
         allowStepDown: Bool = false,
         promptSet: CleanupPromptSet = .compiled,
+        speaker: SpeakerContext? = TranscriptFormatterService.speakerContext,
         pipeline: TranscriptCleanupPipeline = .shared
     ) async -> TranscriptCleanupOutcome {
         let plan = CleanupPlan(
@@ -24,7 +25,8 @@ enum TranscriptCleanupPreview {
             minimumWordCount: 0,
             allowStepDown: allowStepDown,
             isPreview: true,
-            promptSet: promptSet)
+            promptSet: promptSet,
+            speaker: speaker)
         return await pipeline.clean(raw: text, plan: plan)
     }
 

@@ -185,7 +185,7 @@ struct ModelRow: View, Equatable {
                     Button(action: loadAndSelectModel) {
                         ActionButton.label(title: "Use", icon: "arrow.right", style: .secondary)
                     }
-                    .buttonStyle(.plain).help("Set as default model")
+                    .buttonStyle(.plainHitArea).help("Set as default model")
                 }
                 if model.engine != .apple {
                     Button(action: deleteModel) {
@@ -193,18 +193,18 @@ struct ModelRow: View, Equatable {
                             .foregroundStyle(Color.textMuted).padding(8)
                             .background(Circle().fill(Color.textPrimary.opacity(isHovered ? 0.06 : 0)))
                     }
-                    .buttonStyle(.plain).help("Delete model")
+                    .buttonStyle(.plainHitArea).help("Delete model")
                 }
             } else if isDownloading {
                 Button(action: { downloadService.cancelDownload(for: model.variant) }) {
                     ActionButton.label(title: "Cancel", icon: "xmark", style: .secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             } else {
                 Button(action: { downloadService.downloadModel(variant: model.variant) }) {
                     ActionButton.label(title: "Download", icon: "arrow.down", style: .primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             }
         }
     }

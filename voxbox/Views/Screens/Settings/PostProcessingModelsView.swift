@@ -174,14 +174,14 @@ private struct PostProcessingModelRow: View {
                 } label: {
                     ActionButton.label(title: "Cancel", icon: "xmark", style: .secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             } else if !isDownloaded {
                 Button {
                     manager.download(variant: model.variant)
                 } label: {
                     ActionButton.label(title: "Download", icon: "arrow.down", style: .primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             } else {
                 if !isSelected {
                     Button {
@@ -189,7 +189,7 @@ private struct PostProcessingModelRow: View {
                     } label: {
                         ActionButton.label(title: "Use", icon: "arrow.right", style: .secondary)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plainHitArea)
                     .help("Use this model for transcript cleanup")
                 }
                 if model.kind == .mlx {
@@ -201,7 +201,7 @@ private struct PostProcessingModelRow: View {
                             .background(
                                 Circle().fill(Color.textPrimary.opacity(isHovered ? 0.06 : 0)))
                     }
-                    .buttonStyle(.plain).help("Delete downloaded model")
+                    .buttonStyle(.plainHitArea).help("Delete downloaded model")
                 }
             }
         }

@@ -82,7 +82,7 @@ struct SettingsTabButton: View {
             .background(isSelected ? Color.bgHover : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
     }
 }
 
@@ -139,6 +139,14 @@ struct GeneralSettingsTab: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                // About you: read by Light cleanup and Polish on every take.
+                SettingsSection {
+                    SettingsSectionHeader(
+                        icon: "person.text.rectangle", title: "About you",
+                        subtitle: "What you do and the names you use, so cleanup spells what the speech engine mishears. Used by Light cleanup and Polish; stays on this Mac.")
+                    AboutYouFields()
+                }
+
                 // Appearance
                 SettingsSection {
                     SettingsSectionHeader(
@@ -178,7 +186,7 @@ struct GeneralSettingsTab: View {
                             .background(Color.bgHover)
                             .clipShape(RoundedRectangle(cornerRadius: 7))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plainHitArea)
                         .help("Resets the primary hotkey to Fn and recorded shortcuts to their original combinations.")
                     }
 
@@ -360,7 +368,7 @@ struct GeneralSettingsTab: View {
                                     .padding(.vertical, 8)
                                     .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.plainHitArea)
                             }
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -606,7 +614,7 @@ struct GeneralSettingsTab: View {
                             .background(Color.bgHover)
                             .clipShape(RoundedRectangle(cornerRadius: 7))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plainHitArea)
                         .help("Included with this build. Does not contact the internet.")
                     }
 
@@ -674,7 +682,7 @@ struct GeneralSettingsTab: View {
                                 .background(Color.bgHover)
                                 .clipShape(RoundedRectangle(cornerRadius: 7))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plainHitArea)
                             .fixedSize()
                             .disabled(
                                 updateService.manualCheckStatus == .checking
@@ -870,7 +878,7 @@ struct AudioSettingsTab: View {
                         .background(Color.bgHover)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plainHitArea)
                     .padding(.top, 8)
                 }
             }
@@ -1034,7 +1042,7 @@ struct SettingsNavigationRow: View {
             .padding(.vertical, 6)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
     }
 }
 
@@ -1082,7 +1090,7 @@ struct RadioButton: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
     }
 }
 
@@ -1132,7 +1140,7 @@ struct SettingsPermissionItem: View {
             .padding(.vertical, 6)
             .background(Color.bgHover)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
         }
         .padding(16)
         .background(Color.bgCard)

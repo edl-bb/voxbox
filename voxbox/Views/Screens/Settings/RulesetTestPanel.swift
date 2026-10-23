@@ -193,7 +193,7 @@ struct RulesetTestPanel: View {
                     }
                     Spacer()
                     Button(showFullInput ? "Show less" : "Show all") { showFullInput.toggle() }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plainHitArea)
                         .font(Typography.captionSmall)
                         .foregroundStyle(Color.textSecondary)
                 }

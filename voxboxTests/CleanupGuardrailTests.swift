@@ -183,7 +183,7 @@ final class CleanupGuardrailTests: XCTestCase {
     func testRetentionFloorVetoesASummaryWhoseDeletionsFitTheBudget() {
         let generous = GuardrailBudget(maxCostRatio: 5, minFreeEdits: 0, minRetention: 0.65)
         let result = evaluate(
-            "please review the quarterly budget numbers before the finance meeting on thursday and send your comments to priya by wednesday evening",
+            "please review the quarterly budget numbers before the finance meeting tomorrow morning and send your comments to priya by this evening",
             "Please review the budget numbers and send comments to Priya.", generous)
         guard case .retentionTooLow(let kept, let floor) = result.verdict else {
             return XCTFail("expected retentionTooLow, got \(result.verdict)")
@@ -194,7 +194,7 @@ final class CleanupGuardrailTests: XCTestCase {
 
     func testHalfLengthSummaryIsRejectedAtPolish() {
         let result = evaluate(
-            "please review the quarterly budget numbers before the finance meeting on thursday and send your comments to priya by wednesday evening",
+            "please review the quarterly budget numbers before the finance meeting tomorrow morning and send your comments to priya by this evening",
             "Please review the budget numbers and send comments to Priya.", polish)
         XCTAssertFalse(result.verdict.isAccepted)
     }

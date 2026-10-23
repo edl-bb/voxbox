@@ -65,13 +65,15 @@ nonisolated enum FormattingIntensity: Int, CaseIterable, Identifiable, Sendable 
     /// Cost-ratio ceiling of the compiled budget; `nil` for Custom.
     var maximumChangeRatio: Double? { budget?.maxCostRatio }
 
-    /// Polish → Light cleanup → Basic. Light-requested skips Polish. Raw is
-    /// not in the list; the caller keeps the deterministic text after the
-    /// last veto.
+    /// Model rungs: Polish → Light cleanup. After the last veto the pipeline
+    /// ships the instant pass (fillers, repeats, numerals, punctuation tidy)
+    /// rather than calling the model again for Basic: Basic changes no words,
+    /// so a Basic rung cost a full generation to undo less than the instant
+    /// pass already does. Basic requested is its own single rung.
     var stepDownLadder: [FormattingIntensity] {
         switch self {
-        case .polish: return [.polish, .lightCleanup, .formatting]
-        case .lightCleanup: return [.lightCleanup, .formatting]
+        case .polish: return [.polish, .lightCleanup]
+        case .lightCleanup: return [.lightCleanup]
         case .formatting: return [.formatting]
         case .custom: return [.custom]
         }
@@ -110,6 +112,17 @@ final class TranscriptFormatterService {
     nonisolated static let enabledKey = "formatTranscriptWithOnDeviceAI"
     nonisolated static let intensityKey = "formatTranscriptIntensity"
     nonisolated static let markdownFormattingKey = "formatTranscriptMarkdown"
+    nonisolated static let speakerAboutKey = "cleanupSpeakerAbout"
+    nonisolated static let speakerVocabularyKey = "cleanupSpeakerVocabulary"
+
+    /// Settings › About you. Nil when both fields are blank.
+    nonisolated static var speakerContext: SpeakerContext? {
+        let defaults = UserDefaults.standard
+        let context = SpeakerContext(
+            about: defaults.string(forKey: speakerAboutKey) ?? "",
+            vocabularyText: defaults.string(forKey: speakerVocabularyKey) ?? "")
+        return context.isEmpty ? nil : context
+    }
 
     /// Opt-in; default off.
     nonisolated static var isEnabled: Bool {
@@ -205,7 +218,8 @@ final class TranscriptFormatterService {
             autoEditEnabled: AutoEdit.isEnabled,
             smartTrailingPunctuation: SmartTrailingPunctuation.isEnabled,
             minimumWordCount: minimumWordCount,
-            promptSet: .resolved())
+            promptSet: .resolved(),
+            speaker: speakerContext)
     }
 
     /// Model stage only (no spelling, dictionary, Auto Edit or trailing

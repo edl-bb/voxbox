@@ -41,7 +41,7 @@ struct CustomRulesetManagerView: View {
                     .background(Capsule().fill(Color.textPrimary.opacity(0.06)))
                     .foregroundStyle(Color.textPrimary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
                 .disabled(!store.canAddRuleset)
                 .help(
                     store.canAddRuleset
@@ -149,7 +149,7 @@ private struct RulesetRow: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
 
             Spacer(minLength: 8)
 
@@ -164,7 +164,7 @@ private struct RulesetRow: View {
                     .padding(6)
                     .background(Circle().fill(Color.textPrimary.opacity(isHovered ? 0.06 : 0)))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
             .help("Edit ruleset")
 
             Button(action: onDelete) {
@@ -174,7 +174,7 @@ private struct RulesetRow: View {
                     .padding(6)
                     .background(Circle().fill(Color.textPrimary.opacity(isHovered ? 0.06 : 0)))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
             .help("Delete ruleset")
         }
         .padding(.horizontal, 12).padding(.vertical, 10)

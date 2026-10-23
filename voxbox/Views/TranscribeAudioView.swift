@@ -85,7 +85,7 @@ struct TranscribeAudioView: View {
                             .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plainHitArea)
                     } else if isTranscribing {
                         VStack(spacing: 8) {
                             ProgressView()

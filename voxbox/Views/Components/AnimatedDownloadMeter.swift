@@ -122,7 +122,7 @@ struct DownloadCompleteBanner: View {
                         large: !compact
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
             }
         }
         .padding(compact ? 10 : 14)

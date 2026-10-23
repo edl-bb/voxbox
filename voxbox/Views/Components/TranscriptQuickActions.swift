@@ -32,7 +32,7 @@ struct TranscriptQuickActions: View {
                 .background(Color.bgHover)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plainHitArea)
             .help("Copy the transcript")
 
             if hasAudio {
@@ -49,7 +49,7 @@ struct TranscriptQuickActions: View {
                     .background(Color.bgHover)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plainHitArea)
                 .help(isPlayingThisItem ? "Stop playback" : "Play the recording")
             }
         }

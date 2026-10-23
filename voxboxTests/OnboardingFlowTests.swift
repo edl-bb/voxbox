@@ -48,17 +48,27 @@ final class OnboardingFlowTests: XCTestCase {
 
     func testStepsRunInOrderAndEndAtTheModelPage() {
         XCTAssertEqual(
-            OnboardingStep.allCases, [.welcome, .globeKey, .recordingMode, .permissions, .cleanup, .model])
+            OnboardingStep.allCases, [.welcome, .globeKey, .recordingMode, .permissions, .cleanup, .aboutYou, .model])
         XCTAssertEqual(OnboardingStep.welcome.next, .globeKey)
         XCTAssertEqual(OnboardingStep.recordingMode.next, .permissions)
         XCTAssertEqual(OnboardingStep.permissions.next, .cleanup)
         XCTAssertNil(OnboardingStep.model.next)
         XCTAssertTrue(OnboardingStep.model.isLast)
         XCTAssertFalse(OnboardingStep.welcome.showsStepDots)
-        XCTAssertEqual(OnboardingStep.dotSteps.count, 5)
+        XCTAssertEqual(OnboardingStep.dotSteps.count, 6)
         XCTAssertEqual(OnboardingStep.model.contentPadding, 16)
         XCTAssertEqual(OnboardingStep.cleanup.contentPadding, 24)
         XCTAssertEqual(OnboardingStep.welcome.contentPadding, 40)
+    }
+
+    func testAboutYouOnlyFollowsLevelsThatReadIt() {
+        XCTAssertEqual(OnboardingStep.cleanup.next(cleanup: .lightCleanup), .aboutYou)
+        XCTAssertEqual(OnboardingStep.cleanup.next(cleanup: .polish), .aboutYou)
+        for choice in [OnboardingCleanupChoice.off, .basic, .custom] {
+            XCTAssertEqual(OnboardingStep.cleanup.next(cleanup: choice), .model, "\(choice)")
+        }
+        XCTAssertEqual(OnboardingStep.aboutYou.next(cleanup: .polish), .model)
+        XCTAssertNil(OnboardingStep.model.next(cleanup: .polish))
     }
 
     func testReplayFlagIsIndependentOfCompletion() {

@@ -251,7 +251,7 @@ struct CleanupOptionCard: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plainHitArea)
         .animation(.easeOut(duration: 0.15), value: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -294,8 +294,8 @@ struct CleanupOptionCard: View {
                     if let error = outcome.error {
                         Label(error, systemImage: "xmark.octagon.fill")
                             .foregroundStyle(Color.accentError)
-                    } else if outcome.modelRan, outcome.landed == nil {
-                        Label("Changed too much. VoxBox would keep the original.", systemImage: "exclamationmark.triangle.fill")
+                    } else if let note = outcome.stepDownNote {
+                        Label(note, systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(Color.accentWarning)
                     }
                 }

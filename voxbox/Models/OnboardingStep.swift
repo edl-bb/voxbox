@@ -7,10 +7,19 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     case recordingMode
     case permissions
     case cleanup
+    case aboutYou
     case model
 
     var next: OnboardingStep? {
         OnboardingStep(rawValue: rawValue + 1)
+    }
+
+    /// The step after this one for the cleanup level just chosen: About you
+    /// only matters to Light and Polish, so other levels skip it.
+    func next(cleanup: OnboardingCleanupChoice) -> OnboardingStep? {
+        guard let step = next else { return nil }
+        if step == .aboutYou, !cleanup.usesSpeakerContext { return step.next }
+        return step
     }
 
     var isLast: Bool { next == nil }
@@ -80,6 +89,11 @@ enum OnboardingCleanupChoice: Int, CaseIterable, Identifiable {
         case .polish: return "Smooths choppy dictation into fluent sentences. Keeps your meaning."
         case .custom: return "Your own instructions, in your own words."
         }
+    }
+
+    /// Light and Polish read Settings › About you; the other levels never see it.
+    var usesSpeakerContext: Bool {
+        self == .lightCleanup || self == .polish
     }
 
     var intensity: FormattingIntensity? {
