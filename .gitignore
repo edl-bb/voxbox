@@ -57,3 +57,6 @@ env.example
 
 .scratch
 SourcePackages
+# Cleanup eval: private History exports and run outputs
+evals/**/*.local.json
+evals/cleanup/runs/

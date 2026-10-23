@@ -1,0 +1,618 @@
+{
+  "language": "en-AU",
+  "contexts": {},
+  "cases": [
+    {
+      "id": "weekday-no-sorry",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Can you lock in the stand-up for Tuesday. No, sorry, Thursday, and ping Priya when it's in the calendar?",
+      "expected": {
+        "light": "Can you lock in the stand-up for Thursday, and ping Priya when it's in the calendar?",
+        "polish": "Can you lock in the stand-up for Thursday, and ping Priya when it's in the calendar?"
+      },
+      "keep": [
+        "Thursday",
+        "ping Priya"
+      ],
+      "forbid": [
+        "Tuesday"
+      ]
+    },
+    {
+      "id": "date-no-wait",
+      "tags": [
+        "correction"
+      ],
+      "raw": "The board pack needs to go out on the 12th. No wait, the 14th, or we'll miss the print slot.",
+      "expected": {
+        "light": "The board pack needs to go out on the 14th, or we'll miss the print slot.",
+        "polish": "The board pack needs to go out on the 14th, or we'll miss the print slot."
+      },
+      "keep": [
+        "the 14th"
+      ],
+      "forbid": [
+        "12th"
+      ]
+    },
+    {
+      "id": "time-wait-no",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Let's jump on at three pm. Wait, no, four pm, so Callum can join after the school run.",
+      "expected": {
+        "light": "Let's jump on at 4pm, so Callum can join after the school run.",
+        "polish": "Let's jump on at 4pm, so Callum can join after the school run."
+      },
+      "keep": [
+        "4pm",
+        "Callum"
+      ],
+      "forbid": [
+        "3pm",
+        "three pm"
+      ]
+    },
+    {
+      "id": "number-make-that",
+      "tags": [
+        "correction"
+      ],
+      "raw": "We'll need twelve chairs. Make that sixteen, and a couple of extra power boards for the side tables.",
+      "expected": {
+        "light": "We'll need 16 chairs, and a couple of extra power boards for the side tables.",
+        "polish": "We'll need 16 chairs, and a couple of extra power boards for the side tables."
+      },
+      "keep": [
+        "16 chairs"
+      ],
+      "forbid": [
+        "twelve",
+        "12"
+      ]
+    },
+    {
+      "id": "amount-scratch-that",
+      "tags": [
+        "correction"
+      ],
+      "raw": "The Harbourfold quote is four thousand two hundred. Scratch that, it's four thousand eight hundred including freight, so I'll need Bea to re-check the budget.",
+      "expected": {
+        "light": "It's $4,800 including freight, so I'll need Bea to re-check the budget.",
+        "polish": "It's $4,800 including freight, so I'll need Bea to re-check the budget."
+      },
+      "keep": [
+        "$4,800",
+        "including freight"
+      ],
+      "forbid": [
+        "$4,200",
+        "four thousand two hundred"
+      ],
+      "note": "Scratch that deletes the sentence before it, as in desktop dictation; the subject goes with it."
+    },
+    {
+      "id": "name-sorry-i-mean",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Send the draft to Ned, sorry, I mean Tash, and copy me so I can chase if she doesn't reply.",
+      "expected": {
+        "light": "Send the draft to Tash, and copy me so I can chase if she doesn't reply.",
+        "polish": "Send the draft to Tash, and copy me so I can chase if she doesn't reply."
+      },
+      "keep": [
+        "to Tash"
+      ],
+      "forbid": [
+        "Ned"
+      ]
+    },
+    {
+      "id": "i-mean-channel",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Put it in the ops channel, I mean the finance channel, before close of play.",
+      "expected": {
+        "light": "Put it in the finance channel, before close of play.",
+        "polish": "Put it in the finance channel, before close of play."
+      },
+      "keep": [
+        "finance channel"
+      ],
+      "forbid": [
+        "ops channel"
+      ]
+    },
+    {
+      "id": "or-rather-level",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Book me a desk on level two, or rather level three, next to the print room.",
+      "expected": {
+        "light": "Book me a desk on level 3, next to the print room.",
+        "polish": "Book me a desk on level 3, next to the print room."
+      },
+      "keep": [
+        "level 3"
+      ],
+      "forbid": [
+        "level two",
+        "level 2"
+      ]
+    },
+    {
+      "id": "actually-thursday",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Ship the spare monitors on Friday, actually Thursday, if the courier can still do a same-day run.",
+      "expected": {
+        "light": "Ship the spare monitors on Thursday, if the courier can still do a same-day run.",
+        "polish": "Ship the spare monitors on Thursday, if the courier can still do a same-day run."
+      },
+      "keep": [
+        "Thursday"
+      ],
+      "forbid": [
+        "Friday"
+      ]
+    },
+    {
+      "id": "phrase-kitchen",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Let's book the big room, no sorry, let's just use the kitchen, it's only a ten minute catch-up.",
+      "expected": {
+        "light": "Let's just use the kitchen, it's only a ten minute catch-up.",
+        "polish": "Let's just use the kitchen, it's only a ten minute catch-up."
+      },
+      "keep": [
+        "use the kitchen"
+      ],
+      "forbid": [
+        "big room"
+      ]
+    },
+    {
+      "id": "anchor-to-faye",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Send it to Wren, no, to Faye, and ask her to print two copies for the meeting.",
+      "expected": {
+        "light": "Send it to Faye, and ask her to print two copies for the meeting.",
+        "polish": "Send it to Faye, and ask her to print two copies for the meeting."
+      },
+      "keep": [
+        "to Faye"
+      ],
+      "forbid": [
+        "Wren"
+      ]
+    },
+    {
+      "id": "restart-we-were",
+      "tags": [
+        "restart"
+      ],
+      "raw": "We were, we were going to hold the all-hands in the studio, but the painters are still in there.",
+      "expected": {
+        "light": "We were going to hold the all-hands in the studio, but the painters are still in there.",
+        "polish": "We were going to hold the all-hands in the studio, but the painters are still in there."
+      },
+      "keep": [
+        "We were going"
+      ],
+      "forbid": [
+        "We were, we were"
+      ]
+    },
+    {
+      "id": "restart-i-think",
+      "tags": [
+        "restart"
+      ],
+      "raw": "I think. I think we should delay the laptop rollout until the extra chargers arrive.",
+      "expected": {
+        "light": "I think we should delay the laptop rollout until the extra chargers arrive.",
+        "polish": "I think we should delay the laptop rollout until the extra chargers arrive."
+      },
+      "keep": [
+        "I think we should delay"
+      ],
+      "forbid": [
+        "I think. I think"
+      ]
+    },
+    {
+      "id": "two-corrections",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Hey team, can you shift the contractor onboarding to Monday. No, sorry, Wednesday afternoon, and send the laptop request to Wren, I mean Faye, so she can order the chargers as well. I'll be out from two pm, so if anything's blocked just leave it on my desk and I'll sort it in the morning.",
+      "expected": {
+        "light": "Hey team, can you shift the contractor onboarding to Wednesday afternoon, and send the laptop request to Faye, so she can order the chargers as well? I'll be out from 2pm, so if anything's blocked just leave it on my desk and I'll sort it in the morning.",
+        "polish": "Hey team, can you shift the contractor onboarding to Wednesday afternoon, and send the laptop request to Faye, so she can order the chargers as well? I'll be out from 2pm, so if anything's blocked just leave it on my desk and I'll sort it in the morning."
+      },
+      "keep": [
+        "Wednesday afternoon",
+        "to Faye",
+        "2pm"
+      ],
+      "forbid": [
+        "Monday",
+        "Wren"
+      ]
+    },
+    {
+      "id": "question-wednesday",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Can you send the agenda Tuesday, sorry, Wednesday, so people have a day to read it?",
+      "expected": {
+        "light": "Can you send the agenda Wednesday, so people have a day to read it?",
+        "polish": "Can you send the agenda Wednesday, so people have a day to read it?"
+      },
+      "keep": [
+        "Wednesday"
+      ],
+      "forbid": [
+        "Tuesday"
+      ]
+    },
+    {
+      "id": "restart-we-should",
+      "tags": [
+        "restart"
+      ],
+      "raw": "We should, we should just cancel the extra catering.",
+      "expected": {
+        "light": "We should just cancel the extra catering.",
+        "polish": "We should just cancel the extra catering."
+      },
+      "keep": [
+        "We should just cancel"
+      ],
+      "forbid": [
+        "We should, we should"
+      ]
+    },
+    {
+      "id": "restart-i-was",
+      "tags": [
+        "restart"
+      ],
+      "raw": "I was, I was going to ask you to chase Redlane about the missing delivery note.",
+      "expected": {
+        "light": "I was going to ask you to chase Redlane about the missing delivery note.",
+        "polish": "I was going to ask you to chase Redlane about the missing delivery note."
+      },
+      "keep": [
+        "I was going",
+        "Redlane"
+      ],
+      "forbid": [
+        "I was, I was"
+      ]
+    },
+    {
+      "id": "question-time",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Can you move my one pm, sorry, my two pm, to the small booth?",
+      "expected": {
+        "light": "Can you move my 2pm to the small booth?",
+        "polish": "Can you move my 2pm to the small booth?"
+      },
+      "keep": [
+        "2pm"
+      ],
+      "forbid": [
+        "1pm",
+        "one pm"
+      ]
+    },
+    {
+      "id": "amount-or-rather",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Approve three hundred dollars, or rather three hundred and fifty, for the team lunch on Friday.",
+      "expected": {
+        "light": "Approve $350 for the team lunch on Friday.",
+        "polish": "Approve $350 for the team lunch on Friday."
+      },
+      "keep": [
+        "$350"
+      ],
+      "forbid": [
+        "$300",
+        "three hundred dollars"
+      ]
+    },
+    {
+      "id": "time-make-that",
+      "tags": [
+        "correction"
+      ],
+      "raw": "Let's start at ten am, make that ten thirty, so people can grab a coffee first.",
+      "expected": {
+        "light": "Let's start at 10.30am, so people can grab a coffee first.",
+        "polish": "Let's start at 10.30am, so people can grab a coffee first."
+      },
+      "keep": [
+        "so people can grab a coffee first"
+      ],
+      "forbid": [
+        "10am",
+        "ten am"
+      ]
+    },
+    {
+      "id": "trap-id-rather",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "I'd rather we keep the Friday slot than try to squeeze everyone in on Thursday afternoon, and I can tell Northpine we'll send a recording.",
+      "expected": {
+        "light": "I'd rather we keep the Friday slot than try to squeeze everyone in on Thursday afternoon, and I can tell Northpine we'll send a recording.",
+        "polish": "I'd rather we keep the Friday slot than try to squeeze everyone in on Thursday afternoon, and I can tell Northpine we'll send a recording."
+      },
+      "keep": [
+        "I'd rather",
+        "Friday slot",
+        "Thursday afternoon"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-rather-than",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "Use the spare room rather than the boardroom, so the client call can stay put.",
+      "expected": {
+        "light": "Use the spare room rather than the boardroom, so the client call can stay put.",
+        "polish": "Use the spare room rather than the boardroom, so the client call can stay put."
+      },
+      "keep": [
+        "rather than",
+        "spare room",
+        "boardroom"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-actually-emphasis",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "I actually think the quote is fine, we just need to confirm the lead time with Redlane.",
+      "expected": {
+        "light": "I actually think the quote is fine, we just need to confirm the lead time with Redlane.",
+        "polish": "I actually think the quote is fine, we just need to confirm the lead time with Redlane."
+      },
+      "keep": [
+        "I actually think",
+        "quote is fine"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-actually-opener",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "Actually, the spare laptops arrived this morning, so we can kit out the contractors today.",
+      "expected": {
+        "light": "Actually, the spare laptops arrived this morning, so we can kit out the contractors today.",
+        "polish": "Actually, the spare laptops arrived this morning, so we can kit out the contractors today."
+      },
+      "keep": [
+        "Actually, the spare laptops",
+        "this morning"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-sorry-for",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "Sorry for the late note, the courier missed us and I've only just unpacked the samples.",
+      "expected": {
+        "light": "Sorry for the late note, the courier missed us and I've only just unpacked the samples.",
+        "polish": "Sorry for the late note, the courier missed us and I've only just unpacked the samples."
+      },
+      "keep": [
+        "Sorry for the late note",
+        "courier missed us"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-sorry-bye-bye",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "Sorry, I missed your call just now. I'm heading out, bye bye, ring me if the courier shows up.",
+      "expected": {
+        "light": "Sorry, I missed your call just now. I'm heading out, bye bye, ring me if the courier shows up.",
+        "polish": "Sorry, I missed your call just now. I'm heading out, bye bye, ring me if the courier shows up."
+      },
+      "keep": [
+        "Sorry, I missed your call",
+        "bye bye"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-no-thats-fine",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "No, that's fine, leave the old chairs in the meeting room until the new ones show up.",
+      "expected": {
+        "light": "No, that's fine, leave the old chairs in the meeting room until the new ones show up.",
+        "polish": "No, that's fine, leave the old chairs in the meeting room until the new ones show up."
+      },
+      "keep": [
+        "No, that's fine",
+        "old chairs"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-no-one",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "No one had had a look at the Harbourfold contract yet, so don't send it across.",
+      "expected": {
+        "light": "No one had had a look at the Harbourfold contract yet, so don't send it across.",
+        "polish": "No one had had a look at the Harbourfold contract yet, so don't send it across."
+      },
+      "keep": [
+        "No one",
+        "Harbourfold contract"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-no-worries",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "No worries if you're late, it's a very very loose agenda and we'll recap in Slack.",
+      "expected": {
+        "light": "No worries if you're late, it's a very very loose agenda and we'll recap in Slack.",
+        "polish": "No worries if you're late, it's a very very loose agenda and we'll recap in Slack."
+      },
+      "keep": [
+        "No worries",
+        "loose agenda"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-i-mean-it",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "I mean it, don't send the invoice until Priya has signed off on the hours.",
+      "expected": {
+        "light": "I mean it, don't send the invoice until Priya has signed off on the hours.",
+        "polish": "I mean it, don't send the invoice until Priya has signed off on the hours."
+      },
+      "keep": [
+        "I mean it",
+        "don't send the invoice"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-i-mean-filler",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "The kitchen's free after lunch, I mean, we can just grab a table if the meeting room's booked.",
+      "expected": {
+        "light": "The kitchen's free after lunch, we can just grab a table if the meeting room's booked.",
+        "polish": "The kitchen's free after lunch, we can just grab a table if the meeting room's booked."
+      },
+      "keep": [
+        "The kitchen's free after lunch",
+        "grab a table"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-make-that-happen",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "If you can make that happen before Friday, the auditors won't have to come back.",
+      "expected": {
+        "light": "If you can make that happen before Friday, the auditors won't have to come back.",
+        "polish": "If you can make that happen before Friday, the auditors won't have to come back."
+      },
+      "keep": [
+        "make that happen",
+        "before Friday"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-question-then-answer",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "Is it Tuesday? No, Wednesday is better, because Tash is in the office then.",
+      "expected": {
+        "light": "Is it Tuesday? No, Wednesday is better, because Tash is in the office then.",
+        "polish": "Is it Tuesday? No, Wednesday is better, because Tash is in the office then."
+      },
+      "keep": [
+        "Is it Tuesday",
+        "Wednesday is better"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-name-list",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "Can you add Ned, Tash and Callum to the offsite thread so they see the venue options?",
+      "expected": {
+        "light": "Can you add Ned, Tash and Callum to the offsite thread so they see the venue options?",
+        "polish": "Can you add Ned, Tash and Callum to the offsite thread so they see the venue options?"
+      },
+      "keep": [
+        "Ned, Tash",
+        "Callum"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-number-list",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "We'll need two, three or four people on the door depending on how many guests RSVP.",
+      "expected": {
+        "light": "We'll need 2, 3 or 4 people on the door depending on how many guests RSVP.",
+        "polish": "We'll need 2, 3 or 4 people on the door depending on how many guests RSVP."
+      },
+      "keep": [
+        "2, 3 or 4 people"
+      ],
+      "forbid": []
+    },
+    {
+      "id": "trap-elaboration",
+      "tags": [
+        "correction-trap"
+      ],
+      "raw": "It's fine, I mean it's not ideal, but it's fine, we can live with the smaller room for now and I'll tell Priya we won't recut the floor plan.",
+      "expected": {
+        "light": "It's fine, it's not ideal, but it's fine, we can live with the smaller room for now and I'll tell Priya we won't recut the floor plan.",
+        "polish": "It's fine, it's not ideal, but it's fine, we can live with the smaller room for now and I'll tell Priya we won't recut the floor plan."
+      },
+      "keep": [
+        "it's not ideal",
+        "it's fine"
+      ],
+      "forbid": []
+    }
+  ]
+}

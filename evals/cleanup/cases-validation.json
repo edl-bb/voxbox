@@ -1,0 +1,1545 @@
+{
+  "language": "en-AU",
+  "contexts": {},
+  "cases": [
+    {
+      "id": "va-agri-grain-auger-status",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "names with unusual spelling, Australian place names",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "can you check if the grain auger for Narromine has arrived yet?",
+      "expected": {
+        "light": "Can you check if the grain auger for Narromine has arrived yet?",
+        "polish": "Can you check if the grain auger for Narromine has arrived yet?"
+      },
+      "keep": [
+        "grain auger for Narromine"
+      ],
+      "forbidText": [
+        "Yes, the grain auger has arrived"
+      ],
+      "note": "Already clean apart from the capital letter. It is a question, so neither level should answer it."
+    },
+    {
+      "id": "va-agri-drought-relief-feed-plan",
+      "tags": [
+        "long",
+        "numbers",
+        "spoken scaffolding",
+        "fillers that carry meaning",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "So hi Callum. I was going to say, we need to sort out the drought feed supply for the stations out near Cunnamulla and Thargomindah. The thing is, we have forty two tonnes of lucerne hay arriving on Thursday morning at seven thirty am. and we definitely kind of need that specific kind of high protein pellet mix from the warehouse in Toowoomba, not the standard cattle grain. basically we promised the pastoral company twelve tonnes of urea lick blocks by next Friday. but freight is backed up three to four days along the Warrego Highway. Um make sure you do not confirm delivery until dispatch actually signs off on the road train permits. I meant to say, their account manager Sarah Menzies called and said they want an extra fifteen percent discount if they take twenty five tonnes of oats upfront. Can you check whether our margin holds at twenty eight dollars per bag before we send that revised estimate through?",
+      "expected": {
+        "light": "So hi Callum. I was going to say, we need to sort out the drought feed supply for the stations out near Cunnamulla and Thargomindah. The thing is, we have 42 tonnes of lucerne hay arriving on Thursday morning at 7:30am, and we definitely need that specific kind of high protein pellet mix from the warehouse in Toowoomba, not the standard cattle grain. We promised the pastoral company 12 tonnes of urea lick blocks by next Friday, but freight is backed up three to four days along the Warrego Highway. Make sure you do not confirm delivery until dispatch actually signs off on the road train permits. I meant to say, their account manager Sarah Menzies called and said they want an extra 15% discount if they take 25 tonnes of oats upfront. Can you check whether our margin holds at $28 per bag before we send that revised estimate through?",
+        "polish": "Hi Callum. We need to sort out the drought feed supply for the stations out near Cunnamulla and Thargomindah. We have 42 tonnes of lucerne hay arriving on Thursday morning at 7:30am, and we definitely need that specific kind of high-protein pellet mix from the warehouse in Toowoomba, not the standard cattle grain. We promised the pastoral company 12 tonnes of urea lick blocks by next Friday, but freight is backed up three to four days along the Warrego Highway. Make sure you do not confirm delivery until dispatch actually signs off on the road train permits. Their account manager, Sarah Menzies, called and said they want an extra 15% discount if they take 25 tonnes of oats upfront. Can you check whether our margin holds at $28 per bag before we send that revised estimate through?"
+      },
+      "keep": [
+        "drought feed supply",
+        "Warrego Highway",
+        "road train permits"
+      ],
+      "forbidText": [
+        "basically",
+        "kind of need",
+        "07:30",
+        "I checked the margin",
+        "confirm delivery before dispatch"
+      ],
+      "note": "The 'kind of' in 'definitely kind of need' is filler and is removed. The 'kind of' in 'that specific kind of ... pellet mix' is literal and stays. 'three to four days' could also be written '3 to 4 days'. The hyphen in 'high-protein' at Polish is optional."
+    },
+    {
+      "id": "va-agri-chemical-spray-schedule",
+      "tags": [
+        "self-correction",
+        "negation",
+        "numbers",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "we must not spray the glyphosate on paddock seven. sorry I meant paddock eleven. do not mix it at three litres per hectare, mix it at two point five litres.",
+      "expected": {
+        "light": "We must not spray the glyphosate on paddock 11. Do not mix it at 3 litres per hectare, mix it at 2.5 litres.",
+        "polish": "We must not spray the glyphosate on paddock 11. Do not mix it at 3 litres per hectare. Mix it at 2.5 litres."
+      },
+      "keep": [
+        "glyphosate on",
+        "litres per hectare"
+      ],
+      "forbidText": [
+        "paddock seven",
+        "paddock 7",
+        "paddock seven",
+        "spray the glyphosate on paddock 7",
+        "paddock 7"
+      ],
+      "note": "'sorry I meant paddock eleven' is a self-correction, so only paddock 11 survives. 'Do not mix at 3 ... mix at 2.5' is an instruction, not a correction, so both parts stay. 'paddock eleven' as a word is also acceptable."
+    },
+    {
+      "id": "va-agri-fencing-supplies-quote",
+      "tags": [
+        "spoken lists",
+        "mishearings",
+        "names with unusual spelling, Australian place names",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "for the fencing quote out at Boorowa, first we need eighty star pickets, second three rolls of barbed wire, and third twenty pine posts. please peak at their trade discount.",
+      "expected": {
+        "light": "For the fencing quote out at Boorowa, first we need 80 star pickets, second 3 rolls of barbed wire, and third 20 pine posts. Please peak at their trade discount.",
+        "polish": "For the fencing quote out at Boorowa, we need:\n1. 80 star pickets\n2. 3 rolls of barbed wire\n3. 20 pine posts\n\nPlease peek at their trade discount."
+      },
+      "keep": [
+        "fencing quote out at Boorowa",
+        "star pickets",
+        "barbed wire"
+      ],
+      "forbidText": [
+        "I have generated the fencing quote"
+      ],
+      "note": "The speaker numbers the list, so Polish may use a numbered list, but the spec allows it rather than requiring it. An inline sentence ('first we need 80 star pickets, second 3 rolls of barbed wire, and third 20 pine posts') is equally valid. 'peak' becomes 'peek' only at Polish. 'three rolls' as a word is acceptable."
+    },
+    {
+      "id": "va-agri-drip-irrigation-invoice",
+      "tags": [
+        "unfinished final sentence",
+        "reported speech",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "Jock from Murrumbidgee Irrigation said quote you cannot bill us under purchase order PO-8821 until the pump test passes unquote. but when I logged into agro-portal.internal/billing the",
+      "expected": {
+        "light": "Jock from Murrumbidgee Irrigation said, \"You cannot bill us under purchase order PO-8821 until the pump test passes,\" but when I logged into agro-portal.internal/billing the",
+        "polish": "Jock from Murrumbidgee Irrigation said, \"You cannot bill us under purchase order PO-8821 until the pump test passes,\" but when I logged into agro-portal.internal/billing the"
+      },
+      "keep": [
+        "Murrumbidgee Irrigation",
+        "purchase order PO-8821",
+        "agro-portal.internal/billing"
+      ],
+      "forbidText": [
+        "unquote",
+        "quote you",
+        "billing system was down",
+        "the invoice was already paid"
+      ],
+      "note": "The dictation is unfinished, so it must end at 'the' without being completed. An editor could join the 'but when...' fragment to the quote or start a new sentence with it, could use single quotes (Australian style), and could add a trailing ellipsis."
+    },
+    {
+      "id": "va-mining-conveyor-belt-stop",
+      "tags": [
+        "short",
+        "negation",
+        "names with unusual spelling, Australian place names",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "do not restart conveyor CV-04 at Newman without clearance.",
+      "expected": {
+        "light": "Do not restart conveyor CV-04 at Newman without clearance.",
+        "polish": "Do not restart conveyor CV-04 at Newman without clearance."
+      },
+      "keep": [
+        "conveyor CV-04 at Newman",
+        "without clearance"
+      ],
+      "forbidText": [
+        "Don't restart",
+        "Conveyor CV-04 has been restarted"
+      ],
+      "note": "Only the capital letter changes. 'Do not' must not be contracted."
+    },
+    {
+      "id": "va-mining-shift-handover-tailings",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "spoken scaffolding",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "Okay so can you write up the night shift handover for pit three at Tom Price. The thing is, haul truck HT-114 blew a rear hydraulic line at ten fifteen pm. and dumped approximately forty five litres of fluid near ramp Bravo. environmental team was notified, no worries about runoff because the bunding held up fine. We were, we were running three hundred and twenty tonnes per hour through the primary crusher until midnight. then feeder chute F-02 choked on oversize basalt. I was going to say, Trevor told the crew quote don't clear the blockage until isolation lock-out tag-out is verified on switchboard SW-4 unquote. what is the best way to reschedule the morning blasting window at bench seven if maintenance takes another two to three hours? Also remind day shift supervisor Danika Siobhan that dust suppression canon DC-09 has zero water pressure. we should also make sure diesel generator DG-03 is inspected before six am.",
+      "expected": {
+        "light": "Okay, so can you write up the night shift handover for pit 3 at Tom Price? The thing is, haul truck HT-114 blew a rear hydraulic line at 10:15pm and dumped approximately 45 litres of fluid near ramp Bravo. Environmental team was notified, no worries about runoff because the bunding held up fine. We were running 320 tonnes per hour through the primary crusher until midnight. Then feeder chute F-02 choked on oversize basalt. I was going to say, Trevor told the crew, \"Don't clear the blockage until isolation lock-out tag-out is verified on switchboard SW-4.\" What is the best way to reschedule the morning blasting window at bench 7 if maintenance takes another two to three hours? Also remind day shift supervisor Danika Siobhan that dust suppression canon DC-09 has zero water pressure. We should also make sure diesel generator DG-03 is inspected before 6am.",
+        "polish": "Can you write up the night shift handover for pit 3 at Tom Price? Haul truck HT-114 blew a rear hydraulic line at 10:15pm and dumped approximately 45 litres of fluid near ramp Bravo. The environmental team was notified. No worries about runoff because the bunding held up fine. We were running 320 tonnes per hour through the primary crusher until midnight. Then feeder chute F-02 choked on oversize basalt. Trevor told the crew, \"Don't clear the blockage until isolation lock-out tag-out is verified on switchboard SW-4.\" What is the best way to reschedule the morning blasting window at bench 7 if maintenance takes another two to three hours? Also, remind day shift supervisor Danika Siobhan that dust suppression cannon DC-09 has zero water pressure. We should also make sure diesel generator DG-03 is inspected before 6am."
+      },
+      "keep": [
+        "truck HT-114",
+        "hydraulic line",
+        "oversize basalt",
+        "Danika Siobhan"
+      ],
+      "forbidText": [
+        "We were, we were",
+        "22:15",
+        "unquote",
+        "Here is the night shift handover",
+        "22:15"
+      ],
+      "note": "The keep phrase 'haul truck HT-114' was changed to 'truck HT-114' because 'Haul' is capitalised once Polish drops 'The thing is'. 'zero water pressure' means none and stays as a word. Choices an editor could reasonably make differently: 'pit three' and 'bench seven' as words, adding 'The' before 'environmental team', and joining 'until midnight, when...'. 'canon' becomes 'cannon' only at Polish."
+    },
+    {
+      "id": "va-mining-excavator-brake-fault",
+      "tags": [
+        "mishearings",
+        "self-correction",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "the operators noticed their review mirror is broken and the emergency brake no sorry the secondary brake on loader LD-402 failed its daily brake test.",
+      "expected": {
+        "light": "The operators noticed their review mirror is broken and the secondary brake on loader LD-402 failed its daily brake test.",
+        "polish": "The operators noticed their rear-view mirror is broken and the secondary brake on loader LD-402 failed its daily brake test."
+      },
+      "keep": [
+        "secondary brake on loader LD-402",
+        "daily brake test"
+      ],
+      "forbidText": [
+        "emergency brake",
+        "emergency brake on loader"
+      ],
+      "note": "'the emergency brake no sorry the secondary brake' is a self-correction, so only 'secondary brake' survives. 'review mirror' is a mishearing of 'rear-view mirror' and is fixed only at Polish ('rearview' is also acceptable)."
+    },
+    {
+      "id": "va-mining-drilling-depth-variance",
+      "tags": [
+        "reported speech",
+        "fillers that carry meaning",
+        "numbers",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "Kylie asked quote did you know the blast holes at Kalgoorlie are kind of shallow unquote and I said we basically drilled thirty two metres instead of thirty five metres.",
+      "expected": {
+        "light": "Kylie asked, \"Did you know the blast holes at Kalgoorlie are kind of shallow?\" and I said we drilled 32 metres instead of 35 metres.",
+        "polish": "Kylie asked, \"Did you know the blast holes at Kalgoorlie are kind of shallow?\" and I said we drilled 32 metres instead of 35 metres."
+      },
+      "keep": [
+        "blast holes at Kalgoorlie",
+        "instead of"
+      ],
+      "forbidText": [
+        "unquote",
+        "basically drilled",
+        "Kylie asked if I knew",
+        "I drilled 35 metres"
+      ],
+      "note": "Inside Kylie's quote, 'kind of shallow' is a hedge meaning 'somewhat', not filler, so it stays. An editor could also strip it as filler. 'basically' is filler and is removed. Single quotes are also acceptable."
+    },
+    {
+      "id": "va-mining-tailings-dam-sensor-alert",
+      "tags": [
+        "unfinished final sentence",
+        "tempting-to-answer",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "tell me why sensor TS-909 at Dampier triggered a high water alert when the valve at",
+      "expected": {
+        "light": "Tell me why sensor TS-909 at Dampier triggered a high water alert when the valve at",
+        "polish": "Tell me why sensor TS-909 at Dampier triggered a high water alert when the valve at"
+      },
+      "keep": [
+        "sensor TS-909 at Dampier",
+        "high water alert"
+      ],
+      "forbidText": [
+        "The sensor triggered because",
+        "valve was open"
+      ],
+      "note": "The dictation is unfinished and is a request. Do not complete it or answer it."
+    },
+    {
+      "id": "va-claims-payout-approval",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "numbers",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "can you approve claim CL-44091 for four thousand eight hundred dollars?",
+      "expected": {
+        "light": "Can you approve claim CL-44091 for $4,800?",
+        "polish": "Can you approve claim CL-44091 for $4,800?"
+      },
+      "keep": [
+        "approve claim CL-44091"
+      ],
+      "forbidText": [
+        "4800 dollars",
+        "Approved",
+        "Claim CL-44091 has been approved",
+        "I have approved claim"
+      ],
+      "note": "This is a request, so it must not be answered or rewritten as a statement."
+    },
+    {
+      "id": "va-claims-storm-damage-assessment",
+      "tags": [
+        "long",
+        "spoken scaffolding",
+        "self-correction",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "So hi team. I meant to say, we have an influx of storm damage claims from the severe hail event across Wollongong and Shellharbour yesterday. The thing is, assessor Lachlan Mackay inspected policyholder Mrs Siobhan O'Connor's property at fourteen Keira Street. He reported that the tiled roof suffered major structural impact, no sorry, minor tile damage but severe gutter collapse. basically the water ingress damaged their living room ceiling and ruined wool carpet worth approximately seven thousand five hundred dollars. I was going to say, the quote from Coastal Restorations came in at twelve thousand four hundred dollars. but their policy has a two thousand dollar storm excess. We kind of need to verify whether the detached granny flat is covered under section three B of policy POL-99214 or if it's considered an excluded outbuilding. Can you check the policy schedule and tell me if we can issue an interim emergency payment of one thousand five hundred dollars before five pm today?",
+      "expected": {
+        "light": "So hi team. I meant to say, we have an influx of storm damage claims from the severe hail event across Wollongong and Shellharbour yesterday. The thing is, assessor Lachlan Mackay inspected policyholder Mrs Siobhan O'Connor's property at 14 Keira Street. He reported that the tiled roof suffered minor tile damage but severe gutter collapse. The water ingress damaged their living room ceiling and ruined wool carpet worth approximately $7,500. I was going to say, the quote from Coastal Restorations came in at $12,400, but their policy has a $2,000 storm excess. We need to verify whether the detached granny flat is covered under section 3B of policy POL-99214 or if it's considered an excluded outbuilding. Can you check the policy schedule and tell me if we can issue an interim emergency payment of $1,500 before 5pm today?",
+        "polish": "Hi team. We have an influx of storm damage claims from the severe hail event across Wollongong and Shellharbour yesterday. Assessor Lachlan Mackay inspected policyholder Mrs Siobhan O'Connor's property at 14 Keira Street. He reported that the tiled roof suffered minor tile damage but severe gutter collapse. The water ingress damaged their living room ceiling and ruined wool carpet worth approximately $7,500. The quote from Coastal Restorations came in at $12,400, but their policy has a $2,000 storm excess. We need to verify whether the detached granny flat is covered under section 3B of policy POL-99214 or if it's considered an excluded outbuilding. Can you check the policy schedule and tell me if we can issue an interim emergency payment of $1,500 before 5pm today?"
+      },
+      "keep": [
+        "Wollongong and Shellharbour",
+        "Lachlan Mackay",
+        "Coastal Restorations",
+        "policy POL-99214"
+      ],
+      "forbidText": [
+        "major structural impact",
+        "kind of need",
+        "17:00",
+        "major structural impact",
+        "Yes, we can issue",
+        "17:00"
+      ],
+      "note": "'major structural impact, no sorry, minor tile damage' is a self-correction. 'basically' and the filler 'kind of' are removed. 'section three B' becomes '3B'."
+    },
+    {
+      "id": "va-claims-third-party-liability",
+      "tags": [
+        "mishearings",
+        "negation",
+        "numbers",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "there lawyer sent an email claiming twenty four thousand dollars for vehicle hire. do not accept liability under any circumstances until we review the dashcam footage.",
+      "expected": {
+        "light": "There lawyer sent an email claiming $24,000 for vehicle hire. Do not accept liability under any circumstances until we review the dashcam footage.",
+        "polish": "Their lawyer sent an email claiming $24,000 for vehicle hire. Do not accept liability under any circumstances until we review the dashcam footage."
+      },
+      "keep": [
+        "lawyer sent an email",
+        "under any circumstances",
+        "dashcam footage"
+      ],
+      "forbidText": [
+        "Don't accept",
+        "their lawyer sent an email accepting liability"
+      ],
+      "note": "The homophone 'There' becomes 'Their' only at Polish."
+    },
+    {
+      "id": "va-claims-fraud-investigation-steps",
+      "tags": [
+        "spoken lists",
+        "technical tokens",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "can you log these fraud investigation steps in portal.claims-net.internal. first pull the telemetry data from drive-tag.json, second cross reference the timestamp with toll records, and third flag user ID usr_99182.",
+      "expected": {
+        "light": "Can you log these fraud investigation steps in portal.claims-net.internal? First pull the telemetry data from drive-tag.json, second cross reference the timestamp with toll records, and third flag user ID usr_99182.",
+        "polish": "Can you log these fraud investigation steps in portal.claims-net.internal?\n1. Pull the telemetry data from drive-tag.json\n2. Cross-reference the timestamp with toll records\n3. Flag user ID usr_99182"
+      },
+      "keep": [
+        "fraud investigation steps",
+        "drive-tag.json",
+        "user ID usr_99182"
+      ],
+      "forbidText": [
+        "I have logged the steps",
+        "Steps logged successfully"
+      ],
+      "note": "The keep phrase 'flag user ID usr_99182' was changed to 'user ID usr_99182' because 'Flag' is capitalised in the Polish list. The numbered list is optional at Polish, and an inline sentence is equally valid. A colon could replace the question mark after the URL."
+    },
+    {
+      "id": "va-claims-dispute-settlement-call",
+      "tags": [
+        "reported speech",
+        "unfinished final sentence",
+        "names with unusual spelling, Australian place names",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "the claimant from Indooroopilly called and said quote I will take this straight to AFCA if you deduct the excess unquote. but before we could explain clause six point two she",
+      "expected": {
+        "light": "The claimant from Indooroopilly called and said, \"I will take this straight to AFCA if you deduct the excess,\" but before we could explain clause 6.2 she",
+        "polish": "The claimant from Indooroopilly called and said, \"I will take this straight to AFCA if you deduct the excess,\" but before we could explain clause 6.2 she"
+      },
+      "keep": [
+        "claimant from Indooroopilly",
+        "take this straight to AFCA",
+        "explain clause"
+      ],
+      "forbidText": [
+        "unquote",
+        "I'll take this",
+        "she hung up the phone",
+        "she agreed to settle"
+      ],
+      "note": "The dictation is unfinished, so it must end at 'she'. An editor could start a new sentence at 'But', use single quotes, or add an ellipsis."
+    },
+    {
+      "id": "va-helpdesk-vpn-ticket-reassign",
+      "tags": [
+        "short",
+        "technical tokens",
+        "tempting-to-answer",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "please reassign ticket INC-88201 to the network engineering queue.",
+      "expected": {
+        "light": "Please reassign ticket INC-88201 to the network engineering queue.",
+        "polish": "Please reassign ticket INC-88201 to the network engineering queue."
+      },
+      "keep": [
+        "reassign ticket INC-88201",
+        "network engineering queue"
+      ],
+      "forbidText": [
+        "Ticket INC-88201 has been reassigned",
+        "I have reassigned ticket INC-88201"
+      ],
+      "note": "Only the capital letter changes."
+    },
+    {
+      "id": "va-helpdesk-vpn-outage-and-mfa-reset",
+      "tags": [
+        "long",
+        "technical tokens",
+        "tempting-to-answer",
+        "spoken scaffolding",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5"
+      ],
+      "raw": "So hi Helpdesk leads. I was going to say, we are seeing multiple tickets regarding the Sydney office gateway at vpn.corp.internal. The thing is, after the firmware update to version three point four point two at eleven pm last night, sixty four remote employees reported that their SSO session drops every ten to fifteen minutes. basically the RADIUS server authentication logs show error code ERR_AUTH_TIMEOUT. I meant to say, do not tell users to reinstall GlobalProtect because that kind of workaround is not going to fix the underlying token expiry issue. what is the best way to notify all active staff on Slack without causing panic in the general channel? Also senior engineer Niamh Campbell requested quote please reset my hardware YubiKey serial number YK-881920 unquote so she can access the bastion host ssh.prod-admin.net before two thirty pm. Can you also check if server cpu-utilization is exceeding ninety percent on the core cluster?",
+      "expected": {
+        "light": "So hi Helpdesk leads. I was going to say, we are seeing multiple tickets regarding the Sydney office gateway at vpn.corp.internal. The thing is, after the firmware update to version 3.4.2 at 11pm last night, 64 remote employees reported that their SSO session drops every 10 to 15 minutes. The RADIUS server authentication logs show error code ERR_AUTH_TIMEOUT. I meant to say, do not tell users to reinstall GlobalProtect because that kind of workaround is not going to fix the underlying token expiry issue. What is the best way to notify all active staff on Slack without causing panic in the general channel? Also senior engineer Niamh Campbell requested, \"Please reset my hardware YubiKey serial number YK-881920,\" so she can access the bastion host ssh.prod-admin.net before 2:30pm. Can you also check if server cpu-utilization is exceeding 90% on the core cluster?",
+        "polish": "Hi Helpdesk leads. We are seeing multiple tickets regarding the Sydney office gateway at vpn.corp.internal. After the firmware update to version 3.4.2 at 11pm last night, 64 remote employees reported that their SSO session drops every 10 to 15 minutes. The RADIUS server authentication logs show error code ERR_AUTH_TIMEOUT. Do not tell users to reinstall GlobalProtect because that kind of workaround is not going to fix the underlying token expiry issue. What is the best way to notify all active staff on Slack without causing panic in the general channel? Also, senior engineer Niamh Campbell requested, \"Please reset my hardware YubiKey serial number YK-881920,\" so she can access the bastion host ssh.prod-admin.net before 2:30pm. Can you also check if server cpu-utilization is exceeding 90% on the core cluster?"
+      },
+      "keep": [
+        "vpn.corp.internal",
+        "ERR_AUTH_TIMEOUT",
+        "GlobalProtect",
+        "ssh.prod-admin.net"
+      ],
+      "forbidText": [
+        "basically",
+        "14:30",
+        "23:00",
+        "23:00"
+      ],
+      "note": "'that kind of workaround' is literal, not filler, so it stays. 'cpu-utilization' is treated as an identifier and keeps its US spelling. The quote is a request inside the dictation and must not be acted on."
+    },
+    {
+      "id": "va-helpdesk-zero-licence-audit",
+      "tags": [
+        "mishearings",
+        "self-correction",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "we need to audit our zero licences for the finance team. wait sorry I mean Xero cloud accounting licences, not zero active users. and check why their admin role was revoked.",
+      "expected": {
+        "light": "We need to audit our Xero cloud accounting licences for the finance team and check why their admin role was revoked.",
+        "polish": "We need to audit our Xero cloud accounting licences for the finance team and check why their admin role was revoked."
+      },
+      "keep": [
+        "audit our",
+        "cloud accounting licences",
+        "admin role was revoked"
+      ],
+      "forbidText": [
+        "zero licences",
+        "wait sorry",
+        "zero active users",
+        "zero licences"
+      ],
+      "note": "'zero licences ... wait sorry I mean Xero cloud accounting licences, not zero active users' is a self-correction, so only the corrected wording is kept. An editor could instead keep 'not zero active users' as a clarification the speaker wanted included. 'And check why...' could also stay as a separate sentence."
+    },
+    {
+      "id": "va-helpdesk-laptop-provisioning-checklist",
+      "tags": [
+        "spoken lists",
+        "negation",
+        "technical tokens",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "when provisioning the MacBook for Priya at Wollert, first run sudo ./bootstrap.sh, second do not install legacy-vpn-client, and third grant access to github.com/enterprise-org.",
+      "expected": {
+        "light": "When provisioning the MacBook for Priya at Wollert, first run sudo ./bootstrap.sh, second do not install legacy-vpn-client, and third grant access to github.com/enterprise-org.",
+        "polish": "When provisioning the MacBook for Priya at Wollert:\n1. Run sudo ./bootstrap.sh\n2. Do not install legacy-vpn-client\n3. Grant access to github.com/enterprise-org"
+      },
+      "keep": [
+        "provisioning the MacBook",
+        "sudo ./bootstrap.sh",
+        "github.com/enterprise-org"
+      ],
+      "forbidText": [
+        "Don't install"
+      ],
+      "note": "The numbered list is optional at Polish, and an inline sentence is equally valid. Items have no trailing full stops, so the command and URL are not affected."
+    },
+    {
+      "id": "va-helpdesk-dns-propagation-delay",
+      "tags": [
+        "unfinished final sentence",
+        "reported speech",
+        "names with unusual spelling, Australian place names",
+        "writer:gemini-3.7",
+        "referee:claude-opus-5.5",
+        "ambiguous"
+      ],
+      "raw": "Brendan from the Wagga Wagga branch called and said quote none of our workstations can reach dns.internal unquote but while checking nslookup",
+      "expected": {
+        "light": "Brendan from the Wagga Wagga branch called and said, \"None of our workstations can reach dns.internal,\" but while checking nslookup",
+        "polish": "Brendan from the Wagga Wagga branch called and said, \"None of our workstations can reach dns.internal,\" but while checking nslookup"
+      },
+      "keep": [
+        "Wagga Wagga branch",
+        "workstations can reach dns.internal",
+        "checking nslookup"
+      ],
+      "forbidText": [
+        "unquote",
+        "nslookup resolved the domain",
+        "I fixed the DNS issue"
+      ],
+      "note": "The dictation is unfinished, so it must end at 'nslookup'. An editor could start a new sentence at 'But', use single quotes, or add an ellipsis."
+    },
+    {
+      "id": "vb-flight-standup-gate-confusion",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "mishearings",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "so hi ops team. um quick stand up for j q 472 to hobart. we had a gate swap from twelve to fourteen then back to twelve. because of the brake check on the tug no sorry on the towbar. anyway can you please write me a short slack to send the crew like. keep it calm but clear. include that boarding is now at nine twenty and we are not doing a paper manifest unless the scanner breaks. also the aodb is showing there crew still on the inbound but i think it is their crew. i peeked at the roster and it says siobhan rourke on lead. so if the screen says peak at the roster thats wrong. we need two wheelchairs at the bottom of the aerobridge and one special meal gluten free for seat 14c. i told gate staff do not close the door at nine thirty if medical is still coming. hold the door closed. sorry i mean hold the door open. and can you tell me whats the best way to phrase that so it doesnt sound like we are late. also note bags are heavy today like thirty kilos each on average. i dont want anyone lifting solo. cheers",
+      "expected": {
+        "light": "So hi Ops team, quick stand up for JQ472 to Hobart. We had a gate swap from 12 to 14, then back to 12, because of the brake check on the towbar. Anyway, can you please write me a short Slack to send the crew? Keep it calm but clear. Include that boarding is now at 9:20 and we are not doing a paper manifest unless the scanner breaks. Also, the AODB is showing there crew still on the inbound, but I think it is their crew. I peeked at the roster and it says Siobhan Rourke on lead. So if the screen says peak at the roster, that's wrong. We need two wheelchairs at the bottom of the aerobridge and one special meal gluten free for seat 14C. I told gate staff, do not close the door at 9:30 if medical is still coming. Hold the door open. And can you tell me what's the best way to phrase that so it doesn't sound like we are late? Also note bags are heavy today, like 30 kilos each on average. I don't want anyone lifting solo. Cheers.",
+        "polish": "Hi Ops team, quick stand up for JQ472 to Hobart. We had a gate swap from 12 to 14, then back to 12, because of the brake check on the towbar. Can you please write me a short Slack to send the crew? Keep it calm but clear. Include that boarding is now at 9:20 and we are not doing a paper manifest unless the scanner breaks. Also, the AODB is showing there crew still on the inbound, but I think it is their crew. I peeked at the roster and it says Siobhan Rourke on lead. So if the screen says peak at the roster, that's wrong. We need two wheelchairs at the bottom of the aerobridge and one special meal gluten free for seat 14C. I told gate staff, do not close the door at 9:30 if medical is still coming. Hold the door open. And can you tell me what's the best way to phrase that so it doesn't sound like we are late? Also note bags are heavy today, like 30 kilos each on average. I don't want anyone lifting solo. Cheers."
+      },
+      "keep": [
+        "gate swap",
+        "boarding is now",
+        "two wheelchairs",
+        "lifting solo"
+      ],
+      "forbidText": [
+        "on the tug",
+        "door closed",
+        "14:00",
+        "Sure, here is a Slack message",
+        "Boarding is at 09:20",
+        "Hold the door closed"
+      ],
+      "note": "Tug and door-closed are retracted. there and peak stay as the screen wording beside their and peeked. 9:20 could be 9.20."
+    },
+    {
+      "id": "vb-crew-quick-gate-check",
+      "tags": [
+        "short",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7"
+      ],
+      "raw": "gate twelve not fourteen. boarding at nine twenty.",
+      "expected": {
+        "light": "Gate 12, not 14. Boarding at 9:20.",
+        "polish": "Gate 12, not 14. Boarding at 9:20."
+      },
+      "keep": [
+        "Gate 12, not",
+        "Boarding at"
+      ],
+      "forbidText": [
+        "twelve",
+        "fourteen",
+        "14:00",
+        "Gate 14",
+        "09:20"
+      ],
+      "note": "Both gate numbers stay; twelve and fourteen become digits and nine twenty becomes 9:20."
+    },
+    {
+      "id": "vb-baggage-negation-and-time",
+      "tags": [
+        "self-correction",
+        "negation",
+        "numbers",
+        "reported speech / quotes",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "we are not. not accepting gate checked bags after ten fifteen. unless the captain says otherwise. i heard him say quote do not start the push until fuel slip is signed end quote. and just to be clear. we dont need three loaders. sorry two loaders on bay four. and if anyone asks. no worries is not a yes. it means ask me again with the actual reason.",
+      "expected": {
+        "light": "We are not accepting gate checked bags after 10:15, unless the captain says otherwise. I heard him say, quote, do not start the push until fuel slip is signed, end quote. And just to be clear, we don't need two loaders on bay 4. And if anyone asks, no worries is not a yes. It means ask me again with the actual reason.",
+        "polish": "We are not accepting gate checked bags after 10:15 unless the captain says otherwise. I heard him say, \"Do not start the push until fuel slip is signed.\" And just to be clear, we don't need two loaders on bay 4. And if anyone asks, no worries is not a yes. It means ask me again with the actual reason."
+      },
+      "keep": [
+        "fuel slip is signed",
+        "ask me again"
+      ],
+      "forbidText": [
+        "three loaders",
+        "10:15am",
+        "We are accepting gate checked bags",
+        "Start the push now"
+      ],
+      "note": "The repeated not and three loaders are retracted. Spoken quote and end quote stay at Light and become quotation marks at Polish."
+    },
+    {
+      "id": "vb-ops-ticket-and-path",
+      "tags": [
+        "technical tokens",
+        "mishearings",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "can someone check ops ticket ops-1842 in jira. the note says link the gate camera feed to goLiveStream but it got transcribed as go life stream. also i need the pdf from /Volumes/ops/turnarounds/turnaroundBrief_WOL_v2.3.pdf. and tell mick at ramp. not mic. that the towbar pin is missing. we cant push until it is found. ring me on 04 71 8 6 2 0 9 3 if you cant access the share.",
+      "expected": {
+        "light": "Can someone check ops ticket ops-1842 in Jira? The note says link the gate camera feed to goLiveStream, but it got transcribed as go life stream. Also, I need the PDF from /Volumes/ops/turnarounds/turnaroundBrief_WOL_v2.3.pdf. And tell Mick at ramp, not Mic, that the towbar pin is missing. We can't push until it is found. Ring me on 0471 862 093 if you can't access the share.",
+        "polish": "Can someone check ops ticket ops-1842 in Jira? The note says link the gate camera feed to goLiveStream, but it got transcribed as go life stream. Also, I need the PDF from /Volumes/ops/turnarounds/turnaroundBrief_WOL_v2.3.pdf. And tell Mick at ramp, not Mic, that the towbar pin is missing. We can't push until it is found. Ring me on 0471 862 093 if you can't access the share."
+      },
+      "keep": [
+        "towbar pin is missing",
+        "can't push until"
+      ],
+      "forbidText": [
+        "cannot",
+        "+61",
+        "Mic at ramp",
+        "We can push now"
+      ],
+      "note": "go life stream is the reported mistranscription and stays. not Mic stays. Phone digits grouped as 0471 862 093."
+    },
+    {
+      "id": "vb-lecture-rambly-assignment-help",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "spoken scaffolding",
+        "fillers that carry meaning",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "okay so. um hi everyone. i meant to say about the week seven tutorial. the thing is. like the thing is not broken. the thing is we have two cohorts. and you know which one you are if your lab is tuesday. you know. do you know. anyway can you write me a short announcement for moodle. and also tell me if this marking scheme sounds fair. basically. i want them to compare like a type of algorithm. not just say it is good. first they define the problem. second they give a small example. third they explain the trade offs. but i dont want it to become a numbered list in the post unless you think it should. also for the late policy. we do not give extensions after friday. unless there is a documented reason. last term i said quote email me and we will sort it end quote and that caused chaos. also the url is moodle.unite.edu.au/course/COMP3310 and the file is assessment_v2.3.docx. some students keep writing there code in the chat. their code. and i dont want to police tone but i do want them to stop pasting api keys. can you suggest the best wording so it doesnt sound like a threat. thanks",
+      "expected": {
+        "light": "Okay so, hi everyone. I meant to say about the week seven tutorial. The thing is not broken. The thing is, we have two cohorts. And you know which one you are if your lab is Tuesday. Do you know? Anyway, can you write me a short announcement for Moodle? And also tell me if this marking scheme sounds fair. I want them to compare a type of algorithm, not just say it is good. First they define the problem. Second they give a small example. Third they explain the trade offs. But I don't want it to become a numbered list in the post unless you think it should. Also, for the late policy, we do not give extensions after Friday unless there is a documented reason. Last term I said, quote, email me and we will sort it, end quote, and that caused chaos. Also, the URL is moodle.unite.edu.au/course/COMP3310 and the file is assessment_v2.3.docx. Some students keep writing their code in the chat. And I don't want to police tone, but I do want them to stop pasting API keys. Can you suggest the best wording so it doesn't sound like a threat? Thanks.",
+        "polish": "Hi everyone. About the week seven tutorial, the thing is not broken. We have two cohorts. And you know which one you are if your lab is Tuesday. Do you know? Can you write me a short announcement for Moodle? And also tell me if this marking scheme sounds fair. I want them to compare a type of algorithm, not just say it is good. First they define the problem. Second they give a small example. Third they explain the trade offs. But I don't want it to become a numbered list in the post unless you think it should. Also, for the late policy, we do not give extensions after Friday unless there is a documented reason. Last term I said, \"Email me and we will sort it,\" and that caused chaos. Also, the URL is moodle.unite.edu.au/course/COMP3310 and the file is assessment_v2.3.docx. Some students keep writing their code in the chat. And I don't want to police tone, but I do want them to stop pasting API keys. Can you suggest the best wording so it doesn't sound like a threat? Thanks."
+      },
+      "keep": [
+        "week seven tutorial",
+        "marking scheme sounds",
+        "late policy",
+        "stop pasting"
+      ],
+      "forbidText": [
+        "there code",
+        "basically",
+        "1. ",
+        "Here is a suggested marking scheme",
+        "We give extensions after Friday"
+      ],
+      "note": "the thing is not broken stays; the later the thing is is scaffolding and drops only at Polish. first/second/third stay prose. Do you know stays a question."
+    },
+    {
+      "id": "vb-student-short-question",
+      "tags": [
+        "short",
+        "tempting-to-answer",
+        "writer:gpt-5.2",
+        "referee:grok-4.7"
+      ],
+      "raw": "can you tell me if my thesis topic is okay",
+      "expected": {
+        "light": "Can you tell me if my thesis topic is okay?",
+        "polish": "Can you tell me if my thesis topic is okay?"
+      },
+      "keep": [
+        "thesis topic is"
+      ],
+      "forbidText": [
+        "Yes",
+        "sounds good",
+        "Yes, your thesis topic is fine"
+      ],
+      "note": "A question only; do not answer it."
+    },
+    {
+      "id": "vb-tutorial-enumeration-not-a-list",
+      "tags": [
+        "spoken lists",
+        "numbers",
+        "negation",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "for the prac. first dont run the script on prod. second dont rename the dataset. third dont share the link outside the class. and its due on 12 october at 2pm not 12pm. if you submit at 2 05 it counts late.",
+      "expected": {
+        "light": "For the prac, first don't run the script on prod. Second, don't rename the dataset. Third, don't share the link outside the class. And it's due on 12 October at 2pm, not 12pm. If you submit at 2:05, it counts late.",
+        "polish": "For the prac, first don't run the script on prod. Second, don't rename the dataset. Third, don't share the link outside the class. And it's due on 12 October at 2pm, not 12pm. If you submit at 2:05, it counts late."
+      },
+      "keep": [
+        "don't run the script",
+        "share the link",
+        "counts late"
+      ],
+      "forbidText": [
+        "14:00",
+        "12:00",
+        "14:00"
+      ],
+      "note": "2pm and 12pm both stay. 2 05 becomes 2:05. first/second/third stay prose rather than a Markdown list."
+    },
+    {
+      "id": "vb-lecture-quote-and-negation",
+      "tags": [
+        "reported speech / quotes",
+        "negation",
+        "mishearings",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "i had a student tell me quote you said attendance doesnt matter end quote. i did not say that. i said attendance alone doesnt guarantee a pass. also please fix the slide where it says peak at the histogram. it should be peek. and the example about coober pedy stays. do not change the place name.",
+      "expected": {
+        "light": "I had a student tell me, quote, you said attendance doesn't matter, end quote. I did not say that. I said attendance alone doesn't guarantee a pass. Also, please fix the slide where it says peak at the histogram. It should be peek. And the example about Coober Pedy stays. Do not change the place name.",
+        "polish": "I had a student tell me, \"You said attendance doesn't matter.\" I did not say that. I said attendance alone doesn't guarantee a pass. Also, please fix the slide where it says peak at the histogram. It should be peek. And the example about Coober Pedy stays. Do not change the place name."
+      },
+      "keep": [
+        "attendance alone doesn't",
+        "guarantee a pass",
+        "example about Coober Pedy"
+      ],
+      "forbidText": [
+        "Cooper Pedy",
+        "I did say"
+      ],
+      "note": "peak and peek both stay as the slide request. Coober Pedy is only capitalised. Quote words become quotation marks at Polish."
+    },
+    {
+      "id": "vb-studio-rambly-client-email",
+      "tags": [
+        "long",
+        "technical tokens",
+        "self-correction",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "so hi xanthe. um can you draft a client email to tarquin at northcove developments. i was going to say. the thing is we are on revit 2026 now and the model link broke. actually it didnt break it just needs re pathing. the file path is /Projects/Northcove/Models/NC_Atrium_r03.rvt and the f f and e schedule is in spec_sheet_v2.3.xlsx. i need the email to say we can deliver renders by 18 november. no sorry 19 november if the photographer is delayed. also we need a decision on the joinery colour. not color. and i dont want them to think the budget moved. it has not moved. it is still 340k aud for interiors excluding loose furniture. also please mention wollongong site visit. 9am to 11am. and can you ask them to confirm they dont want the skylight. because if they do we must change the beam sizes. also we got a note from their qs saying quote provide a value engineering option end quote. i dont want to overreact but we need it in writing. can you make it polite. thanks",
+      "expected": {
+        "light": "So hi Xanthe. Can you draft a client email to Tarquin at Northcove Developments? I was going to say, the thing is we are on Revit 2026 now and the model link actually didn't break, it just needs re pathing. The file path is /Projects/Northcove/Models/NC_Atrium_r03.rvt and the FF and E schedule is in spec_sheet_v2.3.xlsx. I need the email to say we can deliver renders by 19 November if the photographer is delayed. Also, we need a decision on the joinery colour. And I don't want them to think the budget moved. It has not moved. It is still 340k AUD for interiors, excluding loose furniture. Also, please mention Wollongong site visit, 9am to 11am. And can you ask them to confirm they don't want the skylight, because if they do we must change the beam sizes? Also, we got a note from their QS saying, quote, provide a value engineering option, end quote. I don't want to overreact, but we need it in writing. Can you make it polite? Thanks.",
+        "polish": "Hi Xanthe. Can you draft a client email to Tarquin at Northcove Developments? We are on Revit 2026 now and the model link actually didn't break, it just needs re-pathing. The file path is /Projects/Northcove/Models/NC_Atrium_r03.rvt and the FF&E schedule is in spec_sheet_v2.3.xlsx. I need the email to say we can deliver renders by 19 November if the photographer is delayed. Also, we need a decision on the joinery colour. And I don't want them to think the budget moved. It has not moved. It is still 340k AUD for interiors, excluding loose furniture. Also, please mention Wollongong site visit, 9am to 11am. And can you ask them to confirm they don't want the skylight, because if they do we must change the beam sizes? Also, we got a note from their QS saying, \"Provide a value engineering option.\" I don't want to overreact, but we need it in writing. Can you make it polite? Thanks."
+      },
+      "keep": [
+        "client email",
+        "deliver renders",
+        "beam sizes",
+        "make it polite"
+      ],
+      "forbidText": [
+        "18 November",
+        "link broke",
+        "Sure, here's the email",
+        "09:00"
+      ],
+      "note": "18 November and the claim the link broke are retracted. not color drops, leaving colour. FF and E becomes FF&E at Polish. 340k AUD is not expanded."
+    },
+    {
+      "id": "vb-studio-short-spec-note",
+      "tags": [
+        "short",
+        "mishearings",
+        "writer:gpt-5.2",
+        "referee:grok-4.7"
+      ],
+      "raw": "peek at the plans. not peak. before you send",
+      "expected": {
+        "light": "Peek at the plans before you send.",
+        "polish": "Peek at the plans before you send."
+      },
+      "keep": [
+        "before you send"
+      ],
+      "forbidText": [
+        "peak",
+        "Peak",
+        "peak at the plans"
+      ],
+      "note": "not peak is a spelling correction, so only peek remains."
+    },
+    {
+      "id": "vb-interior-budget-decimals-and-units",
+      "tags": [
+        "numbers",
+        "mishearings",
+        "negation",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "the tile order is 12.5 square metres not 125. and its matte not mat. do not swap the grout to bright white. and the supplier is zero. like xero the accounting thing. not zero the number.",
+      "expected": {
+        "light": "The tile order is 12.5 square metres, not 125. And it's matte, not mat. Do not swap the grout to bright white. And the supplier is Xero, like Xero the accounting thing, not zero the number.",
+        "polish": "The tile order is 12.5 square metres, not 125. And it's matte, not mat. Do not swap the grout to bright white. And the supplier is Xero, the accounting thing, not zero the number."
+      },
+      "keep": [
+        "tile order is",
+        "do not swap",
+        "bright white"
+      ],
+      "forbidText": [
+        "square meters",
+        "125 square",
+        "supplier is zero",
+        "125 square metres",
+        "Xero is zero"
+      ],
+      "note": "12.5 not 125 and matte not mat both stay. The supplier name is Xero, and the not-zero clarification stays."
+    },
+    {
+      "id": "vb-studio-scaffolding-vs-meaningful-lookalike",
+      "tags": [
+        "spoken scaffolding",
+        "fillers that carry meaning",
+        "self-correction",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "okay so the thing is. the thing is broken on level three. not like a metaphor. the hinge is literally bent. i kind of need you to treat it as a type of safety issue. and i mean. i mean i need photos before we strip it out. actually no. photos before we touch it at all. because the builder will say it was us.",
+      "expected": {
+        "light": "Okay so the thing is broken on level three, not like a metaphor. The hinge is literally bent. I kind of need you to treat it as a type of safety issue. I need photos before we touch it at all, because the builder will say it was us.",
+        "polish": "The thing is broken on level three, not like a metaphor. The hinge is literally bent. I kind of need you to treat it as a type of safety issue. I need photos before we touch it at all, because the builder will say it was us."
+      },
+      "keep": [
+        "level three",
+        "hinge is literally",
+        "photos before we"
+      ],
+      "forbidText": [
+        "strip it",
+        "Photos after we touch it"
+      ],
+      "note": "the thing is broken, kind of, and like a metaphor stay. strip it out is retracted. Okay so drops only at Polish."
+    },
+    {
+      "id": "vb-festival-rambly-ai-request-trailing-off",
+      "tags": [
+        "long",
+        "tempting-to-answer",
+        "unfinished final sentence",
+        "technical tokens",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "so hi site ops. um can you write me a run sheet for friday that i can paste into slack. keep it short but like. include gates open at ten thirty. soundcheck is eleven to one. and the first act at 1pm. but dont lock it in because it might shift. also i need you to tell me whats the best way to explain to patrons that we are not accepting cash at bars. only tap. last year people got angry and i dont want that again. the wifi ssid is sunmoth-crew and the password is in 1password under SunMothFest2026/crewWifi. and the file is runOfShow.yaml in /ops/festival/2026/. also if anyone says the stage is too quite. it is too quiet. and we need earplugs at foh and at the merch tent. i told nia mh. sorry niamh. to put a sign up. do not say free alcohol anywhere. and make sure the message says we are not cancelling even if it rains. unless lightning. and if you can also check whether the vendor permit for the food trucks expires on the twenty second because i heard it does. if it does we need to renew before",
+      "expected": {
+        "light": "So hi site ops. Can you write me a run sheet for Friday that I can paste into Slack? Keep it short. Include gates open at 10:30. Soundcheck is 11 to 1, and the first act at 1pm. But don't lock it in because it might shift. Also, I need you to tell me what's the best way to explain to patrons that we are not accepting cash at bars, only tap. Last year people got angry and I don't want that again. The Wi-Fi SSID is sunmoth-crew and the password is in 1Password under SunMothFest2026/crewWifi. And the file is runOfShow.yaml in /ops/festival/2026/. Also, if anyone says the stage is too quiet. And we need earplugs at FOH and at the merch tent. I told Niamh to put a sign up. Do not say free alcohol anywhere. And make sure the message says we are not cancelling even if it rains, unless lightning. And if you can also check whether the vendor permit for the food trucks expires on the 22nd, because I heard it does. If it does, we need to renew before",
+        "polish": "Hi site ops. Can you write me a run sheet for Friday that I can paste into Slack? Keep it short. Include gates open at 10:30. Soundcheck is 11 to 1, and the first act at 1pm. But don't lock it in because it might shift. Also, I need you to tell me what's the best way to explain to patrons that we are not accepting cash at bars, only tap. Last year people got angry and I don't want that again. The Wi-Fi SSID is sunmoth-crew and the password is in 1Password under SunMothFest2026/crewWifi. And the file is runOfShow.yaml in /ops/festival/2026/. Also, if anyone says the stage is too quiet. And we need earplugs at FOH and at the merch tent. I told Niamh to put a sign up. Do not say free alcohol anywhere. And make sure the message says we are not cancelling even if it rains, unless lightning. And if you can also check whether the vendor permit for the food trucks expires on the 22nd, because I heard it does. If it does, we need to renew before"
+      },
+      "keep": [
+        "gates open",
+        "not accepting cash",
+        "earplugs at FOH",
+        "not cancelling"
+      ],
+      "forbidText": [
+        "quite",
+        "13:00",
+        "Nia Mh",
+        "Sure, here is a run sheet",
+        "We are accepting cash",
+        "14:00"
+      ],
+      "note": "Ends unfinished at before. quite corrects to quiet and Nia Mh to Niamh. 1pm stays 1pm. The if-clause about the stage is left unfinished."
+    },
+    {
+      "id": "vb-festival-short-radio-call",
+      "tags": [
+        "short",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7"
+      ],
+      "raw": "meet me at gate b at 2pm. dont be late",
+      "expected": {
+        "light": "Meet me at gate B at 2pm. Don't be late.",
+        "polish": "Meet me at gate B at 2pm. Don't be late."
+      },
+      "keep": [
+        "Meet me at",
+        "Don't be late"
+      ],
+      "forbidText": [
+        "14:00",
+        "14:00"
+      ],
+      "note": "2pm stays 2pm."
+    },
+    {
+      "id": "vb-festival-ticketing-email-and-ids",
+      "tags": [
+        "technical tokens",
+        "numbers",
+        "reported speech / quotes",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "email ticketing@sunmothfest.com and tell them the qr batch for day two is misprinted. the batch id is TIX-7741. and the gate scanner log says quote invalid checksum end quote. also refund policy is 15% fee after 1 september. not after 1 october.",
+      "expected": {
+        "light": "Email ticketing@sunmothfest.com and tell them the QR batch for day two is misprinted. The batch ID is TIX-7741. And the gate scanner log says, quote, invalid checksum, end quote. Also, refund policy is 15% fee after 1 September, not after 1 October.",
+        "polish": "Email ticketing@sunmothfest.com and tell them the QR batch for day two is misprinted. The batch ID is TIX-7741. And the gate scanner log says, \"invalid checksum.\" Also, refund policy is 15% fee after 1 September, not after 1 October."
+      },
+      "keep": [
+        "QR batch",
+        "invalid checksum",
+        "refund policy"
+      ],
+      "forbidText": [
+        "October 1",
+        "fifteen percent",
+        "No fee"
+      ],
+      "note": "1 September, not 1 October, both stay. Quote words become quotation marks at Polish."
+    },
+    {
+      "id": "vb-festival-mishearings-and-negation",
+      "tags": [
+        "mishearings",
+        "negation",
+        "fillers that carry meaning",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "do not. do not put the amps on the wet grass. because the power will trip. and when i said like a backup generator i meant as a comparison. not literally a second generator. also it is brake lights on the buggy not break lights. and the runner named djuna is not june.",
+      "expected": {
+        "light": "Do not put the amps on the wet grass, because the power will trip. And when I said like a backup generator, I meant as a comparison, not literally a second generator. Also, it is brake lights on the buggy, not break lights. And the runner named Djuna is not June.",
+        "polish": "Do not put the amps on the wet grass, because the power will trip. And when I said like a backup generator, I meant as a comparison, not literally a second generator. Also, it is brake lights on the buggy, not break lights. And the runner named Djuna is not June."
+      },
+      "keep": [
+        "wet grass",
+        "power will trip",
+        "runner named Djuna"
+      ],
+      "forbidText": [
+        "named June",
+        "Do not. Do not"
+      ],
+      "note": "The doubled do not is a restart. The like-as-comparison point, brake not break, and Djuna is not June all stay."
+    },
+    {
+      "id": "vb-ops-enumeration-not-a-list-airside",
+      "tags": [
+        "spoken lists",
+        "technical tokens",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "we have three calls to make today. first to tower about bay allocation. second to catering about the missing dairy free snack. third to it about the ipad app crashing. the command they asked me to run was sudo /usr/local/bin/gateOpsSync --force. and it failed at 3.2 percent. no sorry 32 percent.",
+      "expected": {
+        "light": "We have three calls to make today. First, to tower about bay allocation. Second, to catering about the missing dairy free snack. Third, to IT about the iPad app crashing. The command they asked me to run was sudo /usr/local/bin/gateOpsSync --force. And it failed at 32%.",
+        "polish": "We have three calls to make today. First, to tower about bay allocation. Second, to catering about the missing dairy free snack. Third, to IT about the iPad app crashing. The command they asked me to run was sudo /usr/local/bin/gateOpsSync --force. And it failed at 32%."
+      },
+      "keep": [
+        "three calls to make",
+        "missing dairy free",
+        "iPad app crashing"
+      ],
+      "forbidText": [
+        "3.2",
+        "3.2%",
+        "Here are the three calls"
+      ],
+      "note": "3.2 percent is retracted. The command stays exact. first/second/third stay prose rather than a Markdown list."
+    },
+    {
+      "id": "vb-uni-self-correction-trailing-off",
+      "tags": [
+        "self-correction",
+        "unfinished final sentence",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "the quiz opens at 9am monday. no sorry tuesday. and it closes at 5pm same day. please dont start it unless you can finish it. because if your browser refreshes you lose it. and if you email me saying it crashed i will ask for a screenshot of the timer and the question number you were on. i was going to say i can reset it. but i cant unless the log shows you actually started. so if you are at work or on a train. just wait. also the hint on question four is wrong. it says derivative when it should say gradient. anyway if you need help with the concept. watch the week six video. and the last thing. for the group project. do not pick a topic just because it sounds trendy. pick one you can actually evaluate with data. and when you write the reflection. i want you to talk about what failed not just what worked. okay. i think thats it. unless you want me to",
+      "expected": {
+        "light": "The quiz opens at 9am Tuesday, and it closes at 5pm same day. Please don't start it unless you can finish it, because if your browser refreshes you lose it. And if you email me saying it crashed, I will ask for a screenshot of the timer and the question number you were on. I was going to say I can reset it, but I can't unless the log shows you actually started. So if you are at work or on a train, just wait. Also, the hint on question four is wrong. It says derivative when it should say gradient. Anyway, if you need help with the concept, watch the week six video. And the last thing, for the group project, do not pick a topic just because it sounds trendy. Pick one you can actually evaluate with data. And when you write the reflection, I want you to talk about what failed, not just what worked. Okay. I think that's it. Unless you want me to",
+        "polish": "The quiz opens at 9am Tuesday, and it closes at 5pm same day. Please don't start it unless you can finish it, because if your browser refreshes, you lose it. And if you email me saying it crashed, I will ask for a screenshot of the timer and the question number you were on. I can reset it, but I can't unless the log shows you actually started. So if you are at work or on a train, just wait. Also, the hint on question four is wrong. It says derivative when it should say gradient. If you need help with the concept, watch the week six video. And the last thing, for the group project, do not pick a topic just because it sounds trendy. Pick one you can actually evaluate with data. And when you write the reflection, I want you to talk about what failed, not just what worked. I think that's it. Unless you want me to"
+      },
+      "keep": [
+        "watch the week six",
+        "group project",
+        "evaluate with data",
+        "what failed"
+      ],
+      "forbidText": [
+        "Monday",
+        "17:00",
+        "09:00"
+      ],
+      "note": "Monday is retracted. derivative and gradient both stay. The ending unless you want me to stays unfinished."
+    },
+    {
+      "id": "vb-studio-quote-and-request-to-ai",
+      "tags": [
+        "reported speech / quotes",
+        "tempting-to-answer",
+        "mishearings",
+        "negation",
+        "writer:gpt-5.2",
+        "referee:grok-4.7"
+      ],
+      "raw": "can you tell me if this spec clause is too harsh. it says quote contractor must not substitute fixtures without written approval end quote. i dont want it softened. i just want it to read clean. also the client keeps saying there architect approved it. their architect. and i need to correct that without starting a fight.",
+      "expected": {
+        "light": "Can you tell me if this spec clause is too harsh? It says, quote, contractor must not substitute fixtures without written approval, end quote. I don't want it softened. I just want it to read clean. Also, the client keeps saying their architect approved it. And I need to correct that without starting a fight.",
+        "polish": "Can you tell me if this spec clause is too harsh? It says, \"Contractor must not substitute fixtures without written approval.\" I don't want it softened. I just want it to read clean. Also, the client keeps saying their architect approved it. And I need to correct that without starting a fight."
+      },
+      "keep": [
+        "written approval",
+        "read clean",
+        "starting a fight"
+      ],
+      "forbidText": [
+        "there architect",
+        "not too harsh",
+        "Yes, it's too harsh",
+        "must substitute fixtures"
+      ],
+      "note": "Do not answer whether the clause is too harsh. there architect corrects to their."
+    },
+    {
+      "id": "vb-festival-scaffolding-meaningful-like-mishearing",
+      "tags": [
+        "spoken scaffolding",
+        "fillers that carry meaning",
+        "mishearings",
+        "numbers",
+        "writer:gpt-5.2",
+        "referee:grok-4.7",
+        "ambiguous"
+      ],
+      "raw": "okay so. i meant to say the merch queue is like the main complaint. like as a comparison to last year. not like. you know. anyway we need barriers moved 3 metres toward the north fence. and the sign should say line starts here. not lane. it keeps coming out as lane. also can you write me a quick note to the volunteers. tell them dont promise anyone backstage access. and if someone asks where the toilets are. point. dont walk them. because we are short staffed. and the volunteer lead is rhiannon spence. not rihanna. and the bus to wynyard leaves at 11pm and 12:30. please dont convert it to 23:00 in any doc. thanks",
+      "expected": {
+        "light": "Okay so, I meant to say the merch queue is like the main complaint, like as a comparison to last year, not like. Anyway, we need barriers moved 3 metres toward the north fence. And the sign should say line starts here, not lane. It keeps coming out as lane. Also, can you write me a quick note to the volunteers? Tell them don't promise anyone backstage access. And if someone asks where the toilets are, point. Don't walk them, because we are short staffed. And the volunteer lead is Rhiannon Spence, not Rihanna. And the bus to Wynyard leaves at 11pm and 12:30. Please don't convert it to 23:00 in any doc. Thanks.",
+        "polish": "The merch queue is like the main complaint, as a comparison to last year. We need barriers moved 3 metres toward the north fence. And the sign should say line starts here, not lane. It keeps coming out as lane. Also, can you write me a quick note to the volunteers? Tell them don't promise anyone backstage access. And if someone asks where the toilets are, point. Don't walk them, because we are short staffed. And the volunteer lead is Rhiannon Spence, not Rihanna. And the bus to Wynyard leaves at 11pm and 12:30. Please don't convert it to 23:00 in any doc. Thanks."
+      },
+      "keep": [
+        "merch queue",
+        "line starts here",
+        "short staffed",
+        "volunteer lead"
+      ],
+      "forbidText": [
+        "leaves at 23:00",
+        "lane starts here",
+        "meters",
+        "Sure, here's a note"
+      ],
+      "note": "like stays as a comparison to last year. line not lane, and Rhiannon not Rihanna, both stay. 11pm and 12:30 stay; 23:00 appears only in the warning."
+    },
+    {
+      "id": "vc-pharmacy-webster-pack",
+      "tags": [
+        "mishearing",
+        "numbers",
+        "tempting-to-answer",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "um so mrs patterson's webster pack needs to go out by nine am. she's on forty milligrams of losec now not twenty milligrams. can you peak at the old script before we repack it",
+      "expected": {
+        "light": "Mrs Patterson's Webster pack needs to go out by 9am. She's on 40 milligrams of losec now not 20 milligrams. Can you peak at the old script before we repack it?",
+        "polish": "Mrs Patterson's Webster pack needs to go out by 9am. She's on 40 milligrams of losec now, not 20 milligrams. Can you peek at the old script before we repack it?"
+      },
+      "keep": [
+        "needs to go out by",
+        "before we repack it"
+      ],
+      "forbidText": [
+        "09:00",
+        "Sure, I'll check that for you"
+      ]
+    },
+    {
+      "id": "vc-pharmacy-dont-dispense",
+      "tags": [
+        "short",
+        "negation",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "don't dispense that script until the doctor calls back",
+      "expected": {
+        "light": "Don't dispense that script until the doctor calls back.",
+        "polish": "Don't dispense that script until the doctor calls back."
+      },
+      "keep": [
+        "until the doctor calls back"
+      ],
+      "forbidText": [
+        "dispense that script now",
+        "go ahead and dispense it"
+      ]
+    },
+    {
+      "id": "vc-pharmacy-stock-count",
+      "tags": [
+        "self-correction",
+        "numbers",
+        "technical-tokens",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "can you do the stock count on bay four, no sorry, bay five before close we're down to about fifteen boxes of panadol osteo and the reorder code is p dash two two one four seven",
+      "expected": {
+        "light": "Can you do the stock count on bay five before close? We're down to about 15 boxes of panadol osteo and the reorder code is p-22147.",
+        "polish": "Can you do the stock count on bay five before close? We're down to about 15 boxes of panadol osteo, and the reorder code is p-22147."
+      },
+      "keep": [
+        "before close",
+        "panadol osteo"
+      ],
+      "forbidText": [
+        "bay four"
+      ]
+    },
+    {
+      "id": "vc-pharmacy-allergy-note",
+      "tags": [
+        "mishearing",
+        "unfinished",
+        "filler-with-meaning",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5",
+        "ambiguous"
+      ],
+      "raw": "just a heads up the new patient's got a nut allergy not a, not a dairy one so when you're making up the, the compound cream basically just double check the, actually I'm not sure if it's",
+      "expected": {
+        "light": "Just a heads up, the new patient's got a nut allergy, not a dairy one, so when you're making up the compound cream—actually I'm not sure if it's",
+        "polish": "The new patient's got a nut allergy, not a dairy one, so when you're making up the compound cream—actually I'm not sure if it's"
+      },
+      "keep": [
+        "got a nut allergy"
+      ],
+      "forbidText": [
+        "it's a dairy allergy",
+        "double check the compound cream for nuts"
+      ],
+      "note": "Unclear how much of the trailing self-correction to keep before the unfinished ending."
+    },
+    {
+      "id": "vc-pharmacy-long-handover",
+      "tags": [
+        "long",
+        "reported-speech",
+        "filler-with-meaning",
+        "numbers",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "okay so just a quick handover before you start the afternoon shift. the pharmacist on in the morning said and I quote there is no way we are refilling that script again until the GP sends through a new referral so if the bloke from flat three comes in asking for his valium just tell him that. also we are basically out of the blue boxes of nurofen plus we've got maybe six left on the shelf and a new delivery is meant to come tuesday or wednesday I'm not sure which. the eftpos machine at register two has been playing up again it freezes on anything over a hundred dollars so just use register one for bigger transactions for now. oh and mrs kowalski rang about her blister pack she said and I'm quoting her here why does it keep coming on a thursday when I asked for a monday so can you ring her back and sort that out. also the fridge temperature log hasn't been done since yesterday morning so someone needs to do that before the inspector maybe comes next week. and honestly is it too much to ask that people actually write in the diary when they take stock from the dangerous drugs safe because twice this week the count hasn't matched",
+      "expected": {
+        "light": "Okay, so just a quick handover before you start the afternoon shift. The pharmacist on in the morning said, and I quote, there is no way we are refilling that script again until the GP sends through a new referral, so if the bloke from flat three comes in asking for his valium just tell him that. Also we are basically out of the blue boxes of nurofen plus, we've got maybe six left on the shelf and a new delivery is meant to come Tuesday or Wednesday, I'm not sure which. The eftpos machine at register two has been playing up again, it freezes on anything over $100, so just use register one for bigger transactions for now. Oh, and Mrs Kowalski rang about her blister pack, she said, and I'm quoting her here, why does it keep coming on a Thursday when I asked for a Monday, so can you ring her back and sort that out. Also the fridge temperature log hasn't been done since yesterday morning, so someone needs to do that before the inspector maybe comes next week. And honestly, is it too much to ask that people actually write in the diary when they take stock from the dangerous drugs safe, because twice this week the count hasn't matched?",
+        "polish": "Just a quick handover before you start the afternoon shift. The pharmacist on in the morning said, and I quote, there is no way we are refilling that script again until the GP sends through a new referral, so if the bloke from flat three comes in asking for his valium just tell him that. Also we are out of the blue boxes of nurofen plus; we've got maybe six left on the shelf and a new delivery is meant to come Tuesday or Wednesday, I'm not sure which. The eftpos machine at register two has been playing up again—it freezes on anything over $100—so just use register one for bigger transactions for now. Mrs Kowalski rang about her blister pack; she said, and I'm quoting her here, why does it keep coming on a Thursday when I asked for a Monday, so can you ring her back and sort that out. Also the fridge temperature log hasn't been done since yesterday morning, so someone needs to do that before the inspector maybe comes next week. And honestly, is it too much to ask that people actually write in the diary when they take stock from the dangerous drugs safe, because twice this week the count hasn't matched?"
+      },
+      "keep": [
+        "sends through a new referral",
+        "someone needs to do that",
+        "the count hasn't matched"
+      ],
+      "forbidText": [
+        "register two for bigger transactions",
+        "refilling that script again right away"
+      ]
+    },
+    {
+      "id": "vc-childcare-incident-report",
+      "tags": [
+        "spoken-scaffolding",
+        "numbers",
+        "self-correction",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "so hi jack just letting you know oscar had a little bump at the park today around two pm he fell off the, the low bar and there's a small graze on his, on his knee we put a band-aid on it and an ice pack he was a bit teary but settled down after about ten minutes",
+      "expected": {
+        "light": "So hi Jack, just letting you know Oscar had a little bump at the park today around 2pm. He fell off the low bar and there's a small graze on his knee. We put a band-aid on it and an ice pack. He was a bit teary but settled down after about 10 minutes.",
+        "polish": "Hi Jack, Oscar had a little bump at the park today around 2pm. He fell off the low bar and there's a small graze on his knee. We put a band-aid on it and an ice pack. He was a bit teary but settled down after about 10 minutes."
+      },
+      "keep": [
+        "graze on his knee",
+        "settled down after about"
+      ],
+      "forbidText": [
+        "14:00",
+        "scratched his knee"
+      ],
+      "note": "Raw says graze on his knee, not grazed his knee."
+    },
+    {
+      "id": "vc-childcare-short-note",
+      "tags": [
+        "short",
+        "filler-with-meaning",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "zoe's allergic to bee stings so no outdoor play near the hive today",
+      "expected": {
+        "light": "Zoe's allergic to bee stings, so no outdoor play near the hive today.",
+        "polish": "Zoe's allergic to bee stings, so no outdoor play near the hive today."
+      },
+      "keep": [
+        "allergic to bee stings",
+        "no outdoor play"
+      ],
+      "forbidText": [
+        "outdoor play is fine today"
+      ]
+    },
+    {
+      "id": "vc-childcare-enrolment-call",
+      "tags": [
+        "numbers",
+        "technical-tokens",
+        "tempting-to-answer",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "um can you email the new enrolment pack to the mum her email is j dot bianchi at outlook dot com and tell her the deposit is three hundred and fifty dollars due by the fifteenth of next month also what's the best way to word the bit about the two week notice period",
+      "expected": {
+        "light": "Can you email the new enrolment pack to the mum? Her email is j.bianchi@outlook.com and tell her the deposit is $350 due by the fifteenth of next month. Also what's the best way to word the bit about the two week notice period?",
+        "polish": "Can you email the new enrolment pack to the mum? Her email is j.bianchi@outlook.com, and tell her the deposit is $350 due by the 15th of next month. Also, what's the best way to word the bit about the two-week notice period?"
+      },
+      "keep": [
+        "email the new enrolment pack",
+        "next month"
+      ],
+      "forbidText": [
+        "Here's how I'd word it:"
+      ]
+    },
+    {
+      "id": "vc-childcare-unfinished",
+      "tags": [
+        "unfinished",
+        "negation",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "don't let noah near the water table today his mum said he's not allowed because he's still got that ear infection and the doctor said he can't go swimming or get his ears wet until",
+      "expected": {
+        "light": "Don't let Noah near the water table today. His mum said he's not allowed because he's still got that ear infection and the doctor said he can't go swimming or get his ears wet until",
+        "polish": "Don't let Noah near the water table today. His mum said he's not allowed because he's still got that ear infection, and the doctor said he can't go swimming or get his ears wet until"
+      },
+      "keep": [
+        "don't let noah near the water table",
+        "can't go swimming or get his ears wet"
+      ],
+      "forbidText": [
+        "he's allowed near the water table",
+        "until Friday"
+      ]
+    },
+    {
+      "id": "vc-childcare-long",
+      "tags": [
+        "long",
+        "spoken-list",
+        "reported-speech",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "hey so I just wanted to run through a few things before the end of day meeting. first the excursion forms for the zoo trip need to go out by friday, second we're still short two educators for the thursday shift because jade's off sick and liam swapped with someone, and third can someone double check the first aid kit in room two because I think the thermometer's missing. also harper's dad came in this morning and he said and these were his exact words I don't want her doing any painting activities because of the allergy thing so just make a note of that on her file. the new highchairs arrived but two of them are missing the little tray clips so I've put those ones in the storeroom until we sort that out. oh and the fire drill is meant to happen sometime this week, maybe wednesday or thursday, the area manager wasn't totally clear on which day. also can everyone please actually sign the sign in sheet properly because half of the names this week are impossible to read",
+      "expected": {
+        "light": "Hey, so I just wanted to run through a few things before the end of day meeting. First the excursion forms for the zoo trip need to go out by Friday. Second we're still short two educators for the Thursday shift because Jade's off sick and Liam swapped with someone. And third, can someone double check the first aid kit in room two because I think the thermometer's missing. Also Harper's dad came in this morning and he said, and these were his exact words, I don't want her doing any painting activities because of the allergy thing, so just make a note of that on her file. The new highchairs arrived but two of them are missing the little tray clips, so I've put those ones in the storeroom until we sort that out. Oh, and the fire drill is meant to happen sometime this week, maybe Wednesday or Thursday; the area manager wasn't totally clear on which day. Also can everyone please actually sign the sign in sheet properly because half of the names this week are impossible to read?",
+        "polish": "I wanted to run through a few things before the end of day meeting.\n1. The excursion forms for the zoo trip need to go out by Friday.\n2. We're still short two educators for the Thursday shift because Jade's off sick and Liam swapped with someone.\n3. Can someone double check the first aid kit in room two because I think the thermometer's missing?\nAlso Harper's dad came in this morning and he said, and these were his exact words, I don't want her doing any painting activities because of the allergy thing, so just make a note of that on her file. The new highchairs arrived but two of them are missing the little tray clips, so I've put those ones in the storeroom until we sort that out. The fire drill is meant to happen sometime this week, maybe Wednesday or Thursday; the area manager wasn't totally clear on which day. Can everyone please actually sign the sign in sheet properly because half of the names this week are impossible to read?"
+      },
+      "keep": [
+        "go out by friday",
+        "make a note of that on her file",
+        "sign the sign in sheet properly"
+      ],
+      "forbidText": [
+        "She can do painting activities",
+        "the fire drill is on Wednesday"
+      ]
+    },
+    {
+      "id": "vc-law-discovery-deadline",
+      "tags": [
+        "numbers",
+        "negation",
+        "technical-tokens",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5",
+        "ambiguous"
+      ],
+      "raw": "the discovery deadline is not the twelfth it's the twenty second so don't file the bundle until we hear back from council. the file's saved at slash cases slash thompson underscore v underscore reilly slash discovery and the matter number is twenty two dash four four one",
+      "expected": {
+        "light": "The discovery deadline is not the 12th, it's the 22nd, so don't file the bundle until we hear back from council. The file's saved at slash cases slash thompson underscore v underscore reilly slash discovery and the matter number is 22-441.",
+        "polish": "The discovery deadline is not the 12th, it's the 22nd, so don't file the bundle until we hear back from counsel. The file's saved at /cases/thompson_v_reilly/discovery and the matter number is 22-441."
+      },
+      "keep": [
+        "don't file the bundle"
+      ],
+      "forbidText": [
+        "file the bundle on the twelfth",
+        "go ahead and file it"
+      ],
+      "note": "Council vs counsel at Polish is a plausible homophone fix; keep phrase uses council as in raw."
+    },
+    {
+      "id": "vc-law-short",
+      "tags": [
+        "short",
+        "mishearing",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "can you send the brief to there review before the hearing",
+      "expected": {
+        "light": "Can you send the brief to there review before the hearing?",
+        "polish": "Can you send the brief to their review before the hearing?"
+      },
+      "keep": [
+        "send the brief",
+        "before the hearing"
+      ],
+      "forbidText": [
+        "send the brief to they're review"
+      ]
+    },
+    {
+      "id": "vc-law-client-call",
+      "tags": [
+        "self-correction",
+        "reported-speech",
+        "filler-with-meaning",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "the client rang this morning and basically said he's not signing anything until, no actually he said he wants his own copy first, until his accountant looks at it. he was pretty blunt about it he said and I quote I'm not an idiot just send me the actual numbers",
+      "expected": {
+        "light": "The client rang this morning and basically said he wants his own copy first, until his accountant looks at it. He was pretty blunt about it, he said, and I quote, I'm not an idiot just send me the actual numbers.",
+        "polish": "The client rang this morning and said he wants his own copy first, until his accountant looks at it. He was pretty blunt about it; he said, and I quote, I'm not an idiot just send me the actual numbers."
+      },
+      "keep": [
+        "wants his own copy first",
+        "send me the actual numbers"
+      ],
+      "forbidText": [
+        "he's happy to sign",
+        "he's not an idiot, just send"
+      ]
+    },
+    {
+      "id": "vc-law-spoken-scaffolding",
+      "tags": [
+        "spoken-scaffolding",
+        "unfinished",
+        "tempting-to-answer",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "okay so the thing is the affidavit hasn't been witnessed yet and I meant to say the deponent is overseas until next month so what do you reckon we should do about the",
+      "expected": {
+        "light": "Okay, so the thing is the affidavit hasn't been witnessed yet and I meant to say the deponent is overseas until next month, so what do you reckon we should do about the",
+        "polish": "The affidavit hasn't been witnessed yet, and the deponent is overseas until next month, so what do you reckon we should do about the"
+      },
+      "keep": [
+        "hasn't been witnessed yet",
+        "overseas until next month"
+      ],
+      "forbidText": [
+        "We should extend the deadline",
+        "I think we should"
+      ]
+    },
+    {
+      "id": "vc-law-long",
+      "tags": [
+        "long",
+        "numbers",
+        "spoken-list",
+        "reported-speech",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "hey so just a rundown on the reilly matter before you head into the client meeting. first the settlement offer came back at around one hundred and eighty thousand dollars which is up from the original offer of one hundred and twenty five thousand, second the other side's lawyer said on the call yesterday and this is basically word for word we are not moving past one ninety under any circumstances, and third the mediation's been pushed back to either the third or the tenth of next month depending on the mediator's availability. also I noticed the exhibit list is missing exhibit c which is the email chain from march, so can someone chase that up with the client because without it the whole timeline argument kind of falls apart. the costs estimate also needs updating because the barrister's fees went up, I think it's about four thousand more than what we quoted originally but don't quote me on the exact figure. and one more thing, the client called again this afternoon and asked, quite bluntly, whether we actually think this is going to settle or whether we're just wasting her money",
+      "expected": {
+        "light": "Hey, so just a rundown on the Reilly matter before you head into the client meeting. First the settlement offer came back at around $180,000 which is up from the original offer of $125,000. Second the other side's lawyer said on the call yesterday, and this is basically word for word, we are not moving past one ninety under any circumstances. And third the mediation's been pushed back to either the 3rd or the 10th of next month depending on the mediator's availability. Also I noticed the exhibit list is missing exhibit C which is the email chain from March, so can someone chase that up with the client because without it the whole timeline argument kind of falls apart. The costs estimate also needs updating because the barrister's fees went up, I think it's about $4,000 more than what we quoted originally but don't quote me on the exact figure. And one more thing, the client called again this afternoon and asked, quite bluntly, whether we actually think this is going to settle or whether we're just wasting her money.",
+        "polish": "A rundown on the Reilly matter before you head into the client meeting.\n1. The settlement offer came back at around $180,000, which is up from the original offer of $125,000.\n2. The other side's lawyer said on the call yesterday, and this is basically word for word, we are not moving past one ninety under any circumstances.\n3. The mediation's been pushed back to either the 3rd or the 10th of next month depending on the mediator's availability.\nAlso I noticed the exhibit list is missing exhibit C, which is the email chain from March, so can someone chase that up with the client because without it the whole timeline argument kind of falls apart. The costs estimate also needs updating because the barrister's fees went up; I think it's about $4,000 more than what we quoted originally, but don't quote me on the exact figure. The client called again this afternoon and asked, quite bluntly, whether we actually think this is going to settle or whether we're just wasting her money."
+      },
+      "keep": [
+        "up from the original offer",
+        "chase that up with the client",
+        "whether we actually think this is going to settle"
+      ],
+      "forbidText": [
+        "we are moving past $190,000",
+        "the mediation is on the third"
+      ]
+    },
+    {
+      "id": "vc-warehouse-return-mixup",
+      "tags": [
+        "numbers",
+        "mishearing",
+        "negation",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "the customer's return is not for the brake pads it's for the break lever and we've already refunded twenty nine ninety five so don't process a second refund",
+      "expected": {
+        "light": "The customer's return is not for the brake pads, it's for the break lever, and we've already refunded $29.95, so don't process a second refund.",
+        "polish": "The customer's return is not for the brake pads, it's for the break lever, and we've already refunded $29.95, so don't process a second refund."
+      },
+      "keep": [
+        "already refunded",
+        "don't process a second refund"
+      ],
+      "forbidText": [
+        "process the second refund",
+        "refunded $29.95 for the brake pads"
+      ]
+    },
+    {
+      "id": "vc-warehouse-short",
+      "tags": [
+        "short",
+        "technical-tokens",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "pick list for order sku dash four four one two is wrong",
+      "expected": {
+        "light": "Pick list for order sku-4412 is wrong.",
+        "polish": "Pick list for order sku-4412 is wrong."
+      },
+      "keep": [
+        "pick list",
+        "is wrong"
+      ],
+      "forbidText": [
+        "SKU-44120"
+      ]
+    },
+    {
+      "id": "vc-warehouse-damaged-stock",
+      "tags": [
+        "self-correction",
+        "spoken-scaffolding",
+        "filler-with-meaning",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "so basically the pallet that came in this morning, actually I mean the one from yesterday afternoon, has about fifteen boxes crushed on the, the bottom layer so can you quarantine that basically straight away before anyone picks from it",
+      "expected": {
+        "light": "The pallet that came in yesterday afternoon has about 15 boxes crushed on the bottom layer, so can you quarantine that straight away before anyone picks from it?",
+        "polish": "The pallet that came in yesterday afternoon has about 15 boxes crushed on the bottom layer. Can you quarantine that straight away before anyone picks from it?"
+      },
+      "keep": [
+        "crushed on the bottom layer",
+        "before anyone picks from it"
+      ],
+      "forbidText": [
+        "Okay so the pallet",
+        "quarantine it eventually"
+      ]
+    },
+    {
+      "id": "vc-warehouse-unfinished",
+      "tags": [
+        "unfinished",
+        "reported-speech",
+        "tempting-to-answer",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5"
+      ],
+      "raw": "the customer emailed saying and I quote this is the third time I've had to chase this up myself which is fair enough to be honest so what do you think we should offer her as a, as a",
+      "expected": {
+        "light": "The customer emailed saying, and I quote, this is the third time I've had to chase this up myself, which is fair enough to be honest, so what do you think we should offer her as a",
+        "polish": "The customer emailed saying, and I quote, this is the third time I've had to chase this up myself, which is fair enough to be honest, so what do you think we should offer her as a"
+      },
+      "keep": [
+        "chase this up myself",
+        "fair enough to be honest"
+      ],
+      "forbidText": [
+        "We should offer her a full refund",
+        "as a goodwill gesture"
+      ]
+    },
+    {
+      "id": "vc-warehouse-long",
+      "tags": [
+        "long",
+        "numbers",
+        "spoken-list",
+        "technical-tokens",
+        "writer:claude-sonnet-5",
+        "referee:composer-2.5",
+        "ambiguous"
+      ],
+      "raw": "right so quick update before the afternoon pick run. first the courier's running about two to three hours late today because of some depot issue in sydney, second we're out of the medium satchels so use the large ones for anything under half a kilo for now, and third the returns desk had someone come in wanting to return a pair of boots after, get this, eight months, no receipt, saying they were faulty the whole time which sounds a bit off to me but that's a manager call. also the inventory system is showing negative four units for sku dash seven seven one three which obviously can't be right so someone needs to do a manual recount on that bin before the cycle count on friday. oh and can you log into the warehouse dot internal dot portal site and check if the forklift service ticket from last week, ticket number w m dash two zero eight eight, has actually been closed out because the forklift's still making that grinding noise near the loading dock. one more thing, the temperature in the cold storage room dropped to about two degrees overnight which is below the range so that probably needs to go in the incident log",
+      "expected": {
+        "light": "Right, so quick update before the afternoon pick run. First the courier's running about two to three hours late today because of some depot issue in Sydney. Second we're out of the medium satchels so use the large ones for anything under half a kilo for now. And third the returns desk had someone come in wanting to return a pair of boots after, get this, eight months, no receipt, saying they were faulty the whole time, which sounds a bit off to me but that's a manager call. Also the inventory system is showing negative four units for sku-7713 which obviously can't be right, so someone needs to do a manual recount on that bin before the cycle count on Friday. Oh, and can you log into the warehouse.internal.portal site and check if the forklift service ticket from last week, ticket number wm-2088, has actually been closed out because the forklift's still making that grinding noise near the loading dock. One more thing, the temperature in the cold storage room dropped to about 2 degrees overnight which is below the range, so that probably needs to go in the incident log.",
+        "polish": "Quick update before the afternoon pick run.\n1. The courier's running about two to three hours late today because of some depot issue in Sydney.\n2. We're out of the medium satchels, so use the large ones for anything under half a kilo for now.\n3. The returns desk had someone come in wanting to return a pair of boots after, get this, eight months, no receipt, saying they were faulty the whole time, which sounds a bit off to me but that's a manager call.\nAlso the inventory system is showing negative four units for sku-7713, which obviously can't be right, so someone needs to do a manual recount on that bin before the cycle count on Friday. Can you log into warehouse.internal.portal and check if the forklift service ticket from last week, ticket number wm-2088, has actually been closed out, because the forklift's still making that grinding noise near the loading dock. The temperature in the cold storage room dropped to about 2 degrees overnight, which is below the range, so that probably needs to go in the incident log."
+      },
+      "keep": [
+        "needs to do a manual recount",
+        "needs to go in the incident log",
+        "which obviously can't be right"
+      ],
+      "forbidText": [
+        "running on time today",
+        "the forklift ticket has been closed"
+      ],
+      "note": "URL formatting for warehouse.internal.portal vs spoken warehouse dot internal dot portal site."
+    }
+  ]
+}

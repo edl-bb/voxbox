@@ -1,0 +1,716 @@
+{
+  "language": "en-AU",
+  "contexts": {},
+  "cases": [
+    {
+      "id": "scaffolding-so-opener",
+      "tags": [
+        "scaffolding",
+        "question"
+      ],
+      "raw": "Um so hi Lila, just checking in on. The warehouse booking for Thursday. Can you confirm the dock is free from like nine am?",
+      "expected": {
+        "light": "So hi Lila, just checking in on the warehouse booking for Thursday. Can you confirm the dock is free from 9am?",
+        "polish": "Hi Lila, just checking in on the warehouse booking for Thursday. Can you confirm the dock is free from 9am?"
+      },
+      "keep": [
+        "warehouse booking for Thursday",
+        "Can you confirm the dock"
+      ],
+      "forbid": [
+        "You can confirm"
+      ],
+      "forbidText": [
+        "Thursday, can you"
+      ],
+      "drop": [
+        "like"
+      ]
+    },
+    {
+      "id": "scaffolding-okay-so",
+      "tags": [
+        "scaffolding",
+        "agent",
+        "question",
+        "numbers"
+      ],
+      "raw": "Okay so can you, um, draft a reply to Northpine about the three thousand dollar deposit and ask when they can, you know, release it?",
+      "expected": {
+        "light": "Okay, so can you draft a reply to Northpine about the $3,000 deposit and ask when they can release it?",
+        "polish": "Can you draft a reply to Northpine about the $3,000 deposit and ask when they can release it?"
+      },
+      "keep": [
+        "Can you draft a reply",
+        "Northpine",
+        "$3,000"
+      ],
+      "forbid": [
+        "You can draft",
+        "I can draft"
+      ],
+      "forbidText": [],
+      "drop": [
+        "you know"
+      ]
+    },
+    {
+      "id": "scaffolding-right-so",
+      "tags": [
+        "scaffolding",
+        "email",
+        "question",
+        "numbers"
+      ],
+      "raw": "Right so I'm writing to Fenwick about the, the colour proofs. They still haven't sent the revised set and the print date is Friday. Can you, um, ask them to overnight the files and copy me on the thread? I think we quoted them two thousand dollars for the run so they should, you know, move on this.",
+      "expected": {
+        "light": "Right, so I'm writing to Fenwick about the colour proofs. They still haven't sent the revised set and the print date is Friday. Can you ask them to overnight the files and copy me on the thread? I think we quoted them $2,000 for the run, so they should move on this.",
+        "polish": "I'm writing to Fenwick about the colour proofs. They still haven't sent the revised set and the print date is Friday. Can you ask them to overnight the files and copy me on the thread? I think we quoted them $2,000 for the run, so they should move on this."
+      },
+      "keep": [
+        "I'm writing to Fenwick",
+        "colour proofs",
+        "$2,000",
+        "so they should"
+      ],
+      "forbid": [
+        "You can ask",
+        "I am writing"
+      ],
+      "forbidText": [
+        "Friday, can you"
+      ],
+      "drop": [
+        "you know",
+        "the the"
+      ]
+    },
+    {
+      "id": "scaffolding-alright-so",
+      "tags": [
+        "scaffolding",
+        "note",
+        "question",
+        "numbers"
+      ],
+      "raw": "Alright so remind me to book the Harbourline pickup for, uh, Tuesday at two pm. Should I leave the pallet labels on the bench?",
+      "expected": {
+        "light": "Alright, so remind me to book the Harbourline pickup for Tuesday at 2pm. Should I leave the pallet labels on the bench?",
+        "polish": "Remind me to book the Harbourline pickup for Tuesday at 2pm. Should I leave the pallet labels on the bench?"
+      },
+      "keep": [
+        "Harbourline pickup",
+        "2pm",
+        "Should I leave the pallet labels"
+      ],
+      "forbid": [
+        "Should you leave"
+      ],
+      "forbidText": [
+        "2pm, should"
+      ]
+    },
+    {
+      "id": "scaffolding-anyway-opener",
+      "tags": [
+        "scaffolding",
+        "question",
+        "numbers"
+      ],
+      "raw": "Anyway the Lantern Freight quote came back at eight hundred dollars. Want me to, um, lock it in before Friday?",
+      "expected": {
+        "light": "Anyway, the Lantern Freight quote came back at $800. Want me to lock it in before Friday?",
+        "polish": "The Lantern Freight quote came back at $800. Want me to lock it in before Friday?"
+      },
+      "keep": [
+        "Lantern Freight",
+        "$800",
+        "Want me to lock it in"
+      ],
+      "forbid": [
+        "Do you want me"
+      ],
+      "forbidText": [
+        "$800, want"
+      ]
+    },
+    {
+      "id": "scaffolding-so-mid",
+      "tags": [
+        "scaffolding",
+        "question",
+        "numbers"
+      ],
+      "raw": "I've left the sketches in the shared folder. So just flagging that page four still uses the old typeface. Can someone swap it before, like, five pm?",
+      "expected": {
+        "light": "I've left the sketches in the shared folder. So just flagging that page four still uses the old typeface. Can someone swap it before 5pm?",
+        "polish": "I've left the sketches in the shared folder. Just flagging that page four still uses the old typeface. Can someone swap it before 5pm?"
+      },
+      "keep": [
+        "I've left the sketches",
+        "old typeface",
+        "Can someone swap it"
+      ],
+      "forbid": [
+        "I have left"
+      ],
+      "forbidText": [
+        "folder, so just"
+      ],
+      "drop": [
+        "like"
+      ]
+    },
+    {
+      "id": "scaffolding-meant-start",
+      "tags": [
+        "scaffolding",
+        "question",
+        "numbers"
+      ],
+      "raw": "I meant to say, the kitchen install at Hearth and Co is now. Wednesday at nine am, not, uh, Thursday. Can you tell the tilers?",
+      "expected": {
+        "light": "I meant to say, the kitchen install at Hearth and Co is now Wednesday at 9am, not Thursday. Can you tell the tilers?",
+        "polish": "The kitchen install at Hearth and Co is now Wednesday at 9am, not Thursday. Can you tell the tilers?"
+      },
+      "keep": [
+        "Hearth and Co",
+        "Wednesday at 9am",
+        "Can you tell the tilers"
+      ],
+      "forbid": [
+        "You can tell"
+      ],
+      "forbidText": [
+        "Thursday, can you"
+      ]
+    },
+    {
+      "id": "scaffolding-meant-mid",
+      "tags": [
+        "scaffolding",
+        "question"
+      ],
+      "raw": "Hey Rohan, the brief looks good and, um, as I mentioned the intro is fine. Also I meant to say, the footer still has last year's ABN so, you know, legal will want that fixed. It's on page three. Can you patch it today?",
+      "expected": {
+        "light": "Hey Rohan, the brief looks good and, as I mentioned, the intro is fine. Also I meant to say, the footer still has last year's ABN, so legal will want that fixed. It's on page three. Can you patch it today?",
+        "polish": "Hey Rohan, the brief looks good and, as I mentioned, the intro is fine. Also, the footer still has last year's ABN, so legal will want that fixed. It's on page three. Can you patch it today?"
+      },
+      "keep": [
+        "as I mentioned",
+        "last year's ABN",
+        "so legal will want",
+        "Can you patch it today"
+      ],
+      "forbid": [
+        "You can patch"
+      ],
+      "forbidText": [
+        "three, can you"
+      ],
+      "drop": [
+        "you know"
+      ]
+    },
+    {
+      "id": "scaffolding-wanted-start",
+      "tags": [
+        "scaffolding",
+        "agent",
+        "question",
+        "numbers"
+      ],
+      "raw": "I wanted to say, can you move the Driftwood Labs call to, um, Thursday at ten am? Clare's stuck in Melbourne till lunch.",
+      "expected": {
+        "light": "I wanted to say, can you move the Driftwood Labs call to Thursday at 10am? Clare's stuck in Melbourne till lunch.",
+        "polish": "Can you move the Driftwood Labs call to Thursday at 10am? Clare's stuck in Melbourne till lunch."
+      },
+      "keep": [
+        "Can you move the Driftwood Labs call",
+        "10am",
+        "Clare's stuck"
+      ],
+      "forbid": [
+        "You can move",
+        "Clare is stuck"
+      ],
+      "forbidText": []
+    },
+    {
+      "id": "scaffolding-was-going-mid",
+      "tags": [
+        "scaffolding",
+        "question",
+        "numbers"
+      ],
+      "raw": "The pack is almost ready. I was going to say, we should probably bump the photo budget by two hundred dollars because the location fee went up. Can you update the tracker?",
+      "expected": {
+        "light": "The pack is almost ready. I was going to say, we should probably bump the photo budget by $200 because the location fee went up. Can you update the tracker?",
+        "polish": "The pack is almost ready. We should probably bump the photo budget by $200 because the location fee went up. Can you update the tracker?"
+      },
+      "keep": [
+        "probably bump the photo budget",
+        "$200",
+        "Can you update the tracker"
+      ],
+      "forbid": [
+        "You can update"
+      ],
+      "forbidText": [
+        "ready, we should"
+      ]
+    },
+    {
+      "id": "scaffolding-mention-start",
+      "tags": [
+        "scaffolding",
+        "question",
+        "numbers"
+      ],
+      "raw": "I just wanted to mention, um, the Oak Street Press invoice is still at four hundred and fifty dollars. Did we, you know, ever get a credit note?",
+      "expected": {
+        "light": "I just wanted to mention, the Oak Street Press invoice is still at $450. Did we ever get a credit note?",
+        "polish": "The Oak Street Press invoice is still at $450. Did we ever get a credit note?"
+      },
+      "keep": [
+        "Oak Street Press",
+        "$450",
+        "Did we ever get a credit note"
+      ],
+      "forbid": [
+        "Did you ever get"
+      ],
+      "forbidText": [
+        "$450, did"
+      ],
+      "drop": [
+        "you know"
+      ]
+    },
+    {
+      "id": "scaffolding-trying-to-say",
+      "tags": [
+        "scaffolding",
+        "agent",
+        "question",
+        "numbers"
+      ],
+      "raw": "We're not stalling them. What I'm trying to say is, we can't sign the Fenwick contract until the, the insurance certificate is on file. Can you chase that by three pm?",
+      "expected": {
+        "light": "We're not stalling them. What I'm trying to say is, we can't sign the Fenwick contract until the insurance certificate is on file. Can you chase that by 3pm?",
+        "polish": "We're not stalling them. We can't sign the Fenwick contract until the insurance certificate is on file. Can you chase that by 3pm?"
+      },
+      "keep": [
+        "We're not stalling them",
+        "Fenwick contract",
+        "Can you chase that"
+      ],
+      "forbid": [
+        "We are not",
+        "You can chase"
+      ],
+      "forbidText": [
+        "them, we can't"
+      ],
+      "drop": [
+        "the the"
+      ]
+    },
+    {
+      "id": "scaffolding-the-thing-is",
+      "tags": [
+        "scaffolding",
+        "question"
+      ],
+      "raw": "I like the layout. The thing is, Pebble and Grey still haven't sent the, um, fabric swatches and the upholsterer needs them by Friday. Can you chase them?",
+      "expected": {
+        "light": "I like the layout. The thing is, Pebble and Grey still haven't sent the fabric swatches and the upholsterer needs them by Friday. Can you chase them?",
+        "polish": "I like the layout. Pebble and Grey still haven't sent the fabric swatches, and the upholsterer needs them by Friday. Can you chase them?"
+      },
+      "keep": [
+        "I like the layout",
+        "fabric swatches",
+        "Can you chase them"
+      ],
+      "forbid": [
+        "You can chase"
+      ],
+      "forbidText": [
+        "Friday, can you"
+      ]
+    },
+    {
+      "id": "scaffolding-guess-saying",
+      "tags": [
+        "scaffolding",
+        "question"
+      ],
+      "raw": "I guess what I'm saying is, I'd rather delay the launch a week than ship with the, the broken checkout. Does that, like, make sense to you?",
+      "expected": {
+        "light": "I guess what I'm saying is, I'd rather delay the launch a week than ship with the broken checkout. Does that make sense to you?",
+        "polish": "I'd rather delay the launch a week than ship with the broken checkout. Does that make sense to you?"
+      },
+      "keep": [
+        "I'd rather delay the launch",
+        "broken checkout",
+        "Does that make sense to you"
+      ],
+      "forbid": [
+        "I would rather",
+        "Does that make sense to me"
+      ],
+      "forbidText": [],
+      "drop": [
+        "like",
+        "the the"
+      ]
+    },
+    {
+      "id": "scaffolding-so-and-wanted",
+      "tags": [
+        "scaffolding",
+        "question"
+      ],
+      "raw": "So hi Ned, the site visit is still on for Monday. Also I wanted to say, bring the laser measure because the, the hallway is tighter than the drawings. Can you grab it from the van?",
+      "expected": {
+        "light": "So hi Ned, the site visit is still on for Monday. Also I wanted to say, bring the laser measure because the hallway is tighter than the drawings. Can you grab it from the van?",
+        "polish": "Hi Ned, the site visit is still on for Monday. Also, bring the laser measure because the hallway is tighter than the drawings. Can you grab it from the van?"
+      },
+      "keep": [
+        "site visit is still on",
+        "laser measure",
+        "Can you grab it"
+      ],
+      "forbid": [
+        "You can grab"
+      ],
+      "forbidText": [
+        "Monday, also"
+      ],
+      "drop": [
+        "the the"
+      ]
+    },
+    {
+      "id": "scaffolding-okay-and-thing",
+      "tags": [
+        "scaffolding",
+        "agent",
+        "question"
+      ],
+      "raw": "Okay so the thing is, we need, uh, three extra chairs for the boardroom and they have to match the existing colour. Can you order them from Kite and Co?",
+      "expected": {
+        "light": "Okay, so the thing is, we need three extra chairs for the boardroom and they have to match the existing colour. Can you order them from Kite and Co?",
+        "polish": "We need three extra chairs for the boardroom, and they have to match the existing colour. Can you order them from Kite and Co?"
+      },
+      "keep": [
+        "three extra chairs",
+        "existing colour",
+        "Kite and Co",
+        "Can you order them"
+      ],
+      "forbid": [
+        "You can order"
+      ],
+      "forbidText": [
+        "colour, can you"
+      ]
+    },
+    {
+      "id": "scaffolding-anyway-and-mention",
+      "tags": [
+        "scaffolding",
+        "question",
+        "numbers"
+      ],
+      "raw": "Anyway I just wanted to mention, the Redfern Studio keys are with reception and, you know, Mei finishes at four pm so someone needs to collect them before then. Can you ping her if you're nearby?",
+      "expected": {
+        "light": "Anyway, I just wanted to mention, the Redfern Studio keys are with reception and Mei finishes at 4pm, so someone needs to collect them before then. Can you ping her if you're nearby?",
+        "polish": "The Redfern Studio keys are with reception and Mei finishes at 4pm, so someone needs to collect them before then. Can you ping her if you're nearby?"
+      },
+      "keep": [
+        "Redfern Studio keys",
+        "so someone needs to collect",
+        "Can you ping her",
+        "you're nearby"
+      ],
+      "forbid": [
+        "You can ping",
+        "you are nearby"
+      ],
+      "forbidText": [],
+      "drop": [
+        "you know"
+      ]
+    },
+    {
+      "id": "scaffolding-right-and-was-going",
+      "tags": [
+        "scaffolding",
+        "agent",
+        "question",
+        "numbers"
+      ],
+      "raw": "Right so I was going to say, can you bump the catering headcount to twenty five? Basically the client added four people this morning.",
+      "expected": {
+        "light": "Right, so I was going to say, can you bump the catering headcount to 25? The client added four people this morning.",
+        "polish": "Can you bump the catering headcount to 25? The client added four people this morning."
+      },
+      "keep": [
+        "Can you bump the catering headcount",
+        "25",
+        "people this morning"
+      ],
+      "forbid": [
+        "You can bump"
+      ],
+      "forbidText": [],
+      "drop": [
+        "basically"
+      ]
+    },
+    {
+      "id": "scaffolding-trap-therefore",
+      "tags": [
+        "scaffolding-trap",
+        "question",
+        "numbers"
+      ],
+      "raw": "The build failed on the last commit, so we rolled back to, um, version four. Can you tell Anika before five pm?",
+      "expected": {
+        "light": "The build failed on the last commit, so we rolled back to version four. Can you tell Anika before 5pm?",
+        "polish": "The build failed on the last commit, so we rolled back to version four. Can you tell Anika before 5pm?"
+      },
+      "keep": [
+        "so we rolled back",
+        "Can you tell Anika"
+      ],
+      "forbid": [
+        "You can tell"
+      ],
+      "forbidText": [
+        "commit, can you"
+      ]
+    },
+    {
+      "id": "scaffolding-trap-so-far",
+      "tags": [
+        "scaffolding-trap",
+        "question",
+        "numbers"
+      ],
+      "raw": "So far the Harbourline run has been clean. We've done, like, twenty two drops and nothing's gone missing. Can you log that for Friday's report?",
+      "expected": {
+        "light": "So far the Harbourline run has been clean. We've done 22 drops and nothing's gone missing. Can you log that for Friday's report?",
+        "polish": "So far the Harbourline run has been clean. We've done 22 drops and nothing's gone missing. Can you log that for Friday's report?"
+      },
+      "keep": [
+        "So far",
+        "22 drops",
+        "Can you log that"
+      ],
+      "forbid": [
+        "We have done"
+      ],
+      "forbidText": [
+        "clean, we've"
+      ],
+      "drop": [
+        "like"
+      ]
+    },
+    {
+      "id": "scaffolding-trap-so-much",
+      "tags": [
+        "scaffolding-trap",
+        "numbers"
+      ],
+      "raw": "Thanks so much for staying late on the Fenwick install. I know it ran past nine pm and you still got the site tidy.",
+      "expected": {
+        "light": "Thanks so much for staying late on the Fenwick install. I know it ran past 9pm and you still got the site tidy.",
+        "polish": "Thanks so much for staying late on the Fenwick install. I know it ran past 9pm and you still got the site tidy."
+      },
+      "keep": [
+        "Thanks so much",
+        "Fenwick install",
+        "9pm"
+      ],
+      "forbid": [],
+      "forbidText": []
+    },
+    {
+      "id": "scaffolding-trap-meant-yes",
+      "tags": [
+        "scaffolding-trap"
+      ],
+      "raw": "I meant to say yes but said no on the call, so I need to email Saskia and, uh, walk it back before Friday.",
+      "expected": {
+        "light": "I meant to say yes but said no on the call, so I need to email Saskia and walk it back before Friday.",
+        "polish": "I meant to say yes but said no on the call, so I need to email Saskia and walk it back before Friday."
+      },
+      "keep": [
+        "I meant to say yes",
+        "said no",
+        "so I need to email Saskia"
+      ],
+      "forbid": [],
+      "forbidText": []
+    },
+    {
+      "id": "scaffolding-trap-thank-you",
+      "tags": [
+        "scaffolding-trap",
+        "numbers"
+      ],
+      "raw": "I wanted to say thank you properly for covering the Northpine visit. I couldn't have made the four pm train otherwise.",
+      "expected": {
+        "light": "I wanted to say thank you properly for covering the Northpine visit. I couldn't have made the 4pm train otherwise.",
+        "polish": "I wanted to say thank you properly for covering the Northpine visit. I couldn't have made the 4pm train otherwise."
+      },
+      "keep": [
+        "I wanted to say thank you",
+        "thank you properly",
+        "4pm train"
+      ],
+      "forbid": [
+        "I could not"
+      ],
+      "forbidText": []
+    },
+    {
+      "id": "scaffolding-trap-anyway-done",
+      "tags": [
+        "scaffolding-trap",
+        "numbers"
+      ],
+      "raw": "The chairs arrived this morning and they're the wrong colour, which is annoying because we needed them for Friday. Anyway, it's done, I've already called Kite and Co for a swap and they said a replacement will be here by, um, two pm.",
+      "expected": {
+        "light": "The chairs arrived this morning and they're the wrong colour, which is annoying because we needed them for Friday. Anyway, it's done, I've already called Kite and Co for a swap and they said a replacement will be here by 2pm.",
+        "polish": "The chairs arrived this morning and they're the wrong colour, which is annoying because we needed them for Friday. Anyway, it's done. I've already called Kite and Co for a swap, and they said a replacement will be here by 2pm."
+      },
+      "keep": [
+        "Anyway, it's done",
+        "wrong colour",
+        "Kite and Co",
+        "2pm"
+      ],
+      "forbid": [
+        "they are the wrong",
+        "it is done",
+        "I have already"
+      ],
+      "forbidText": []
+    },
+    {
+      "id": "scaffolding-trap-thing-broken",
+      "tags": [
+        "scaffolding-trap",
+        "question",
+        "numbers"
+      ],
+      "raw": "Can you take a look at the printer? The thing is broken again and we've got, um, twenty five copies to run before lunch.",
+      "expected": {
+        "light": "Can you take a look at the printer? The thing is broken again and we've got 25 copies to run before lunch.",
+        "polish": "Can you take a look at the printer? The thing is broken again and we've got 25 copies to run before lunch."
+      },
+      "keep": [
+        "The thing is broken",
+        "25 copies",
+        "Can you take a look"
+      ],
+      "forbid": [
+        "You can take"
+      ],
+      "forbidText": [
+        "printer, the thing"
+      ]
+    },
+    {
+      "id": "scaffolding-trap-i-guess",
+      "tags": [
+        "scaffolding-trap",
+        "question",
+        "numbers"
+      ],
+      "raw": "I guess Friday works if the room is free after two pm. Want me to book it?",
+      "expected": {
+        "light": "I guess Friday works if the room is free after 2pm. Want me to book it?",
+        "polish": "I guess Friday works if the room is free after 2pm. Want me to book it?"
+      },
+      "keep": [
+        "I guess Friday works",
+        "2pm",
+        "Want me to book it"
+      ],
+      "forbid": [
+        "I think Friday"
+      ],
+      "forbidText": [
+        "2pm, want"
+      ]
+    },
+    {
+      "id": "scaffolding-trap-so-what",
+      "tags": [
+        "scaffolding-trap",
+        "question"
+      ],
+      "raw": "She said, so what? If the client wants the cheaper stock we can, you know, just swap it on the order.",
+      "expected": {
+        "light": "She said, so what? If the client wants the cheaper stock we can just swap it on the order.",
+        "polish": "She said, so what? If the client wants the cheaper stock we can just swap it on the order."
+      },
+      "keep": [
+        "so what",
+        "cheaper stock"
+      ],
+      "forbid": [],
+      "forbidText": [],
+      "drop": [
+        "you know"
+      ]
+    },
+    {
+      "id": "scaffolding-trap-so-that",
+      "tags": [
+        "scaffolding-trap",
+        "numbers"
+      ],
+      "raw": "Leave the door on the latch so that the courier can drop the, the samples without buzzing up. They said they'll be here around three pm.",
+      "expected": {
+        "light": "Leave the door on the latch so that the courier can drop the samples without buzzing up. They said they'll be here around 3pm.",
+        "polish": "Leave the door on the latch so that the courier can drop the samples without buzzing up. They said they'll be here around 3pm."
+      },
+      "keep": [
+        "so that the courier",
+        "they'll be here",
+        "3pm"
+      ],
+      "forbid": [
+        "they will be"
+      ],
+      "forbidText": [],
+      "drop": [
+        "the the"
+      ]
+    },
+    {
+      "id": "scaffolding-trap-was-going-no",
+      "tags": [
+        "scaffolding-trap",
+        "numbers"
+      ],
+      "raw": "Tell Farid I was going to say no to the extra day, but the quote is fine at six hundred dollars.",
+      "expected": {
+        "light": "Tell Farid I was going to say no to the extra day, but the quote is fine at $600.",
+        "polish": "Tell Farid I was going to say no to the extra day, but the quote is fine at $600."
+      },
+      "keep": [
+        "I was going to say no",
+        "$600"
+      ],
+      "forbid": [],
+      "forbidText": []
+    }
+  ]
+}
