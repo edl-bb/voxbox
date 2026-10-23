@@ -12,6 +12,10 @@ APP_BUNDLE_ID="dev.edlittle.VoxBox"
 DEV_BUNDLE_ID="dev.edlittle.VoxBox.dev"
 LEGACY_BUNDLE_ID="dev.cubbei.voxbox"
 APPLE_ID="${APPLE_ID:-email@example.com}" # set to the Apple ID of the signing developer account
+# Without APPLE_TEAM_ID set, use the team of the Developer ID certificate in the
+# keychain, so a fresh shell can sign without committing account details.
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-$(security find-identity -v -p codesigning 2>/dev/null \
+  | sed -n 's/.*"Developer ID Application: .*(\([A-Z0-9]\{10\}\))".*/\1/p' | head -1)}"
 APPLE_TEAM_ID="${APPLE_TEAM_ID:-team-id-here}"
 NOTARY_PROFILE="AC_PASSWORD"          # xcrun notarytool --keychain-profile name
 SIGN_IDENTITY="Developer ID Application"
@@ -71,16 +75,31 @@ resolve_version() {
 # Ensure notarization credentials exist in the keychain, prompting once for an
 # app-specific password if the profile is missing.
 ensure_notary_credentials() {
-  if xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" &>/dev/null; then
+  local check_output
+  if check_output=$(xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" 2>&1); then
     return 0
+  fi
+
+  # A profile that exists but is rejected (expired agreement, revoked password)
+  # needs fixing at Apple, not a fresh prompt. Show Apple's reason instead.
+  if ! echo "$check_output" | grep -qi "no keychain password item found"; then
+    echo "❌ Notarization credentials '$NOTARY_PROFILE' were rejected:"
+    echo "   $check_output"
+    echo ""
+    echo "  • HTTP 403 (agreement missing or expired): accept the pending agreement at"
+    echo "    https://developer.apple.com/account"
+    echo "  • HTTP 401 (unable to authenticate): generate a new app-specific password at"
+    echo "    https://account.apple.com (Sign-In and Security → App-Specific Passwords), then run"
+    echo "    xcrun notarytool store-credentials $NOTARY_PROFILE --apple-id <Apple ID> --team-id <team ID>"
+    exit 1
   fi
 
   echo "❌ Keychain profile '$NOTARY_PROFILE' not found"
   echo ""
   echo "You need an app-specific password for notarization."
-  echo "  1. Go to: https://appleid.apple.com"
+  echo "  1. Go to: https://account.apple.com"
   echo "  2. Sign in with: $APPLE_ID"
-  echo "  3. Security → App-Specific Passwords → Generate"
+  echo "  3. Sign-In and Security → App-Specific Passwords → Generate"
   echo ""
   read -rp "Enter app-specific password: " -s APP_PASSWORD
   echo ""
