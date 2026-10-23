@@ -182,9 +182,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🔒 Submitting for notarization (2-5 min)..."
 echo ""
 
+# `|| true`: under set -e a failed submit would exit here without printing
+# notarytool's error. Fall through so the failure branch below reports it.
 SUBMIT_OUTPUT=$(xcrun notarytool submit "$DMG_PATH" \
   --keychain-profile "$NOTARY_PROFILE" \
-  --wait 2>&1)
+  --wait 2>&1) || true
 
 echo "$SUBMIT_OUTPUT"
 SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep -E '^\s*id:' | head -1 | awk '{print $2}')
